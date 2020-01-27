@@ -2,24 +2,28 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.gbif.registry</groupId>
-    <artifactId>registry-motherpom</artifactId>
-    <version>2.144-SNAPSHOT</version>
+    <groupId>org.gbif</groupId>
+    <artifactId>motherpom</artifactId>
+    <version>37</version>
   </parent>
 
-  <artifactId>registry-collections-sync</artifactId>
+  <artifactId>collections-sync</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <name>Registry Collections Sync</name>
+  <name>Collections sync</name>
+  <url>https://github.com/gbif/${project.artifactId}</url>
 
-  <distributionManagement>
-    <site>
-      <id>gh-pages</id>
-      <url>http://gbif.github.io/registry/${project.artifactId}/</url>
-    </site>
-  </distributionManagement>
+  <scm>
+    <connection>scm:git:git@github.com:gbif/${project.artifactId}.git</connection>
+    <url>https://github.com/gbif/${project.artifactId}</url>
+    <developerConnection>scm:git:git@github.com:gbif/${project.artifactId}.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
 
   <properties>
+    <jdkLevel>1.8</jdkLevel>
+
     <slf4j.version>1.7.29</slf4j.version>
     <jackson.version>2.10.2</jackson.version>
     <retrofit.version>2.7.1</retrofit.version>
@@ -27,6 +31,9 @@
     <okio.version>2.4.3</okio.version>
     <lombok.version>1.18.10</lombok.version>
     <jcommander.version>1.78</jcommander.version>
+    <gbif-api.version>0.103-SNAPSHOT</gbif-api.version>
+    <commons-beanutils.version>1.9.2</commons-beanutils.version>
+    <junit.version>4.12</junit.version>
   </properties>
 
   <repositories>
@@ -44,6 +51,7 @@
     <dependency>
       <groupId>org.gbif</groupId>
       <artifactId>gbif-api</artifactId>
+      <version>${gbif-api.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.codehaus.jackson</groupId>
@@ -94,6 +102,7 @@
     <dependency>
       <groupId>commons-beanutils</groupId>
       <artifactId>commons-beanutils</artifactId>
+      <version>${commons-beanutils.version}</version>
     </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
@@ -112,8 +121,13 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
 
   </dependencies>
+
+  <!-- TODO: add build -->
+
+
 </project>
