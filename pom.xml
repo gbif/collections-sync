@@ -34,6 +34,22 @@
     <gbif-api.version>0.103-SNAPSHOT</gbif-api.version>
     <commons-beanutils.version>1.9.2</commons-beanutils.version>
     <junit.version>4.12</junit.version>
+
+    <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
+    <maven-failsafe-plugin.version>2.18.1</maven-failsafe-plugin.version>
+    <jacoco-maven-plugin.version>0.8.3</jacoco-maven-plugin.version>
+
+    <!-- Sonar -->
+    <sonar.language>java</sonar.language>
+    <sonar.jacoco.reportPaths>${jacoco.merged.output.file}</sonar.jacoco.reportPaths>
+
+    <!-- JaCoCo -->
+    <coverage.dir>${project.build.directory}/coverage</coverage.dir>
+    <coverage.report.it.dir>${project.reporting.outputDirectory}/jacoco-it</coverage.report.it.dir>
+    <coverage.report.ut.dir>${project.reporting.outputDirectory}/jacoco-ut</coverage.report.ut.dir>
+    <jacoco.it.output.file>${coverage.dir}/jacoco-it.exec</jacoco.it.output.file>
+    <jacoco.ut.output.file>${coverage.dir}/jacoco-ut.exec</jacoco.ut.output.file>
+    <jacoco.merged.output.file>${coverage.dir}/jacoco.exec</jacoco.merged.output.file>
   </properties>
 
   <repositories>
@@ -127,7 +143,49 @@
 
   </dependencies>
 
-  <!-- TODO: add build -->
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-surefire-plugin.version}</version>
+        <configuration>
+          <argLine>${surefireArgLine}</argLine>
+        </configuration>
+      </plugin>
 
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco-maven-plugin.version}</version>
+        <configuration>
+          <append>true</append>
+        </configuration>
+        <executions>
+          <execution>
+            <id>prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+            <configuration>
+              <destFile>${jacoco.output.file}</destFile>
+              <propertyName>surefireArgLine</propertyName>
+            </configuration>
+          </execution>
+          <execution>
+            <id>report-coverage</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+            <configuration>
+              <dataFile>${jacoco.output.file}</dataFile>
+              <outputDirectory>${coverage.report.dir}</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
