@@ -118,7 +118,7 @@ public class Matcher {
     String irn = encodeIRN(ihInstitution.getIrn());
     return Match.builder()
         .ihInstitution(ihInstitution)
-        .ihStaff(ihStaffMapByCode.get(ihInstitution.getCode()))
+        .ihStaff(ihStaffMapByCode.getOrDefault(ihInstitution.getCode(), Collections.emptyList()))
         .institutions(institutionsMapByIrn.getOrDefault(irn, Collections.emptySet()))
         .collections(collectionsMapByIrn.getOrDefault(irn, Collections.emptySet()))
         .staffMatcher(this::matchStaff)
@@ -345,12 +345,16 @@ public class Matcher {
   @Builder
   public static class Match {
     IHInstitution ihInstitution;
+
     @Singular(value = "ihStaff")
     List<IHStaff> ihStaff;
+
     @Singular(value = "institution")
     Set<Institution> institutions;
+
     @Singular(value = "collection")
     Set<Collection> collections;
+
     BiFunction<IHStaff, List<Person>, Set<Person>> staffMatcher;
 
     boolean onlyOneInstitutionMatch() {

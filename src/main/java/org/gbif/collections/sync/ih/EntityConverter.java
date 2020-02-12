@@ -143,15 +143,25 @@ public class EntityConverter {
     institution.setCode(ihInstitution.getCode());
     institution.setIndexHerbariorumRecord(true);
     institution.setActive(isActive(ihInstitution.getCurrentStatus()));
-    getStringValue(ihInstitution.getDateFounded())
-        .map(IsoDateParsingUtils::parseDate)
-        .ifPresent(institution::setFoundingDate);
 
     setLocation(ihInstitution, institution);
     setAddress(institution, ihInstitution);
     getIhEmails(ihInstitution).ifPresent(institution::setEmail);
     getIhPhones(ihInstitution).ifPresent(institution::setPhone);
     getIhHomepage(ihInstitution).ifPresent(institution::setHomepage);
+
+    // founding date
+    try {
+      getStringValue(ihInstitution.getDateFounded())
+          .map(IsoDateParsingUtils::parseDate)
+          .ifPresent(institution::setFoundingDate);
+    } catch (Exception e) {
+      log.warn(
+          "Couldn't parse founding date {} for institution {}",
+          ihInstitution.getDateFounded(),
+          ihInstitution.getIrn(),
+          e);
+    }
 
     addIdentifierIfNotExists(institution, Utils.encodeIRN(ihInstitution.getIrn()), creationUser);
 

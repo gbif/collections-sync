@@ -22,9 +22,11 @@ public class IHSyncResultExporter {
       "##########################################################################";
   private static final String SUBSECTION_SEPARATOR =
       "--------------------------------------------------------------------------";
+  private static final String MATCH_SEPARATOR =
+      "  -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_";
   private static final String LINE_STARTER = ">";
-  private static final String SIMPLE_INDENT = "\t";
-  private static final String DOUBLE_INDENT = "\t\t";
+  private static final String SMALL_INDENT = "\t\t";
+  private static final String BIG_INDENT = "\t\t\t\t";
 
   public static void exportResultsToFile(IHSyncResult result, Path filePath) {
 
@@ -53,6 +55,7 @@ public class IHSyncResultExporter {
           .getCollectionOnlyMatches()
           .forEach(
               m -> {
+                printMatchTitle(writer, "Collection Match");
                 printEntityMatch(writer, m.getMatchedCollection());
                 printStaffMatch(writer, m.getStaffMatch());
               });
@@ -64,6 +67,7 @@ public class IHSyncResultExporter {
           .getInstitutionOnlyMatches()
           .forEach(
               m -> {
+                printMatchTitle(writer, "Institution Match");
                 printEntityMatch(writer, m.getMatchedInstitution());
                 printStaffMatch(writer, m.getStaffMatch());
                 printEntity(writer, "New Collection", m.getNewCollection());
@@ -76,6 +80,7 @@ public class IHSyncResultExporter {
           .getInstAndCollMatches()
           .forEach(
               m -> {
+                printMatchTitle(writer, "Institution & Collection Match");
                 printEntityMatch(writer, m.getMatchedInstitution());
                 printStaffMatch(writer, m.getStaffMatchInstitution());
                 printEntityMatch(writer, m.getMatchedCollection());
@@ -88,6 +93,7 @@ public class IHSyncResultExporter {
           .getNoMatches()
           .forEach(
               m -> {
+                printMatchTitle(writer, "No Match");
                 printEntity(writer, "New Institution", m.getNewInstitution());
                 printEntity(writer, "New Collection", m.getNewCollection());
                 printStaffMatch(writer, m.getStaffMatch());
@@ -104,20 +110,36 @@ public class IHSyncResultExporter {
     }
   }
 
-  private static void printSectionTitle(BufferedWriter writer, String title) throws IOException {
-    writer.write(title);
-    writer.newLine();
-    writer.write(SECTION_SEPARATOR);
-    writer.newLine();
-    writer.write(LINE_STARTER);
+  private static void printMatchTitle(BufferedWriter writer, String title) {
+    try {
+      writer.write(title);
+      writer.write(MATCH_SEPARATOR);
+      writer.newLine();
+    } catch (IOException e) {
+      log.warn("Couldn't print title {}", title, e);
+    }
   }
 
-  private static void printSubsectionTitle(BufferedWriter writer, String title) throws IOException {
-    writer.write(DOUBLE_INDENT + title);
-    writer.newLine();
-    writer.write(DOUBLE_INDENT + SUBSECTION_SEPARATOR);
-    writer.newLine();
-    writer.write(DOUBLE_INDENT + LINE_STARTER);
+  private static void printSectionTitle(BufferedWriter writer, String title) {
+    try {
+      writer.write(title);
+      writer.newLine();
+      writer.write(SECTION_SEPARATOR);
+      writer.newLine();
+    } catch (IOException e) {
+      log.warn("Couldn't print title {}", title, e);
+    }
+  }
+
+  private static void printSubsectionTitle(BufferedWriter writer, String subtitle) {
+    try {
+      writer.write(BIG_INDENT + subtitle);
+      writer.newLine();
+      writer.write(BIG_INDENT + SUBSECTION_SEPARATOR);
+      writer.newLine();
+    } catch (IOException e) {
+      log.warn("Couldn't print subtitle {}", subtitle, e);
+    }
   }
 
   private static <T> void printSection(BufferedWriter writer, String title, List<T> collection)
@@ -147,21 +169,23 @@ public class IHSyncResultExporter {
   private static <T> void printCollectionSubsection(BufferedWriter writer, List<T> collection)
       throws IOException {
     for (T e : collection) {
-      writer.write(DOUBLE_INDENT + LINE_STARTER);
-      printWithNewLineAfter(writer, DOUBLE_INDENT + e.toString());
+      writer.write(BIG_INDENT + LINE_STARTER);
+      printWithNewLineAfter(writer, BIG_INDENT + e.toString());
     }
   }
 
   private static void printStaffMatch(BufferedWriter writer, IHSyncResult.StaffMatch staffMatch) {
     try {
-      printWithNewLineAfter(writer, ">>> Staff");
+      writer.newLine();
+      printWithNewLineAfter(writer, SMALL_INDENT + ">>> Associated Staff");
       printSubsection(writer, "New Persons", staffMatch.getNewPersons());
-      printSubsection(writer, "Matched Persons", staffMatch.getMatchedPersons());
+      printSubsectionTitle(writer, "Matched Persons: " + staffMatch.getMatchedPersons().size());
       staffMatch.getMatchedPersons().stream()
           .sorted(Comparator.comparing(IHSyncResult.EntityMatch::isUpdate))
-          .forEach(m -> printEntityMatch(writer, m));
+          .forEach(m -> printStaffEntityMatch(writer, m));
       printSubsection(writer, "Removed Persons", staffMatch.getRemovedPersons());
       printSubsection(writer, "Staff Conflicts", staffMatch.getConflicts());
+      writer.newLine();
     } catch (IOException e) {
       log.warn("Couldn't print staff match {}", staffMatch, e);
     }
@@ -170,13 +194,34 @@ public class IHSyncResultExporter {
   private static <T extends CollectionEntity> void printEntityMatch(
       BufferedWriter writer, IHSyncResult.EntityMatch<T> entityMatch) {
     try {
+      writer.write(LINE_STARTER + " ");
       if (entityMatch.isUpdate()) {
-        printWithNewLineAfter(writer, "Updated");
-        printWithNewLineAfter(writer, SIMPLE_INDENT + "OLD: " + entityMatch.getMatched());
-        printWithNewLineAfter(writer, SIMPLE_INDENT + "NEW: " + entityMatch.getMerged());
+        printWithNewLineAfter(writer, "Entity Updated:");
+        printWithNewLineAfter(writer, SMALL_INDENT + "OLD: " + entityMatch.getMatched());
+        writer.newLine();
+        printWithNewLineAfter(writer, SMALL_INDENT + "NEW: " + entityMatch.getMerged());
       } else {
-        printWithNewLineAfter(writer, "No Change: " + entityMatch.getMatched());
+        printWithNewLineAfter(writer, "Entity No Change: " + entityMatch.getMatched());
       }
+      writer.newLine();
+    } catch (IOException e) {
+      log.warn("Couldn't print entity match {}", entityMatch, e);
+    }
+  }
+
+  private static <T extends CollectionEntity> void printStaffEntityMatch(
+      BufferedWriter writer, IHSyncResult.EntityMatch<T> entityMatch) {
+    try {
+      if (entityMatch.isUpdate()) {
+        printWithNewLineAfter(writer, BIG_INDENT + LINE_STARTER + " Staff Updated:");
+        printWithNewLineAfter(writer, BIG_INDENT + "OLD: " + entityMatch.getMatched());
+        writer.newLine();
+        printWithNewLineAfter(writer, BIG_INDENT + "NEW: " + entityMatch.getMerged());
+      } else {
+        printWithNewLineAfter(
+            writer, BIG_INDENT + LINE_STARTER + " Staff No Change: " + entityMatch.getMatched());
+      }
+      writer.newLine();
     } catch (IOException e) {
       log.warn("Couldn't print entity match {}", entityMatch, e);
     }
