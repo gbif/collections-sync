@@ -2,6 +2,9 @@ package org.gbif.collections.sync;
 
 import org.gbif.collections.sync.ih.IHSync;
 import org.gbif.collections.sync.ih.IHSyncResult;
+import org.gbif.collections.sync.ih.IHSyncResultExporter;
+
+import java.nio.file.Paths;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -20,15 +23,14 @@ public class CliSyncApp {
             .orElseThrow(() -> new IllegalArgumentException("No valid config provided"));
 
     // sync IH
-    IHSyncResult IHSyncResult = IHSync.builder().config(config).build().sync();
-    log.info("Sync result: {}", IHSyncResult);
+    IHSyncResult ihSyncResult = IHSync.builder().config(config).build().sync();
+    log.info("Sync result: {}", ihSyncResult);
 
     // save results to a file
-    // TODO
-    //    if (config.isSaveResultsToFile()) {
-    //      DiffResultExporter.exportResultsToFile(
-    //          diffResult, Paths.get("ih_sync_result_" + System.currentTimeMillis()));
-    //    }
+    if (config.isSaveResultsToFile()) {
+      IHSyncResultExporter.exportResultsToFile(
+          ihSyncResult, Paths.get("ih_sync_result_" + System.currentTimeMillis()));
+    }
   }
 
   private static class CliArgs {
