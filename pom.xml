@@ -31,7 +31,7 @@
     <okio.version>2.4.3</okio.version>
     <lombok.version>1.18.10</lombok.version>
     <jcommander.version>1.78</jcommander.version>
-    <gbif-api.version>0.103-SNAPSHOT</gbif-api.version>
+    <gbif-api.version>0.104-SNAPSHOT</gbif-api.version>
     <commons-beanutils.version>1.9.2</commons-beanutils.version>
     <junit.version>4.12</junit.version>
 
