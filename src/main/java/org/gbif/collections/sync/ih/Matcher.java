@@ -14,7 +14,6 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -26,9 +25,6 @@ import lombok.Singular;
 import static org.gbif.collections.sync.ih.Utils.encodeIRN;
 
 public class Matcher {
-
-  private static final String EMPTY = "";
-  private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
 
   private final EntityConverter entityConverter;
   private final Map<String, Set<Institution>> institutionsMapByIrn;
@@ -58,36 +54,37 @@ public class Matcher {
       s -> {
         StringBuilder fullNameBuilder = new StringBuilder();
         if (!Strings.isNullOrEmpty(s.getFirstName())) {
-          fullNameBuilder.append(s.getFirstName());
+          fullNameBuilder.append(s.getFirstName().trim());
+          fullNameBuilder.append(" ");
         }
         if (!Strings.isNullOrEmpty(s.getMiddleName())) {
-          fullNameBuilder.append(s.getMiddleName());
+          fullNameBuilder.append(s.getMiddleName().trim());
+          fullNameBuilder.append(" ");
         }
         if (!Strings.isNullOrEmpty(s.getLastName())) {
-          fullNameBuilder.append(s.getLastName());
+          fullNameBuilder.append(s.getLastName().trim());
         }
 
         String fullName = fullNameBuilder.toString();
-
         if (Strings.isNullOrEmpty(fullName)) {
           return null;
         }
 
-        return WHITESPACE.matcher(fullName).replaceAll(EMPTY);
+        return fullName.trim();
       };
 
   private static final Function<IHStaff, String> CONCAT_IH_FIRST_NAME =
       s -> {
         StringBuilder firstNameBuilder = new StringBuilder();
         if (!Strings.isNullOrEmpty(s.getFirstName())) {
-          firstNameBuilder.append(s.getFirstName());
+          firstNameBuilder.append(s.getFirstName().trim());
+          firstNameBuilder.append(" ");
         }
         if (!Strings.isNullOrEmpty(s.getMiddleName())) {
-          firstNameBuilder.append(s.getMiddleName());
+          firstNameBuilder.append(s.getMiddleName().trim());
         }
 
         String firstName = firstNameBuilder.toString();
-
         if (Strings.isNullOrEmpty(firstName)) {
           return null;
         }
@@ -99,19 +96,19 @@ public class Matcher {
       p -> {
         StringBuilder fullNameBuilder = new StringBuilder();
         if (!Strings.isNullOrEmpty(p.getFirstName())) {
-          fullNameBuilder.append(p.getFirstName());
+          fullNameBuilder.append(p.getFirstName().trim());
+          fullNameBuilder.append(" ");
         }
         if (!Strings.isNullOrEmpty(p.getLastName())) {
-          fullNameBuilder.append(" ").append(p.getLastName());
+          fullNameBuilder.append(p.getLastName().trim());
         }
 
         String fullName = fullNameBuilder.toString();
-
         if (Strings.isNullOrEmpty(fullName)) {
           return null;
         }
 
-        return WHITESPACE.matcher(fullName).replaceAll(EMPTY);
+        return fullName.trim();
       };
 
   public Match match(IHInstitution ihInstitution) {
@@ -169,7 +166,7 @@ public class Matcher {
     }
 
     // no irn matches, we try to match with the fields
-    return matchWithFields(ihStaff, grSciCollPersons, 10);
+    return matchWithFields(ihStaff, grSciCollPersons, 9);
   }
 
   @VisibleForTesting
@@ -262,10 +259,27 @@ public class Matcher {
           return false;
         };
 
-    BiPredicate<String, String> compareNamePartially =
+    BiPredicate<String, String> compareStringsPartially =
         (s1, s2) -> {
           if (!Strings.isNullOrEmpty(s1) && !Strings.isNullOrEmpty(s2)) {
-            return s1.startsWith(s2) || s2.startsWith(s1);
+            return (s1.startsWith(s2) || s2.startsWith(s1)) || (s1.endsWith(s2) || s2.endsWith(s1));
+          }
+          return false;
+        };
+
+    BiPredicate<String, String> compareFullNamePartially =
+        (s1, s2) -> {
+          if (!Strings.isNullOrEmpty(s1) && !Strings.isNullOrEmpty(s2)) {
+            String[] parts1 = s1.split(" ");
+            String[] parts2 = s2.split(" ");
+
+            for (String p1 : parts1) {
+              for (String p2 : parts2) {
+                if (p1.length() >= 5 && p1.equalsIgnoreCase(p2)) {
+                  return true;
+                }
+              }
+            }
           }
           return false;
         };
@@ -277,18 +291,10 @@ public class Matcher {
 
     if (compareStrings.test(staff1.fullName, staff2.fullName)) {
       score += 10;
-    } else {
-      if (compareStrings.test(staff1.firstName, staff2.firstName)) {
-        score += 5;
-      } else if (compareNamePartially.test(staff1.firstName, staff2.firstName)) {
-        score += 4;
-      }
-
-      if (compareStrings.test(staff1.lastName, staff2.lastName)) {
-        score += 5;
-      } else if (compareNamePartially.test(staff1.lastName, staff2.lastName)) {
-        score += 4;
-      }
+    } else if (compareStringsPartially.test(staff1.fullName, staff2.fullName)) {
+      score += 5;
+    } else if (compareFullNamePartially.test(staff1.fullName, staff2.fullName)) {
+      score += 4;
     }
 
     // at least the name or the email should match
@@ -307,6 +313,9 @@ public class Matcher {
     }
     if (compareStrings.test(staff1.position, staff2.position)) {
       score += 2;
+    }
+    if (compareStringsPartially.test(staff1.position, staff2.position)) {
+      score += 1;
     }
     if (compareStrings.test(staff1.fax, staff2.fax)) {
       score += 1;

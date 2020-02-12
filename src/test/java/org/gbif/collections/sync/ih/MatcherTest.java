@@ -101,4 +101,50 @@ public class MatcherTest {
     assertEquals(1, persons.size());
     assertTrue(persons.contains(p1));
   }
+
+  /** Based on a real case. */
+  @Test
+  public void partialMatchInNamesTest() {
+    Matcher matcher =
+        Matcher.builder()
+            .entityConverter(ENTITY_CONVERTER)
+            .ihStaff(Collections.emptyList())
+            .build();
+
+    // IH Staff
+    IHStaff s = new IHStaff();
+    s.setFirstName("First Second");
+    s.setLastName("Third");
+    s.setPosition("Curator");
+
+    IHStaff.Address ihAddress = new IHStaff.Address();
+    ihAddress.setCity("city");
+    ihAddress.setState("some Province");
+    ihAddress.setCountry("U.S.A.");
+    s.setAddress(ihAddress);
+
+    IHStaff.Contact contact = new IHStaff.Contact();
+    contact.setPhone("123");
+    contact.setEmail("b@b.com");
+    s.setContact(contact);
+
+    // GrSciColl persons
+    Person p1 = new Person();
+    p1.setFirstName("F. S. Third");
+    p1.setPosition("Curator/Manager");
+    p1.setPhone("456");
+    p1.setEmail("a@a.com");
+
+    Address address = new Address();
+    address.setCity("CITY");
+    address.setProvince("Some Province");
+    address.setCountry(Country.UNITED_STATES);
+    p1.setMailingAddress(address);
+
+    // When
+    Set<Person> persons = matcher.matchWithFields(s, Collections.singletonList(p1), 9);
+
+    // Expect
+    assertEquals(1, persons.size());
+  }
 }

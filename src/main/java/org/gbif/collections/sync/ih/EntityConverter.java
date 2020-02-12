@@ -43,17 +43,36 @@ public class EntityConverter {
     COUNTRY_MANUAL_MAPPINGS.put("UK", Country.UNITED_KINGDOM);
     COUNTRY_MANUAL_MAPPINGS.put("Scotland", Country.UNITED_KINGDOM);
     COUNTRY_MANUAL_MAPPINGS.put("Alderney", Country.UNITED_KINGDOM);
+    COUNTRY_MANUAL_MAPPINGS.put("England", Country.UNITED_KINGDOM);
     COUNTRY_MANUAL_MAPPINGS.put("Congo Republic (Congo-Brazzaville)", Country.CONGO);
     COUNTRY_MANUAL_MAPPINGS.put("Republic of Congo-Brazzaville", Country.CONGO);
     COUNTRY_MANUAL_MAPPINGS.put(
         "Democratic Republic of the Congo", Country.CONGO_DEMOCRATIC_REPUBLIC);
+    COUNTRY_MANUAL_MAPPINGS.put("Democratic Republic of Congo", Country.CONGO_DEMOCRATIC_REPUBLIC);
+    COUNTRY_MANUAL_MAPPINGS.put("Zaire", Country.CONGO_DEMOCRATIC_REPUBLIC);
     COUNTRY_MANUAL_MAPPINGS.put("Italia", Country.ITALY);
     COUNTRY_MANUAL_MAPPINGS.put("Ivory Coast", Country.CÔTE_DIVOIRE);
     COUNTRY_MANUAL_MAPPINGS.put("Laos", Country.LAO);
     COUNTRY_MANUAL_MAPPINGS.put("Republic of Korea", Country.KOREA_SOUTH);
     COUNTRY_MANUAL_MAPPINGS.put("Republic of South Korea", Country.KOREA_SOUTH);
+    COUNTRY_MANUAL_MAPPINGS.put("Korea, South", Country.KOREA_SOUTH);
+    COUNTRY_MANUAL_MAPPINGS.put("Korea (South)", Country.KOREA_SOUTH);
+    COUNTRY_MANUAL_MAPPINGS.put("South Korea", Country.KOREA_SOUTH);
     COUNTRY_MANUAL_MAPPINGS.put("São Tomé e Príncipe", Country.SAO_TOME_PRINCIPE);
-    COUNTRY_MANUAL_MAPPINGS.put("Slovak Republic", Country.SLOVAKIA);
+    COUNTRY_MANUAL_MAPPINGS.put(
+        "Slovak Republic",
+        Country
+            .SLOVAKIA); //    COUNTRY_MANUAL_MAPPINGS.put("Brunei Darussalam",
+                        // Country.BRUNEI_DARUSSALAM);
+    COUNTRY_MANUAL_MAPPINGS.put("México", Country.MEXICO);
+    COUNTRY_MANUAL_MAPPINGS.put("French Guiana (France)", Country.FRENCH_GUIANA);
+    COUNTRY_MANUAL_MAPPINGS.put("Reunion", Country.RÉUNION);
+    COUNTRY_MANUAL_MAPPINGS.put("Palestinian Territories", Country.PALESTINIAN_TERRITORY);
+    COUNTRY_MANUAL_MAPPINGS.put("Espanya", Country.SPAIN);
+    COUNTRY_MANUAL_MAPPINGS.put("Virgin Islands, U.S.A.", Country.VIRGIN_ISLANDS);
+    COUNTRY_MANUAL_MAPPINGS.put("Brasil", Country.BRAZIL);
+    COUNTRY_MANUAL_MAPPINGS.put("Türkiye", Country.TURKEY);
+    COUNTRY_MANUAL_MAPPINGS.put("Panamá", Country.PANAMA);
   }
 
   @Builder
@@ -61,7 +80,7 @@ public class EntityConverter {
     this.creationUser = creationUser;
     countryLookup = mapCountries(countries);
 
-    if (countryLookup.size() != countries.size()) {
+    if (countryLookup.size() < countries.size()) {
       log.warn("We couldn't match all the countries to our enum");
     }
   }
@@ -77,9 +96,6 @@ public class EntityConverter {
     countries.forEach(
         c -> {
           Country country = titleLookup.get(c);
-
-          // we first try manual mappings
-          country = COUNTRY_MANUAL_MAPPINGS.get(c);
 
           if (country == null) {
             country = Country.fromIsoCode(c);
@@ -117,11 +133,13 @@ public class EntityConverter {
           }
         });
 
+    COUNTRY_MANUAL_MAPPINGS.forEach((k, v) -> mappings.put(k.toLowerCase(), v));
+
     return mappings;
   }
 
   public Country convertCountry(String country) {
-    return countryLookup.get(country.toLowerCase());
+    return countryLookup.get(country.toLowerCase().trim());
   }
 
   public Institution convertToInstitution(IHInstitution ihInstitution) {
@@ -153,6 +171,7 @@ public class EntityConverter {
     // founding date
     try {
       getStringValue(ihInstitution.getDateFounded())
+          .map(v -> v.endsWith(".") ? v.substring(0, v.length() - 1) : v)
           .map(IsoDateParsingUtils::parseDate)
           .ifPresent(institution::setFoundingDate);
     } catch (Exception e) {
@@ -372,7 +391,7 @@ public class EntityConverter {
         if (mailingAddressCountry == null) {
           log.warn(
               "Country not found for {} and IH institution {}",
-              ih.getAddress().getPhysicalCountry(),
+              ih.getAddress().getPostalCountry(),
               ih.getIrn());
         }
       }
