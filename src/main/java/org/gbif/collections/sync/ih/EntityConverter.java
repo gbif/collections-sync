@@ -59,11 +59,7 @@ public class EntityConverter {
     COUNTRY_MANUAL_MAPPINGS.put("Korea (South)", Country.KOREA_SOUTH);
     COUNTRY_MANUAL_MAPPINGS.put("South Korea", Country.KOREA_SOUTH);
     COUNTRY_MANUAL_MAPPINGS.put("São Tomé e Príncipe", Country.SAO_TOME_PRINCIPE);
-    COUNTRY_MANUAL_MAPPINGS.put(
-        "Slovak Republic",
-        Country
-            .SLOVAKIA); //    COUNTRY_MANUAL_MAPPINGS.put("Brunei Darussalam",
-                        // Country.BRUNEI_DARUSSALAM);
+    COUNTRY_MANUAL_MAPPINGS.put("Slovak Republic", Country.SLOVAKIA);
     COUNTRY_MANUAL_MAPPINGS.put("México", Country.MEXICO);
     COUNTRY_MANUAL_MAPPINGS.put("French Guiana (France)", Country.FRENCH_GUIANA);
     COUNTRY_MANUAL_MAPPINGS.put("Reunion", Country.RÉUNION);
