@@ -8,7 +8,6 @@ import lombok.Data;
 
 @Data
 @Builder
-@AllArgsConstructor
 public class Issue {
   private String title;
   private String body;

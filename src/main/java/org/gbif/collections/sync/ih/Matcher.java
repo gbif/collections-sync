@@ -386,7 +386,7 @@ public class Matcher {
       // check that the collection belongs to the institution
       Institution institution = institutions.iterator().next();
       Collection collection = collections.iterator().next();
-      return collection.getInstitutionKey().equals(institution.getKey());
+      return institution.getKey().equals(collection.getInstitutionKey());
     }
 
     List<CollectionEntity> getAllMatches() {

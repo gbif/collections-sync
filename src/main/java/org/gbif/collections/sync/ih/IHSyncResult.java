@@ -7,6 +7,7 @@ import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.ih.model.IHEntity;
 
 import java.util.List;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -54,9 +55,8 @@ public class IHSyncResult {
   @Builder
   public static class InstitutionAndCollectionMatch {
     private EntityMatch<Institution> matchedInstitution;
-    private StaffMatch staffMatchInstitution;
     private EntityMatch<Collection> matchedCollection;
-    private StaffMatch staffMatchCollection;
+    private StaffMatch staffMatch;
   }
 
   @Data
@@ -71,16 +71,16 @@ public class IHSyncResult {
   @Builder
   public static class StaffMatch {
     @Singular(value = "newPerson")
-    private List<Person> newPersons;
+    private Set<Person> newPersons;
 
     @Singular(value = "matchedPerson")
-    private List<EntityMatch<Person>> matchedPersons;
+    private Set<EntityMatch<Person>> matchedPersons;
 
     @Singular(value = "removedPerson")
-    private List<Person> removedPersons;
+    private Set<Person> removedPersons;
 
     @Singular(value = "conflict")
-    private List<Conflict> conflicts;
+    private Set<Conflict> conflicts;
   }
 
   @Data

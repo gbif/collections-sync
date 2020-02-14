@@ -13,6 +13,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -38,11 +39,45 @@ public class EntityConverterTest {
     assertEquals(URI.create("http://www.a.com"), EntityConverter.getIhHomepage(ih).get());
 
     contact.setWebUrl("www.b.com;http://www.  a.co m");
-    assertEquals(URI.create("www.b.com"), EntityConverter.getIhHomepage(ih).get());
+    assertEquals(URI.create("http://www.b.com"), EntityConverter.getIhHomepage(ih).get());
 
     contact.setWebUrl("www.b.com\nhttp://www.  a.co m");
-    assertEquals(URI.create("www.b.com"), EntityConverter.getIhHomepage(ih).get());
+    assertEquals(URI.create("http://www.b.com"), EntityConverter.getIhHomepage(ih).get());
   }
+
+  @Test
+  public void emailValidityTest() {
+    assertTrue(EntityConverter.isValidEmail("a@a.c"));
+    assertFalse(EntityConverter.isValidEmail("aa.c"));
+    assertFalse(EntityConverter.isValidEmail("N/A"));
+    assertFalse(EntityConverter.isValidEmail("@a.c"));
+  }
+
+  @Test
+  public void phoneValidityTest() {
+    assertTrue(EntityConverter.isValidPhone("[]132435"));
+    assertFalse(EntityConverter.isValidPhone("12"));
+    assertFalse(EntityConverter.isValidPhone("[][][][]"));
+  }
+
+  @Test
+  public void faxValidityTest() {
+    assertTrue(EntityConverter.isValidFax("[]132435"));
+    assertFalse(EntityConverter.isValidFax("12"));
+    assertFalse(EntityConverter.isValidFax("[][][][]"));
+  }
+
+  @Test
+  public void parseDateTest() {
+    assertTrue(EntityConverter.parseDate("2019").isPresent());
+    assertTrue(EntityConverter.parseDate("2019.").isPresent());
+    assertTrue(EntityConverter.parseDate("2019-08-08").isPresent());
+    assertTrue(EntityConverter.parseDate("2019-08").isPresent());
+    assertTrue(EntityConverter.parseDate("12/01/2019").isPresent());
+    assertTrue(EntityConverter.parseDate("June 2019").isPresent());
+    assertTrue(EntityConverter.parseDate("Junio 2019").isPresent());
+  }
+
 
   @Ignore("Manual test")
   @Test

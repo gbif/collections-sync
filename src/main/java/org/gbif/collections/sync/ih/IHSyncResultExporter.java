@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
@@ -44,6 +45,7 @@ public class IHSyncResultExporter {
           writer, "Institution & Collection Matches: " + result.getInstAndCollMatches().size());
       printWithNewLineAfter(writer, "No Matches: " + result.getNoMatches().size());
       printWithNewLineAfter(writer, "Conflicts: " + result.getConflicts().size());
+      printWithNewLineAfter(writer, "Staff Conflicts: " + getNumberStaffConflicts(result));
       printWithNewLineAfter(writer, "Failed Actions: " + result.getFailedActions().size());
       writer.newLine();
       writer.newLine();
@@ -82,9 +84,8 @@ public class IHSyncResultExporter {
               m -> {
                 printMatchTitle(writer, "Institution & Collection Match");
                 printEntityMatch(writer, m.getMatchedInstitution());
-                printStaffMatch(writer, m.getStaffMatchInstitution());
                 printEntityMatch(writer, m.getMatchedCollection());
-                printStaffMatch(writer, m.getStaffMatchCollection());
+                printStaffMatch(writer, m.getStaffMatch());
               });
 
       writer.newLine();
@@ -150,8 +151,8 @@ public class IHSyncResultExporter {
     writer.newLine();
   }
 
-  private static <T> void printSubsection(BufferedWriter writer, String title, List<T> collection)
-      throws IOException {
+  private static <T> void printSubsection(
+      BufferedWriter writer, String title, Collection<T> collection) throws IOException {
     writer.newLine();
     printSubsectionTitle(writer, title + ": " + collection.size());
     printCollectionSubsection(writer, collection);
@@ -166,7 +167,7 @@ public class IHSyncResultExporter {
     }
   }
 
-  private static <T> void printCollectionSubsection(BufferedWriter writer, List<T> collection)
+  private static <T> void printCollectionSubsection(BufferedWriter writer, Collection<T> collection)
       throws IOException {
     for (T e : collection) {
       writer.write(BIG_INDENT + LINE_STARTER);
@@ -240,5 +241,26 @@ public class IHSyncResultExporter {
   private static void printWithNewLineAfter(BufferedWriter writer, String text) throws IOException {
     writer.write(text);
     writer.newLine();
+  }
+
+  private static int getNumberStaffConflicts(IHSyncResult result) {
+    int numberConflicts = 0;
+    numberConflicts +=
+        result.getNoMatches().stream()
+            .flatMap(m -> m.getStaffMatch().getConflicts().stream())
+            .count();
+    numberConflicts +=
+        result.getInstAndCollMatches().stream()
+            .flatMap(m -> m.getStaffMatch().getConflicts().stream())
+            .count();
+    numberConflicts +=
+        result.getInstitutionOnlyMatches().stream()
+            .flatMap(m -> m.getStaffMatch().getConflicts().stream())
+            .count();
+    numberConflicts +=
+        result.getCollectionOnlyMatches().stream()
+            .flatMap(m -> m.getStaffMatch().getConflicts().stream())
+            .count();
+    return numberConflicts;
   }
 }

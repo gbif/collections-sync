@@ -85,8 +85,8 @@ public class GrSciCollHttpClient {
     return result;
   }
 
-  public void createInstitution(Institution institution) {
-    syncCall(api.createInstitution(institution));
+  public UUID createInstitution(Institution institution) {
+    return syncCall(api.createInstitution(institution));
   }
 
   public void updateInstitution(Institution institution) {
@@ -109,8 +109,8 @@ public class GrSciCollHttpClient {
     return result;
   }
 
-  public void createCollection(Collection collection) {
-    syncCall(api.createCollection(collection));
+  public UUID createCollection(Collection collection) {
+    return syncCall(api.createCollection(collection));
   }
 
   public void updateCollection(Collection collection) {

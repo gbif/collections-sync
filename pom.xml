@@ -34,6 +34,7 @@
     <gbif-api.version>0.104-SNAPSHOT</gbif-api.version>
     <commons-beanutils.version>1.9.2</commons-beanutils.version>
     <junit.version>4.12</junit.version>
+    <logback.version>1.2.3</logback.version>
 
     <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
     <maven-failsafe-plugin.version>2.18.1</maven-failsafe-plugin.version>
@@ -131,7 +132,11 @@
       <artifactId>jcommander</artifactId>
       <version>${jcommander.version}</version>
     </dependency>
-
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
+    </dependency>
 
     <!-- test -->
     <dependency>

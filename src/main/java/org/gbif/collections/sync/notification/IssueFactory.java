@@ -22,14 +22,15 @@ public class IssueFactory {
 
   private static IssueFactory instance;
 
-  private static final String IH_OUTDATED_TITLE = "The IH %s with IRN %s is outdated";
+  private static final String INVALID_ENTITY_TITLE = "Invalid IH entity with IRN %s";
   private static final String ENTITY_CONFLICT_TITLE =
       "IH %s with IRN %s matches with multiple GrSciColl entities";
   private static final String FAILS_TITLE =
       "Some operations have failed updating the registry in the IH sync";
   private static final String NEW_LINE = "\n";
   private static final String CODE_SEPARATOR = "```";
-  private static final List<String> DEFAULT_LABELS = Collections.singletonList("GrSciColl-IH sync");
+  private static final String IH_SYNC_LABEL = "GrSciColl-IH sync";
+  private static final String FAIL_LABEL = "IH sync fail";
 
   private static final UnaryOperator<String> PORTAL_URL_NORMALIZER =
       url -> {
@@ -74,51 +75,6 @@ public class IssueFactory {
     return new IssueFactory(config);
   }
 
-  public Issue createOutdatedIHStaffIssue(Person grSciCollPerson, IHStaff ihStaff) {
-    return createOutdatedIHEntityIssue(
-        grSciCollPerson, ihStaff.getIrn(), ihStaff.toString(), EntityType.IH_STAFF);
-  }
-
-  public <T extends IHEntity> Issue createOutdatedIHInstitutionIssue(
-      CollectionEntity grSciCollEntity, T ihInstitution) {
-    return createOutdatedIHEntityIssue(
-        grSciCollEntity,
-        ihInstitution.getIrn(),
-        ihInstitution.toString(),
-        EntityType.IH_INSTITUTION);
-  }
-
-  private Issue createOutdatedIHEntityIssue(
-      CollectionEntity grSciCollEntity,
-      String irn,
-      String ihEntityAsString,
-      EntityType entityType) {
-
-    // create body
-    StringBuilder body = new StringBuilder();
-    body.append("The IH ")
-        .append(createLink(irn, entityType))
-        .append(":")
-        .append(formatEntity(ihEntityAsString))
-        .append("has a more up-to-date ")
-        .append(
-            createLink(grSciCollEntity.getKey().toString(), getRegistryEntityType(grSciCollEntity)))
-        .append(" in GrSciColl:")
-        .append(formatEntity(grSciCollEntity.toString()))
-        .append("Please check which one should remain and sync them in both systems.");
-
-    if (entityType != EntityType.IH_STAFF) {
-      body.append(" Remember to sync the associated staff too.");
-    }
-
-    return Issue.builder()
-        .title(String.format(IH_OUTDATED_TITLE, entityType.title, irn))
-        .body(body.toString())
-        .assignees(config.getGhIssuesAssignees())
-        .labels(DEFAULT_LABELS)
-        .build();
-  }
-
   public Issue createConflict(List<CollectionEntity> entities, IHInstitution ihInstitution) {
     return createConflict(entities, ihInstitution, EntityType.IH_INSTITUTION);
   }
@@ -138,7 +94,7 @@ public class IssueFactory {
         .append("have multiple candidates in GrSciColl: " + NEW_LINE);
     entities.forEach(
         e ->
-            body.append(createLink(e.getKey().toString(), getRegistryEntityType(e), true))
+            body.append(createLink(e.getKey().toString(), getEntityType(e), true))
                 .append(formatEntity(e)));
     body.append("A IH ")
         .append(ihEntityType.title)
@@ -148,7 +104,22 @@ public class IssueFactory {
         .title(String.format(ENTITY_CONFLICT_TITLE, ihEntityType.title, ihEntity.getIrn()))
         .body(body.toString())
         .assignees(config.getGhIssuesAssignees())
-        .labels(DEFAULT_LABELS)
+        .labels(Collections.singletonList(IH_SYNC_LABEL))
+        .build();
+  }
+
+  public <T extends IHEntity> Issue createInvalidEntity(T entity, String message) {
+    String body =
+        message
+            + NEW_LINE
+            + createLink(entity.getIrn(), getEntityType(entity), true)
+            + formatEntity(entity);
+
+    return Issue.builder()
+        .title(String.format(INVALID_ENTITY_TITLE, entity.getIrn()))
+        .body(body)
+        .assignees(config.getGhIssuesAssignees())
+        .labels(Collections.singletonList(IH_SYNC_LABEL))
         .build();
   }
 
@@ -161,17 +132,22 @@ public class IssueFactory {
     fails.forEach(
         f ->
             body.append(NEW_LINE)
+                .append(CODE_SEPARATOR)
+                .append(NEW_LINE)
                 .append("Error: ")
                 .append(f.getMessage())
                 .append(NEW_LINE)
                 .append("Entity: ")
-                .append(f.getEntity()));
+                .append(f.getEntity())
+                .append(NEW_LINE)
+                .append(CODE_SEPARATOR)
+                .append(NEW_LINE));
 
     return Issue.builder()
         .title(FAILS_TITLE)
         .body(body.toString())
         .assignees(config.getGhIssuesAssignees())
-        .labels(DEFAULT_LABELS)
+        .labels(Collections.singletonList(FAIL_LABEL))
         .build();
   }
 
@@ -209,14 +185,24 @@ public class IssueFactory {
     return "[" + text + "](" + uri.toString() + ")";
   }
 
-  private EntityType getRegistryEntityType(CollectionEntity entity) {
+  private EntityType getEntityType(Object entity) {
     if (entity instanceof Institution) {
       return EntityType.INSTITUTION;
-    } else if (entity instanceof Collection) {
+    }
+    if (entity instanceof Collection) {
       return EntityType.COLLECTION;
-    } else {
+    }
+    if (entity instanceof Person) {
       return EntityType.PERSON;
     }
+    if (entity instanceof IHInstitution) {
+      return EntityType.IH_INSTITUTION;
+    }
+    if (entity instanceof IHStaff) {
+      return EntityType.IH_STAFF;
+    }
+
+    throw new IllegalArgumentException("Entity not supported: " + entity);
   }
 
   private enum EntityType {
