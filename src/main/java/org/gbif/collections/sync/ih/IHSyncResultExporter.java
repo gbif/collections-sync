@@ -247,20 +247,20 @@ public class IHSyncResultExporter {
     int numberConflicts = 0;
     numberConflicts +=
         result.getNoMatches().stream()
-            .flatMap(m -> m.getStaffMatch().getConflicts().stream())
-            .count();
+            .mapToLong(m -> m.getStaffMatch().getConflicts().size())
+            .sum();
     numberConflicts +=
         result.getInstAndCollMatches().stream()
-            .flatMap(m -> m.getStaffMatch().getConflicts().stream())
-            .count();
+            .mapToLong(m -> m.getStaffMatch().getConflicts().size())
+            .sum();
     numberConflicts +=
         result.getInstitutionOnlyMatches().stream()
-            .flatMap(m -> m.getStaffMatch().getConflicts().stream())
-            .count();
+            .mapToLong(m -> m.getStaffMatch().getConflicts().size())
+            .sum();
     numberConflicts +=
         result.getCollectionOnlyMatches().stream()
-            .flatMap(m -> m.getStaffMatch().getConflicts().stream())
-            .count();
+            .mapToLong(m -> m.getStaffMatch().getConflicts().size())
+            .sum();
     return numberConflicts;
   }
 }

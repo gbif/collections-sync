@@ -18,9 +18,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Singular;
+import lombok.*;
 
 import static org.gbif.collections.sync.ih.Utils.encodeIRN;
 
@@ -30,7 +28,7 @@ public class Matcher {
   private final Map<String, Set<Institution>> institutionsMapByIrn;
   private final Map<String, Set<Collection>> collectionsMapByIrn;
   private final Map<String, Set<Person>> grSciCollPersonsByIrn;
-  private final List<Person> allGrSciCollPersons;
+  private final Set<Person> allGrSciCollPersons;
   private final Map<String, List<IHStaff>> ihStaffMapByCode;
 
   @Builder
@@ -38,7 +36,7 @@ public class Matcher {
       EntityConverter entityConverter,
       List<Institution> institutions,
       List<Collection> collections,
-      List<Person> allGrSciCollPersons,
+      Set<Person> allGrSciCollPersons,
       List<IHStaff> ihStaff) {
     this.entityConverter = entityConverter;
     institutionsMapByIrn = mapByIrn(institutions);
@@ -122,7 +120,7 @@ public class Matcher {
         .build();
   }
 
-  private Set<Person> matchStaff(IHStaff ihStaff, List<Person> contacts) {
+  private Set<Person> matchStaff(IHStaff ihStaff, Set<Person> contacts) {
     // try to find a match in the GrSciColl contacts
     Set<Person> matches = matchWithContacts(ihStaff, contacts);
 
@@ -146,7 +144,7 @@ public class Matcher {
     return matchWithFields(ihStaff, allGrSciCollPersons, 11);
   }
 
-  private Set<Person> matchWithContacts(IHStaff ihStaff, List<Person> grSciCollPersons) {
+  private Set<Person> matchWithContacts(IHStaff ihStaff, Set<Person> grSciCollPersons) {
     if (grSciCollPersons == null || grSciCollPersons.isEmpty()) {
       return Collections.emptySet();
     }
@@ -170,7 +168,7 @@ public class Matcher {
   }
 
   @VisibleForTesting
-  Set<Person> matchWithFields(IHStaff ihStaff, List<Person> persons, int minimumScore) {
+  Set<Person> matchWithFields(IHStaff ihStaff, Set<Person> persons, int minimumScore) {
     if (persons.isEmpty()) {
       return Collections.emptySet();
     }
@@ -364,7 +362,7 @@ public class Matcher {
     @Singular(value = "collection")
     Set<Collection> collections;
 
-    BiFunction<IHStaff, List<Person>, Set<Person>> staffMatcher;
+    BiFunction<IHStaff, Set<Person>, Set<Person>> staffMatcher;
 
     boolean onlyOneInstitutionMatch() {
       return institutions.size() == 1 && collections.isEmpty();
@@ -398,7 +396,7 @@ public class Matcher {
   }
 
   private static <T extends CollectionEntity & Identifiable> Map<String, Set<T>> mapByIrn(
-      List<T> entities) {
+      java.util.Collection<T> entities) {
     Map<String, Set<T>> mapByIrn = new HashMap<>();
     if (entities == null) {
       return mapByIrn;

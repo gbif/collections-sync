@@ -10,6 +10,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import lombok.extern.slf4j.Slf4j;
 
+/** CLI app to sync IH with GrSciColl entities in GBIF registry. */
 @Slf4j
 public class CliSyncApp {
 

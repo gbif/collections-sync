@@ -14,6 +14,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.Singular;
 
+/**
+ * Holds the result of an IH sync.
+ *
+ * <p>These results are mainly used to export results after a run in order to verify how the process
+ * went. They are also useful in dry runs to know what changes it'd be done if we ran the sync
+ * process.
+ */
 @Data
 @Builder
 public class IHSyncResult {
