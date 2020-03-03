@@ -10,11 +10,13 @@ import org.gbif.collections.sync.SyncConfig;
 import org.gbif.collections.sync.http.BasicAuthInterceptor;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -37,12 +39,18 @@ public class GrSciCollHttpClient {
   private GrSciCollHttpClient(String grSciCollWsUrl, String user, String password) {
     Objects.requireNonNull(grSciCollWsUrl);
 
-    ObjectMapper mapper = new ObjectMapper();
+    ObjectMapper mapper =
+        new ObjectMapper()
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
     SimpleModule module = new SimpleModule();
-    module.addDeserializer(Country.class, new IsoDeserializer());
+    module.addDeserializer(Country.class, new CountryIsoDeserializer());
     mapper.registerModule(module);
 
-    OkHttpClient.Builder okHttpClientBuilder = new OkHttpClient.Builder();
+    OkHttpClient.Builder okHttpClientBuilder =
+        new OkHttpClient.Builder()
+            .connectTimeout(Duration.ofMinutes(2))
+            .readTimeout(Duration.ofMinutes(2));
 
     if (user != null && password != null) {
       okHttpClientBuilder.addInterceptor(new BasicAuthInterceptor(user, password)).build();
@@ -69,7 +77,7 @@ public class GrSciCollHttpClient {
     return instance;
   }
 
-  /** Returns all institutions in GrSciCol. */
+  /** Returns all institutions in GrSciColl. */
   public List<Institution> getInstitutions() {
     List<Institution> result = new ArrayList<>();
 
@@ -141,6 +149,10 @@ public class GrSciCollHttpClient {
     syncCall(api.updatePerson(person.getKey(), person));
   }
 
+  public void deletePerson(UUID personKey) {
+    syncCall(api.deletePerson(personKey));
+  }
+
   public void addIdentifierToPerson(UUID personKey, Identifier identifier) {
     syncCall(api.addIdentifierToPerson(personKey, identifier));
   }
@@ -192,6 +204,9 @@ public class GrSciCollHttpClient {
     @PUT("person/{key}")
     Call<Void> updatePerson(@Path("key") UUID key, @Body Person person);
 
+    @DELETE("person/{key}")
+    Call<Void> deletePerson(@Path("key") UUID key);
+
     @POST("person/{key}/identifier")
     Call<Void> addIdentifierToPerson(@Path("key") UUID personKey, @Body Identifier identifier);
 
@@ -213,7 +228,7 @@ public class GrSciCollHttpClient {
   }
 
   /** Adapter necessary for retrofit due to versioning. */
-  private static class IsoDeserializer extends JsonDeserializer<Country> {
+  private static class CountryIsoDeserializer extends JsonDeserializer<Country> {
     @Override
     public Country deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
       try {

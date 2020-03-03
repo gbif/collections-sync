@@ -18,7 +18,9 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
-import lombok.*;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Singular;
 
 import static org.gbif.collections.sync.ih.Utils.encodeIRN;
 
@@ -141,7 +143,7 @@ public class Matcher {
     }
 
     // we try to match with fields
-    return matchWithFields(ihStaff, allGrSciCollPersons, 11);
+    return matchWithFields(ihStaff, allGrSciCollPersons, 13);
   }
 
   private Set<Person> matchWithContacts(IHStaff ihStaff, Set<Person> grSciCollPersons) {
@@ -164,7 +166,7 @@ public class Matcher {
     }
 
     // no irn matches, we try to match with the fields
-    return matchWithFields(ihStaff, grSciCollPersons, 9);
+    return matchWithFields(ihStaff, grSciCollPersons, 11);
   }
 
   @VisibleForTesting
@@ -282,21 +284,30 @@ public class Matcher {
           return false;
         };
 
-    int score = 0;
+    int emailScore = 0;
     if (compareStrings.test(staff1.email, staff2.email)) {
-      score += 10;
+      emailScore = 10;
     }
 
+    int nameScore = 0;
     if (compareStrings.test(staff1.fullName, staff2.fullName)) {
-      score += 10;
+      nameScore = 10;
     } else if (compareStringsPartially.test(staff1.fullName, staff2.fullName)) {
-      score += 5;
+      nameScore = 5;
     } else if (compareFullNamePartially.test(staff1.fullName, staff2.fullName)) {
-      score += 4;
+      nameScore = 4;
+    } else if (staff1.fullName == null && staff2.fullName == null) {
+      nameScore = 1;
     }
 
-    // at least the name or the email should match
-    if (score == 0) {
+    // case when 2 persons have the same corporate email but different name
+    if (emailScore > 0 && nameScore == 0) {
+      return 0;
+    }
+
+    int score = emailScore + nameScore;
+    // a minimum match of the email or the name are required
+    if (score < 5) {
       return score;
     }
 

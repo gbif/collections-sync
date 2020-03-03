@@ -170,9 +170,11 @@ public class IHSyncTest {
             .staffMatcher((s, ppl) -> Collections.singleton(personToUpdate.entity))
             .build();
 
+    Institution institution = new Institution();
+    institution.setContacts(Collections.singletonList(personToUpdate.entity));
+
     IHSyncResult.StaffMatch staffMatch =
-        IH_SYNC.handleStaffForSameEntity(
-            match, Collections.singletonList(personToUpdate.entity), null);
+        IH_SYNC.handleStaff(match, Collections.singletonList(institution));
 
     assertEquals(0, staffMatch.getNewPersons().size());
     assertEquals(0, staffMatch.getRemovedPersons().size());
@@ -190,9 +192,11 @@ public class IHSyncTest {
             .staffMatcher((s, ppl) -> Collections.singleton(personNoChange.entity))
             .build();
 
+    Institution institution = new Institution();
+    institution.setContacts(Collections.singletonList(personNoChange.entity));
+
     IHSyncResult.StaffMatch staffMatch =
-        IH_SYNC.handleStaffForSameEntity(
-            match, Collections.singletonList(personNoChange.entity), null);
+        IH_SYNC.handleStaff(match, Collections.singletonList(institution));
 
     assertEquals(0, staffMatch.getNewPersons().size());
     assertEquals(0, staffMatch.getRemovedPersons().size());
@@ -206,9 +210,11 @@ public class IHSyncTest {
     TestEntity<Person, IHStaff> personToRemove = createTestStaffToRemove();
     Match match = Match.builder().build();
 
+    Institution institution = new Institution();
+    institution.setContacts(Collections.singletonList(personToRemove.entity));
+
     IHSyncResult.StaffMatch staffMatch =
-        IH_SYNC.handleStaffForSameEntity(
-            match, Collections.singletonList(personToRemove.entity), null);
+        IH_SYNC.handleStaff(match, Collections.singletonList(institution));
 
     assertEquals(0, staffMatch.getNewPersons().size());
     assertEquals(1, staffMatch.getRemovedPersons().size());
@@ -225,7 +231,7 @@ public class IHSyncTest {
             .staffMatcher((s, ppl) -> Collections.emptySet())
             .build();
 
-    IHSyncResult.StaffMatch staffMatch = IH_SYNC.handleStaffForSameEntity(match, null, null);
+    IHSyncResult.StaffMatch staffMatch = IH_SYNC.handleStaff(match, Collections.emptyList());
 
     assertEquals(1, staffMatch.getNewPersons().size());
     assertEquals(0, staffMatch.getRemovedPersons().size());
@@ -250,7 +256,7 @@ public class IHSyncTest {
             .staffMatcher((s, ppl) -> new HashSet<>(Arrays.asList(p1, p2)))
             .build();
 
-    IHSyncResult.StaffMatch staffMatch = IH_SYNC.handleStaffForSameEntity(match, null, null);
+    IHSyncResult.StaffMatch staffMatch = IH_SYNC.handleStaff(match, Collections.emptyList());
     assertEquals(0, staffMatch.getNewPersons().size());
     assertEquals(0, staffMatch.getRemovedPersons().size());
     assertEquals(1, staffMatch.getConflicts().size());

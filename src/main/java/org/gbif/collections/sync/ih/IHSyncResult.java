@@ -43,6 +43,9 @@ public class IHSyncResult {
   @Singular(value = "failedAction")
   private List<FailedAction> failedActions;
 
+  @Singular(value = "invalidEntity")
+  private List<IHEntity> invalidEntities;
+
   @Data
   @Builder
   public static class CollectionOnlyMatch {

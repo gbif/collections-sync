@@ -143,9 +143,47 @@ public class MatcherTest {
     p1.setMailingAddress(address);
 
     // When
-    Set<Person> persons = matcher.matchWithFields(s, Collections.singleton(p1), 9);
+    Set<Person> persons = matcher.matchWithFields(s, Collections.singleton(p1), 11);
+
+    // Expect
+    assertTrue(persons.isEmpty());
+
+    // When
+    persons = matcher.matchWithFields(s, Collections.singleton(p1), 0);
 
     // Expect
     assertEquals(1, persons.size());
+  }
+
+  @Test
+  public void corporateEmailTest() {
+    Matcher matcher =
+        Matcher.builder()
+            .entityConverter(ENTITY_CONVERTER)
+            .ihStaff(Collections.emptyList())
+            .build();
+
+    // IH Staff
+    IHStaff s = new IHStaff();
+    s.setFirstName("First");
+    s.setPosition("Curator");
+
+    IHStaff.Contact contact = new IHStaff.Contact();
+    contact.setPhone("123");
+    contact.setEmail("generic@a.com");
+    s.setContact(contact);
+
+    // GrSciColl persons
+    Person p1 = new Person();
+    p1.setFirstName("Another");
+    p1.setPosition("Curator/Manager");
+    p1.setPhone("456");
+    p1.setEmail("generic@a.com");
+
+    // When
+    Set<Person> persons = matcher.matchWithFields(s, Collections.singleton(p1), 11);
+
+    // Expect
+    assertTrue(persons.isEmpty());
   }
 }

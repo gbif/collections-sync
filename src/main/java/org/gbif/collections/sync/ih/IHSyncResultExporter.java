@@ -47,6 +47,7 @@ public class IHSyncResultExporter {
       printWithNewLineAfter(writer, "Conflicts: " + result.getConflicts().size());
       printWithNewLineAfter(writer, "Staff Conflicts: " + getNumberStaffConflicts(result));
       printWithNewLineAfter(writer, "Failed Actions: " + result.getFailedActions().size());
+      printWithNewLineAfter(writer, "Invalid entities: " + result.getInvalidEntities().size());
       writer.newLine();
       writer.newLine();
 
@@ -105,6 +106,9 @@ public class IHSyncResultExporter {
 
       // fails
       printSection(writer, "Failed Actions", result.getFailedActions());
+
+      // fails
+      printSection(writer, "Invalid entities", result.getInvalidEntities());
 
     } catch (Exception e) {
       log.warn("Couldn't save diff results", e);

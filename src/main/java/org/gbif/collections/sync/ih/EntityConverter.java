@@ -479,6 +479,10 @@ public class EntityConverter {
     // we try to clean the URL...
     String webUrl = WHITESPACE.matcher(webUrlOpt.get()).replaceAll("");
 
+    if (webUrl.startsWith("http//:")) {
+      webUrl = webUrl.replace("http//:", "http://");
+    }
+
     if (!webUrl.startsWith("http") && !webUrl.startsWith("Http") && !webUrl.startsWith("HTTP")) {
       webUrl = "http://" + webUrl;
     }
@@ -513,7 +517,7 @@ public class EntityConverter {
   }
 
   private static void addIdentifierIfNotExists(Identifiable entity, String irn, String user) {
-    if (!containsIrnAsIdentifier(entity, irn)) {
+    if (!containsIrnIdentifier(entity)) {
       // add identifier
       Identifier ihIdentifier = new Identifier(IdentifierType.IH_IRN, irn);
       ihIdentifier.setCreatedBy(user);
@@ -521,8 +525,8 @@ public class EntityConverter {
     }
   }
 
-  private static boolean containsIrnAsIdentifier(Identifiable entity, String irn) {
-    return entity.getIdentifiers().stream().anyMatch(i -> Objects.equals(irn, i.getIdentifier()));
+  private static boolean containsIrnIdentifier(Identifiable entity) {
+    return entity.getIdentifiers().stream().anyMatch(i -> i.getType() == IdentifierType.IH_IRN);
   }
 
   private static Optional<String> getStringValue(String value) {

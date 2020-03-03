@@ -1,9 +1,7 @@
 package org.gbif.collections.sync.ih;
 
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
+import org.gbif.api.model.collections.*;
 import org.gbif.collections.sync.SyncConfig;
 import org.gbif.collections.sync.http.clients.GithubClient;
 import org.gbif.collections.sync.http.clients.GrSciCollHttpClient;
@@ -145,10 +143,7 @@ public class IHSync {
     EntityMatch<Collection> collectionEntityMatch = updateCollection(match);
 
     StaffMatch staffMatch =
-        handleStaffForSameEntity(
-            match,
-            collectionEntityMatch.getMatched().getContacts(),
-            Collections.singletonList(collectionEntityMatch.getMerged()));
+        handleStaff(match, Collections.singletonList(collectionEntityMatch.getMatched()));
 
     return CollectionOnlyMatch.builder()
         .matchedCollection(collectionEntityMatch)
@@ -166,6 +161,7 @@ public class IHSync {
             match.ihInstitution, institutionEntityMatch.getMatched().getKey());
     if (isInvalidCollection(newCollection)) {
       createGHIssue(issueFactory.createInvalidEntity(match.ihInstitution, "Not valid institution"));
+      syncResultBuilder.invalidEntity(match.ihInstitution);
       return Optional.empty();
     }
 
@@ -177,10 +173,7 @@ public class IHSync {
 
     // same staff for both entities
     StaffMatch staffMatch =
-        handleStaffForSameEntity(
-            match,
-            institutionEntityMatch.getMatched().getContacts(),
-            Arrays.asList(institutionEntityMatch.getMerged(), newCollection));
+        handleStaff(match, Arrays.asList(institutionEntityMatch.getMatched(), newCollection));
 
     return Optional.of(
         InstitutionOnlyMatch.builder()
@@ -198,6 +191,7 @@ public class IHSync {
       createGHIssue(
           issueFactory.createInvalidEntity(
               match.ihInstitution, "Not valid institution - name is required"));
+      syncResultBuilder.invalidEntity(match.ihInstitution);
       return Optional.empty();
     }
 
@@ -216,6 +210,7 @@ public class IHSync {
       createGHIssue(
           issueFactory.createInvalidEntity(
               match.ihInstitution, "Not valid institution - name is required"));
+      syncResultBuilder.invalidEntity(match.ihInstitution);
       return Optional.empty();
     }
 
@@ -229,9 +224,7 @@ public class IHSync {
     newCollection.setKey(collectionKey);
 
     // same staff for both entities
-    StaffMatch staffMatch =
-        handleStaffForSameEntity(
-            match, Collections.emptyList(), Arrays.asList(newInstitution, newCollection));
+    StaffMatch staffMatch = handleStaff(match, Arrays.asList(newInstitution, newCollection));
 
     return Optional.of(
         NoEntityMatch.builder()
@@ -242,8 +235,7 @@ public class IHSync {
   }
 
   @VisibleForTesting
-  <T extends CollectionEntity> InstitutionAndCollectionMatch handleInstitutionAndCollectionMatch(
-      Match match) {
+  InstitutionAndCollectionMatch handleInstitutionAndCollectionMatch(Match match) {
     // first we see if we need to update any of the entities
     EntityMatch<Institution> institutionEntityMatch = updateInstitution(match);
     EntityMatch<Collection> collectionEntityMatch = updateCollection(match);
@@ -252,12 +244,7 @@ public class IHSync {
     Collection collection = collectionEntityMatch.getMerged();
 
     // then we handle the staff of both entities at the same time to avoid creating duplicates
-    StaffMatch staffMatch =
-        handleStaffFromDifferentEntities(
-            match,
-            collection.getContacts(),
-            institution.getContacts(),
-            Arrays.asList(institution, collection));
+    StaffMatch staffMatch = handleStaff(match, Arrays.asList(institution, collection));
 
     return InstitutionAndCollectionMatch.builder()
         .matchedInstitution(institutionEntityMatch)
@@ -305,21 +292,13 @@ public class IHSync {
     return entityMatchBuilder.build();
   }
 
-  /**
-   * This method handles the staff for entities that have the same contacts. Therefore, the sync is
-   * the same for both.
-   *
-   * <p>This happens when we're creating a new instituion and collection at once or when we're just
-   * updating one entity (one institution or one collection).
-   */
   @VisibleForTesting
-  <T extends CollectionEntity> StaffMatch handleStaffForSameEntity(
-      Match match, List<Person> contacts, List<T> entities) {
+  <T extends CollectionEntity & Contactable> StaffMatch handleStaff(Match match, List<T> entities) {
 
     BiConsumer<T, Person> addPersonToEntity =
         (e, p) -> {
           // they can be null in dry runs or if the creation of a collection/institution fails
-          if (p == null || p.getKey() == null || e.getKey() == null || contacts.contains(p)) {
+          if (isPersonInContacts(p.getKey(), e.getContacts())) {
             return;
           }
 
@@ -328,12 +307,17 @@ public class IHSync {
           } else if (e instanceof Institution) {
             grSciCollHttpClient.addPersonToInstitution(p.getKey(), e.getKey());
           }
+
+          // we add it to the contacts to avoid adding it again if there are duplicates in IH
+          if (!e.getContacts().contains(p)) {
+            e.getContacts().add(p);
+          }
         };
 
     BiConsumer<T, Person> removePersonFromEntity =
         (e, p) -> {
           // they can be null in dry runs or if the creation of a collection/institution fails
-          if (p == null || p.getKey() == null || e.getKey() == null || !contacts.contains(p)) {
+          if (!isPersonInContacts(p.getKey(), e.getContacts())) {
             return;
           }
 
@@ -344,71 +328,15 @@ public class IHSync {
           }
         };
 
-    return handleStaff(
-        match, new HashSet<>(contacts), entities, addPersonToEntity, removePersonFromEntity);
-  }
+    // merge contacts from all entities
+    Set<Person> contacts = new HashSet<>();
+    entities.stream()
+        .filter(e -> e.getContacts() != null)
+        .forEach(e -> contacts.addAll(e.getContacts()));
 
-  /**
-   * This method handles the staff of 2 entities which initially have different staff but will have
-   * the same after the sync.
-   *
-   * <p>This happens when a IH institution matches to an institution and a collection. Both are
-   * syncing to the same IH insitution but their initial contacts can be different.
-   */
-  @VisibleForTesting
-  <T extends CollectionEntity> StaffMatch handleStaffFromDifferentEntities(
-      Match match,
-      List<Person> collectionContacts,
-      List<Person> institutionContacts,
-      List<T> entities) {
+    // copy to keep track of the matches we have in order to remove the left ones at the end
+    Set<Person> contactsCopy = new HashSet<>(contacts);
 
-    BiConsumer<T, Person> addPersonToEntity =
-        (e, p) -> {
-          // they can be null in dry runs or if the creation of a collection/institution fails
-          if (p == null || p.getKey() == null || e.getKey() == null) {
-            return;
-          }
-
-          if (e instanceof Collection && !collectionContacts.contains(p)) {
-            grSciCollHttpClient.addPersonToCollection(p.getKey(), e.getKey());
-          } else if (e instanceof Institution && !institutionContacts.contains(p)) {
-            grSciCollHttpClient.addPersonToInstitution(p.getKey(), e.getKey());
-          }
-        };
-
-    BiConsumer<T, Person> removePersonFromEntity =
-        (e, p) -> {
-          // they can be null in dry runs or if the creation of a collection/institution fails
-          if (p == null || p.getKey() == null || e.getKey() == null) {
-            return;
-          }
-
-          if (e instanceof Collection && collectionContacts.contains(p)) {
-            grSciCollHttpClient.removePersonFromCollection(p.getKey(), e.getKey());
-          } else if (e instanceof Institution && institutionContacts.contains(p)) {
-            grSciCollHttpClient.removePersonFromInstitution(p.getKey(), e.getKey());
-          }
-        };
-
-    Set<Person> allContacts = new HashSet<>();
-    if (collectionContacts != null) {
-      allContacts.addAll(collectionContacts);
-    }
-    if (institutionContacts != null) {
-      allContacts.addAll(institutionContacts);
-    }
-
-    return handleStaff(match, allContacts, entities, addPersonToEntity, removePersonFromEntity);
-  }
-
-  private <T extends CollectionEntity> StaffMatch handleStaff(
-      Match match,
-      Set<Person> contacts,
-      List<T> entities,
-      BiConsumer<T, Person> addPersonToEntity,
-      BiConsumer<T, Person> removePersonFromEntity) {
-
-    List<Person> contactsCopy = contacts != null ? new ArrayList<>(contacts) : new ArrayList<>();
     List<IHStaff> ihStaffList = match.ihStaff != null ? match.ihStaff : Collections.emptyList();
     StaffMatch.StaffMatchBuilder staffSyncBuilder = StaffMatch.builder();
     for (IHStaff ihStaff : ihStaffList) {
@@ -422,10 +350,11 @@ public class IHSync {
           createGHIssue(
               issueFactory.createInvalidEntity(
                   ihStaff, "Not valid person - first name is required"));
+          syncResultBuilder.invalidEntity(ihStaff);
           continue;
         }
 
-        executeOrAddFailAsync(
+        executeOrAddFail(
             () -> {
               UUID createdKey = grSciCollHttpClient.createPerson(newPerson);
               newPerson.setKey(createdKey);
@@ -449,20 +378,30 @@ public class IHSync {
         EntityMatch.EntityMatchBuilder<Person> entityMatchBuilder =
             EntityMatch.<Person>builder().matched(matchedPerson).merged(mergedPerson);
         if (!mergedPerson.lenientEquals(matchedPerson)) {
+          // update person
           executeOrAddFailAsync(
-              () -> {
-                grSciCollHttpClient.updatePerson(mergedPerson);
-                // add identifiers if needed
-                mergedPerson.getIdentifiers().stream()
-                    .filter(i -> i.getKey() == null)
-                    .forEach(
-                        i -> grSciCollHttpClient.addIdentifierToPerson(mergedPerson.getKey(), i));
-                // if the match was global we'd need to link it to the entity. The same if we're
-                // syncing staff from different entities: one entity could have the contact already
-                // but not the other
-                entities.forEach(e -> addPersonToEntity.accept(e, mergedPerson));
-              },
+              () -> grSciCollHttpClient.updatePerson(mergedPerson),
               e -> new FailedAction(mergedPerson, "Failed to update person: " + e.getMessage()));
+
+          // add identifiers if needed
+          executeOrAddFailAsync(
+              () ->
+                  mergedPerson.getIdentifiers().stream()
+                      .filter(i -> i.getKey() == null)
+                      .forEach(
+                          i -> grSciCollHttpClient.addIdentifierToPerson(mergedPerson.getKey(), i)),
+              e ->
+                  new FailedAction(
+                      mergedPerson, "Failed to add identifiers to person: " + e.getMessage()));
+
+          // if the match was global we'd need to link it to the entity. The same if we're
+          // syncing staff from different entities: one entity could have the contact already
+          // but not the other
+          executeOrAddFail(
+              () -> entities.forEach(e -> addPersonToEntity.accept(e, mergedPerson)),
+              e ->
+                  new FailedAction(
+                      mergedPerson, "Failed to add persons to entity: " + e.getMessage()));
           entityMatchBuilder.update(true);
         }
 
@@ -500,6 +439,10 @@ public class IHSync {
     return Strings.isNullOrEmpty(person.getFirstName());
   }
 
+  private static boolean isPersonInContacts(UUID personKey, List<Person> contacts) {
+    return contacts != null && contacts.stream().anyMatch(c -> c.getKey().equals(personKey));
+  }
+
   private UUID executeCreateEntityOrAddFail(
       Supplier<UUID> execution, Function<Throwable, FailedAction> failCreator) {
     if (!dryRun) {
@@ -523,6 +466,16 @@ public class IHSync {
                   syncResultBuilder.failedAction(failCreator.apply(e));
                 }
               });
+    }
+  }
+
+  private void executeOrAddFail(Runnable runnable, Function<Throwable, FailedAction> failCreator) {
+    if (!dryRun) {
+      try {
+        runnable.run();
+      } catch (Exception e) {
+        syncResultBuilder.failedAction(failCreator.apply(e));
+      }
     }
   }
 

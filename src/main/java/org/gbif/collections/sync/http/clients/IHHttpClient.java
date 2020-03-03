@@ -5,11 +5,13 @@ import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHMetadata;
 import org.gbif.collections.sync.ih.model.IHStaff;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import lombok.Data;
+import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
@@ -25,8 +27,14 @@ public class IHHttpClient {
   private IHHttpClient(String ihWsUrl) {
     Objects.requireNonNull(ihWsUrl);
 
+    OkHttpClient.Builder okHttpClientBuilder =
+        new OkHttpClient.Builder()
+            .connectTimeout(Duration.ofMinutes(2))
+            .readTimeout(Duration.ofMinutes(2));
+
     Retrofit retrofit =
         new Retrofit.Builder()
+            .client(okHttpClientBuilder.build())
             .baseUrl(ihWsUrl)
             .addConverterFactory(JacksonConverterFactory.create())
             .build();
