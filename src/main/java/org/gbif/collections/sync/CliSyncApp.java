@@ -25,12 +25,13 @@ public class CliSyncApp {
 
     // sync IH
     IHSyncResult ihSyncResult = IHSync.builder().config(config).build().sync();
-    log.info("Sync result: {}", ihSyncResult);
 
     // save results to a file
     if (config.isSaveResultsToFile()) {
       IHSyncResultExporter.exportResultsToFile(
           ihSyncResult, Paths.get("ih_sync_result_" + System.currentTimeMillis()));
+    } else {
+      log.info("Sync result: {}", ihSyncResult);
     }
   }
 

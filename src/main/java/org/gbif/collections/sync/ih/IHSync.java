@@ -57,7 +57,7 @@ public class IHSync {
       this.ihHttpClient = IHHttpClient.getInstance(config.getIhWsUrl());
       this.githubClient = GithubClient.getInstance(config);
     } else {
-      this.dryRun = false;
+      this.dryRun = true;
       this.sendNotifications = false;
       this.issueFactory = IssueFactory.fromDefaults();
       this.grSciCollHttpClient = null;
@@ -314,20 +314,6 @@ public class IHSync {
           }
         };
 
-    BiConsumer<T, Person> removePersonFromEntity =
-        (e, p) -> {
-          // they can be null in dry runs or if the creation of a collection/institution fails
-          if (!isPersonInContacts(p.getKey(), e.getContacts())) {
-            return;
-          }
-
-          if (e instanceof Collection) {
-            grSciCollHttpClient.removePersonFromCollection(p.getKey(), e.getKey());
-          } else if (e instanceof Institution) {
-            grSciCollHttpClient.removePersonFromInstitution(p.getKey(), e.getKey());
-          }
-        };
-
     // merge contacts from all entities
     Set<Person> contacts = new HashSet<>();
     entities.stream()
@@ -408,6 +394,21 @@ public class IHSync {
         staffSyncBuilder.matchedPerson(entityMatchBuilder.build());
       }
     }
+
+    // now we remove all the contacts that are not present in IH
+    BiConsumer<T, Person> removePersonFromEntity =
+      (e, p) -> {
+        // they can be null in dry runs or if the creation of a collection/institution fails
+        if (!isPersonInContacts(p.getKey(), e.getContacts())) {
+          return;
+        }
+
+        if (e instanceof Collection) {
+          grSciCollHttpClient.removePersonFromCollection(p.getKey(), e.getKey());
+        } else if (e instanceof Institution) {
+          grSciCollHttpClient.removePersonFromInstitution(p.getKey(), e.getKey());
+        }
+      };
 
     contactsCopy.forEach(
         personToRemove -> {

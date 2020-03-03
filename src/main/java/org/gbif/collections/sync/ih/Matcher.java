@@ -295,7 +295,7 @@ public class Matcher {
     } else if (compareStringsPartially.test(staff1.fullName, staff2.fullName)) {
       nameScore = 5;
     } else if (compareFullNamePartially.test(staff1.fullName, staff2.fullName)) {
-      nameScore = 4;
+      nameScore = 3;
     } else if (staff1.fullName == null && staff2.fullName == null) {
       nameScore = 1;
     }

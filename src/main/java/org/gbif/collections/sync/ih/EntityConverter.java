@@ -275,6 +275,7 @@ public class EntityConverter {
   private static Map<String, Integer> getCollectionSummary(CollectionSummary collectionSummary) {
     if (collectionSummary != null) {
       return Arrays.stream(CollectionSummary.class.getDeclaredFields())
+          .filter(f -> f.getType().isAssignableFrom(int.class))
           .collect(
               Collectors.toMap(
                   Field::getName,
