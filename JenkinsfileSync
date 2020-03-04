@@ -19,8 +19,8 @@ pipeline {
            rm -rf *
            git clone -b master git@github.com:gbif/gbif-configuration.git
     
-           REPO_URL = https://repository.gbif.org/service/rest/v1/search/assets/download?repository=${params.VERSION}\
-                      &group=org.gbif&name=collections-sync&sort=version&direction=desc&maven.classifier&maven.extension=jar" 
+           REPO_URL = "https://repository.gbif.org/service/rest/v1/search/assets/download?repository=${params.VERSION}\
+                      &group=org.gbif&name=collections-sync&sort=version&direction=desc&maven.classifier&maven.extension=jar"
            curl ${REPO_URL} -L -o collections-sync.jar
            java -jar collections-sync.jar -c gbif-configuration/collections-sync/${params.ENV.toLowerCase()}/config.yaml
           """
