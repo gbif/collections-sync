@@ -10,19 +10,12 @@ pipeline {
   parameters {
     booleanParam(name: 'RELEASE',
             defaultValue: false,
-            description: 'Do a Maven release of the project.')
-    booleanParam(name: 'SYNC',
-            defaultValue: false,
-            description: 'Run a sync')
-    choice(name: 'ENV', choices: ['dev', 'uat', 'prod'], description: 'Choose environment')
+            description: 'Do a Maven release of the project')
   }
   stages {
     stage('Build') {
       when {
-        allOf {
-          not { expression { params.RELEASE } };
-          not { expression { params.SYNC } };
-        }
+        not { expression { params.RELEASE } }
       }
       steps {
         configFileProvider(
@@ -34,10 +27,7 @@ pipeline {
     }
     stage('SonarQube analysis') {
       when {
-        allOf {
-          not { expression { params.RELEASE } };
-          not { expression { params.SYNC } };
-        }
+        not { expression { params.RELEASE } }
       }
       steps {
         withSonarQubeEnv('GBIF Sonarqube') {
@@ -48,8 +38,7 @@ pipeline {
     stage('Snapshot to nexus') {
       when {
         allOf {
-          not { expression { params.RELEASE } };
-          not { expression { params.SYNC } };
+          not { expression { params.RELEASE } }
           branch 'master';
         }
       }
@@ -67,27 +56,10 @@ pipeline {
         configFileProvider(
                 [configFile(fileId: 'org.jenkinsci.plugins.configfiles.maven.GlobalMavenSettingsConfig1387378707709',
                         variable: 'MAVEN_SETTINGS_XML')]) {
-          git 'https://github.com/gbif/vocabulary.git'
+          git 'https://github.com/gbif/collections-sync.git'
           sh 'mvn -s $MAVEN_SETTINGS_XML -B release:prepare release:perform'
         }
       }
     }
-    stage('Sync') {
-      when { expression { params.SYNC } }
-      steps {
-        sshagent(['85f1747d-ea03-49ca-9e5d-aa9b7bc01c5f']) {
-          sh """
-           rm -rf *
-           git clone -b master git@github.com:gbif/gbif-configuration.git
-           curl "https://repository.gbif.org/service/rest/v1/search/assets/download?repository=gbif&group=org.gbif\
-                &name=collections-sync&sort=version&direction=desc&prerelease=false&maven.classifier&maven.extension=jar" \
-                -L -o collections-sync.jar
-           java -jar collections-sync.jar -c gbif-configuration/collections-sync/${params.ENV.toLowerCase()}/config.yaml
-          """
-          archiveArtifacts artifacts: '/**/ih_sync_result_*', fingerprint: true, allowEmptyArchive: true
-        }
-      }
-    }
   }
-
 }
