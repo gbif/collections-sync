@@ -26,7 +26,7 @@ pipeline {
            curl "${REPO_URL}" -L -o collections-sync.jar
            java -jar collections-sync.jar -c gbif-configuration/collections-sync/${params.ENV.toLowerCase()}/config.yaml
           """
-          archiveArtifacts artifacts: '/**/ih_sync_result_*', fingerprint: true, allowEmptyArchive: true
+          archiveArtifacts artifacts: 'ih_sync_result_*', fingerprint: true, allowEmptyArchive: true
         }
       }
     }
