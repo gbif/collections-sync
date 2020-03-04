@@ -12,7 +12,6 @@ pipeline {
   }
   stages {
     stage('Sync') {
-      when { expression { params.SYNC } }
       steps {
         sshagent(['85f1747d-ea03-49ca-9e5d-aa9b7bc01c5f']) {
           sh """
