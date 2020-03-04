@@ -66,6 +66,17 @@
     </repository>
   </repositories>
 
+  <distributionManagement>
+    <repository>
+      <id>gbif-release</id>
+      <url>http://repository.gbif.org/content/repositories/releases</url>
+    </repository>
+    <snapshotRepository>
+      <id>gbif-deploy</id>
+      <url>http://repository.gbif.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
+
   <dependencies>
     <dependency>
       <groupId>org.gbif</groupId>
