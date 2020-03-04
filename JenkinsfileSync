@@ -9,7 +9,8 @@ pipeline {
   }
   parameters {
     choice(name: 'ENV', choices: ['dev', 'uat', 'prod'], description: 'Choose environment')
-    choice(name: 'VERSION', choices: ['releases', 'snapshots'], description: 'Choose version')
+    choice(name: 'VERSION', choices: ['releases', 'snapshots'],
+            description: 'Choose version. Keep in mind that snapshot versions can be unstable.')
     booleanParam(name: 'DRY_RUN',
             defaultValue: false,
             description: "It only looks for differences between IH and the registry " +
@@ -18,6 +19,7 @@ pipeline {
             defaultValue: false,
             description: "If checked it creates Github issues when there are conflicts")
     string(name: 'GITHUB_ASSIGNEES',
+            defaultValue: '',
             description: '(Optional) If set it overrides the default assignees for Github issues.' +
                          'For multiple values separate them with commas, e.g.: assig1,assig2,assig3')
   }
