@@ -19,7 +19,7 @@ pipeline {
             defaultValue: false,
             description: "If checked it creates Github issues when there are conflicts")
     string(name: 'GITHUB_ASSIGNEES',
-            defaultValue: '',
+            defaultValue: ' ',
             description: '(Optional) If set it overrides the default assignees for Github issues.' +
                          'For multiple values separate them with commas, e.g.: assig1,assig2,assig3')
   }
