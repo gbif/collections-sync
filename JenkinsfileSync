@@ -19,7 +19,7 @@ pipeline {
             defaultValue: false,
             description: "If checked it creates Github issues when there are conflicts")
     string(name: 'GITHUB_ASSIGNEES',
-            defaultValue: ' ',
+            defaultValue: '',
             description: '(Optional) If set it overrides the default assignees for Github issues.' +
                          'For multiple values separate them with commas, e.g.: assig1,assig2,assig3')
   }
@@ -28,6 +28,7 @@ pipeline {
       environment {
         REPO_URL = "https://repository.gbif.org/service/rest/v1/search/assets/download?repository=${params.VERSION}" +
                    "&group=org.gbif&name=collections-sync&sort=version&direction=desc&maven.classifier&maven.extension=jar"
+        CLI_ARGS = createCliArgs()
       }
       steps {
         sshagent(['85f1747d-ea03-49ca-9e5d-aa9b7bc01c5f']) {
@@ -38,12 +39,29 @@ pipeline {
            curl "${REPO_URL}" -L -o collections-sync.jar
            java -jar collections-sync.jar \
                 -c gbif-configuration/collections-sync/${params.ENV.toLowerCase()}/config.yaml \
-                -dr ${params.DRY_RUN} -n ${params.SEND_NOTIFICATIONS} -ga ${params.GITHUB_ASSIGNEES}
+                ${CLI_ARGS}
           """
           archiveArtifacts artifacts: 'ih_sync_result_*', fingerprint: true, allowEmptyArchive: true
         }
       }
     }
   }
+}
 
+def createCliArgs() {
+  def args = "";
+
+  if (${params.DRY_RUN}) {
+    args += "-dr ${params.DRY_RUN} "
+  }
+
+  if (${params.SEND_NOTIFICATIONS}) {
+    args += "-n ${params.SEND_NOTIFICATIONS} "
+  }
+
+  if (${params.GITHUB_ASSIGNEES} != '') {
+    args += "-ga ${params.GITHUB_ASSIGNEES} "
+  }
+
+  return args
 }
