@@ -14,7 +14,7 @@ pipeline {
     booleanParam(name: 'SYNC',
             defaultValue: false,
             description: 'Run a sync')
-    choice(name: 'ENV', choices: ['dev', 'uat', 'prod'], defaultValue: 'dev', description: 'Choose environment')
+    choice(name: 'ENV', choices: ['dev', 'uat', 'prod'], description: 'Choose environment')
   }
   stages {
     stage('Build') {
