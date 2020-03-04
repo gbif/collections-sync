@@ -9,6 +9,7 @@ pipeline {
   }
   parameters {
     choice(name: 'ENV', choices: ['dev', 'uat', 'prod'], description: 'Choose environment')
+    choice(name: 'VERSION', choices: ['releases', 'snapshots'], description: 'Choose version')
   }
   stages {
     stage('Sync') {
@@ -17,8 +18,8 @@ pipeline {
           sh """
            rm -rf *
            git clone -b master git@github.com:gbif/gbif-configuration.git
-           curl "https://repository.gbif.org/service/rest/v1/search/assets/download?repository=gbif&group=org.gbif\
-                &name=collections-sync&sort=version&direction=desc&prerelease=false&maven.classifier&maven.extension=jar" \
+           curl "https://repository.gbif.org/service/rest/v1/search/assets/download?repository=${params.VERSION}&group=org.gbif\
+                &name=collections-sync&sort=version&direction=desc&maven.classifier&maven.extension=jar" \
                 -L -o collections-sync.jar
            java -jar collections-sync.jar -c gbif-configuration/collections-sync/${params.ENV.toLowerCase()}/config.yaml
           """
