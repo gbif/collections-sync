@@ -49,18 +49,10 @@ pipeline {
 }
 
 def createCliArgs() {
-  def args = "";
-
-  if (params.DRY_RUN) {
-    args += "-dr ${params.DRY_RUN} "
-  }
-
-  if (params.SEND_NOTIFICATIONS) {
-    args += "-n ${params.SEND_NOTIFICATIONS} "
-  }
+  def args = "-dr ${params.DRY_RUN} -n ${params.SEND_NOTIFICATIONS}"
 
   if (params.GITHUB_ASSIGNEES != '') {
-    args += "-ga ${params.GITHUB_ASSIGNEES} "
+    args += " -ga ${params.GITHUB_ASSIGNEES} "
   }
 
   return args
