@@ -4,11 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,7 +27,7 @@ public class SyncConfig {
   private String registryWsUser;
   private String registryWsPassword;
   private String ihWsUrl;
-  private NotificationConfig notification;
+  private NotificationConfig notification = new NotificationConfig();
   private boolean saveResultsToFile;
   private boolean dryRun;
   private boolean sendNotifications;
@@ -42,11 +43,9 @@ public class SyncConfig {
     private List<String> ghIssuesAssignees;
   }
 
-  public static Optional<SyncConfig> fromFileName(String configFileName) {
-    if (Strings.isNullOrEmpty(configFileName)) {
-      log.error("No config file provided");
-      return Optional.empty();
-    }
+  public static SyncConfig fromFileName(String configFileName) {
+    Preconditions.checkArgument(
+        !Strings.isNullOrEmpty(configFileName), "Config file path is required");
 
     File configFile = Paths.get(configFileName).toFile();
     SyncConfig config;
@@ -54,13 +53,37 @@ public class SyncConfig {
       config = YAML_READER.readValue(configFile);
     } catch (IOException e) {
       log.error("Couldn't load config from file {}", configFileName, e);
-      return Optional.empty();
+      throw new IllegalArgumentException("Couldn't load config file");
     }
 
     if (config == null) {
-      return Optional.empty();
+      throw new IllegalArgumentException("Config is empty");
     }
 
+    return validateConfig(config);
+  }
+
+  public static SyncConfig fromCliArgs(CliSyncApp.CliArgs args) {
+    Objects.requireNonNull(args);
+
+    SyncConfig config = fromFileName(args.getConfPath());
+
+    if (args.getDryRun() != null) {
+      config.setDryRun(args.getDryRun());
+    }
+
+    if (args.getSendNotifications() != null) {
+      config.setSendNotifications(args.getSendNotifications());
+    }
+
+    if (config.isSendNotifications() && !isEmptyList(args.getGithubAssignees())) {
+      config.getNotification().setGhIssuesAssignees(args.getGithubAssignees());
+    }
+
+    return config;
+  }
+
+  private static SyncConfig validateConfig(SyncConfig config) {
     // do some checks for required fields
     if (Strings.isNullOrEmpty(config.getRegistryWsUrl())
         || Strings.isNullOrEmpty(config.getIhWsUrl())) {
@@ -75,26 +98,39 @@ public class SyncConfig {
     }
 
     if (config.isSendNotifications()) {
-      if (config.getNotification() == null) {
-        throw new IllegalArgumentException("Notification config is required");
-      }
-
-      if (!config.getNotification().getGithubWsUrl().endsWith("/")) {
-        throw new IllegalArgumentException("Github API URL must finish with a /.");
-      }
-
-      if (Strings.isNullOrEmpty(config.getNotification().getGithubUser())
-          || Strings.isNullOrEmpty(config.getNotification().getGithubPassword())) {
-        throw new IllegalArgumentException(
-            "Github credentials are required if we are not ignoring conflicts.");
-      }
-
-      if (Strings.isNullOrEmpty(config.getNotification().getRegistryPortalUrl())
-          || Strings.isNullOrEmpty(config.getNotification().getIhPortalUrl())) {
-        throw new IllegalArgumentException("Portal URLs are required");
-      }
+      validateNotificationConfig(config.getNotification());
     }
 
-    return Optional.of(config);
+    return config;
+  }
+
+  private static void validateNotificationConfig(NotificationConfig notificationConfig) {
+    if (Strings.isNullOrEmpty(notificationConfig.getGithubWsUrl())) {
+      throw new IllegalArgumentException(
+          "Github API URL is required if we are sending notifications");
+    }
+
+    if (!notificationConfig.getGithubWsUrl().endsWith("/")) {
+      throw new IllegalArgumentException("Github API URL must finish with a /");
+    }
+
+    if (Strings.isNullOrEmpty(notificationConfig.getGithubUser())
+        || Strings.isNullOrEmpty(notificationConfig.getGithubPassword())) {
+      throw new IllegalArgumentException(
+          "Github credentials are required if we are sending notifications");
+    }
+
+    if (Strings.isNullOrEmpty(notificationConfig.getRegistryPortalUrl())
+        || Strings.isNullOrEmpty(notificationConfig.getIhPortalUrl())) {
+      throw new IllegalArgumentException("Portal URLs are required");
+    }
+  }
+
+  private static boolean isEmptyList(List<String> list) {
+    if (list == null || list.isEmpty()) {
+      return true;
+    }
+
+    return list.stream().allMatch(Strings::isNullOrEmpty);
   }
 }

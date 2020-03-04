@@ -10,6 +10,16 @@ pipeline {
   parameters {
     choice(name: 'ENV', choices: ['dev', 'uat', 'prod'], description: 'Choose environment')
     choice(name: 'VERSION', choices: ['releases', 'snapshots'], description: 'Choose version')
+    booleanParam(name: 'DRY_RUN',
+            defaultValue: false,
+            description: "It only looks for differences between IH and the registry " +
+                         "but doesn't update anything in the registry")
+    booleanParam(name: 'SEND_NOTIFICATIONS',
+            defaultValue: false,
+            description: "If checked it creates Github issues when there are conflicts")
+    string(name: 'GITHUB_ASSIGNEES',
+            description: '(Optional) If set it overrides the default assignees for Github issues.' +
+                         'For multiple values separate them with commas, e.g.: assig1,assig2,assig3')
   }
   stages {
     stage('Sync') {
@@ -24,7 +34,9 @@ pipeline {
            git clone -b master git@github.com:gbif/gbif-configuration.git
     
            curl "${REPO_URL}" -L -o collections-sync.jar
-           java -jar collections-sync.jar -c gbif-configuration/collections-sync/${params.ENV.toLowerCase()}/config.yaml
+           java -jar collections-sync.jar \
+                -c gbif-configuration/collections-sync/${params.ENV.toLowerCase()}/config.yaml \
+                -dr ${params.DRY_RUN} -n ${params.SEND_NOTIFICATIONS} -ga ${params.GITHUB_ASSIGNEES}
           """
           archiveArtifacts artifacts: 'ih_sync_result_*', fingerprint: true, allowEmptyArchive: true
         }

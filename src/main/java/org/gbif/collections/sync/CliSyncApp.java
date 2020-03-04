@@ -5,9 +5,12 @@ import org.gbif.collections.sync.ih.IHSyncResult;
 import org.gbif.collections.sync.ih.IHSyncResultExporter;
 
 import java.nio.file.Paths;
+import java.util.List;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 /** CLI app to sync IH with GrSciColl entities in GBIF registry. */
@@ -19,9 +22,7 @@ public class CliSyncApp {
     CliArgs cliArgs = new CliArgs();
     JCommander.newBuilder().addObject(cliArgs).build().parse(args);
 
-    SyncConfig config =
-        SyncConfig.fromFileName(cliArgs.confPath)
-            .orElseThrow(() -> new IllegalArgumentException("No valid config provided"));
+    SyncConfig config = SyncConfig.fromCliArgs(cliArgs);
 
     // sync IH
     IHSyncResult ihSyncResult = IHSync.builder().config(config).build().sync();
@@ -35,8 +36,21 @@ public class CliSyncApp {
     }
   }
 
-  private static class CliArgs {
-    @Parameter(names = {"--config", "-c"})
+  @Getter
+  @Setter
+  static class CliArgs {
+    @Parameter(
+        names = {"--config", "-c"},
+        required = true)
     private String confPath;
+
+    @Parameter(names = {"--dryRun", "-dr"})
+    private Boolean dryRun;
+
+    @Parameter(names = {"--sendNotifications", "-n"})
+    private Boolean sendNotifications;
+
+    @Parameter(names = {"--githubAssignees", "-ga"})
+    private List<String> githubAssignees;
   }
 }
