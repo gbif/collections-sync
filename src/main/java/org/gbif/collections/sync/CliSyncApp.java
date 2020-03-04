@@ -44,10 +44,10 @@ public class CliSyncApp {
         required = true)
     private String confPath;
 
-    @Parameter(names = {"--dryRun", "-dr"})
+    @Parameter(names = {"--dryRun", "-dr"}, arity = 1)
     private Boolean dryRun;
 
-    @Parameter(names = {"--sendNotifications", "-n"})
+    @Parameter(names = {"--sendNotifications", "-n"}, arity = 1)
     private Boolean sendNotifications;
 
     @Parameter(names = {"--githubAssignees", "-ga"})
