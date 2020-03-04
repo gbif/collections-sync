@@ -23,7 +23,7 @@ pipeline {
            rm -rf *
            git clone -b master git@github.com:gbif/gbif-configuration.git
     
-           curl ${REPO_URL} -L -o collections-sync.jar
+           curl "${REPO_URL}" -L -o collections-sync.jar
            java -jar collections-sync.jar -c gbif-configuration/collections-sync/${params.ENV.toLowerCase()}/config.yaml
           """
           archiveArtifacts artifacts: '/**/ih_sync_result_*', fingerprint: true, allowEmptyArchive: true
