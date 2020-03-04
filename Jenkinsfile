@@ -10,7 +10,7 @@ pipeline {
   parameters {
     booleanParam(name: 'RELEASE',
             defaultValue: false,
-            description: 'Do a Maven release of the project')
+            description: 'Do a Maven release of the project.')
     booleanParam(name: 'SYNC',
             defaultValue: false,
             description: 'Run a sync')
