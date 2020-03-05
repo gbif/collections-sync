@@ -46,13 +46,18 @@ pipeline {
       }
     }
   }
+  post {
+    always {
+      slackSend "Build finished - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)", channel: "#ih-sync"
+    }
+  }
 }
 
 def createCliArgs() {
   def args = "-dr ${params.DRY_RUN} -n ${params.SEND_NOTIFICATIONS}"
 
   if (params.GITHUB_ASSIGNEES != '') {
-    args += " -ga ${params.GITHUB_ASSIGNEES} "
+    args += " -ga ${params.GITHUB_ASSIGNEES}"
   }
 
   return args

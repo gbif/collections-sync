@@ -33,7 +33,7 @@ import static org.gbif.collections.sync.ih.model.IHInstitution.Location;
 @Slf4j
 public class EntityConverter {
 
-  private static final Pattern WHITESPACE = Pattern.compile("[\\s+]");
+  private static final Pattern WHITESPACE_PATTERN = Pattern.compile("[\\s+]");
   private static final Pattern CONTAINS_NUMBER = Pattern.compile(".*[0-9].*");
   private static final Map<String, Country> COUNTRY_MANUAL_MAPPINGS = new HashMap<>();
   private static final List<SimpleDateFormat> DATE_FORMATS = new ArrayList<>();
@@ -478,7 +478,7 @@ public class EntityConverter {
     }
 
     // we try to clean the URL...
-    String webUrl = WHITESPACE.matcher(webUrlOpt.get()).replaceAll("");
+    String webUrl = WHITESPACE_PATTERN.matcher(webUrlOpt.get()).replaceAll("");
 
     if (webUrl.startsWith("http//:")) {
       webUrl = webUrl.replace("http//:", "http://");

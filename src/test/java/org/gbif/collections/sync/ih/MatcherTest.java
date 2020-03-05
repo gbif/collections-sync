@@ -64,7 +64,8 @@ public class MatcherTest {
     p2.setMailingAddress(address);
 
     // When
-    Set<Person> persons = matcher.matchWithFields(s, Sets.newHashSet(p1, p2), 0);
+    Set<Person> persons =
+        matcher.matchWithFields(new Matcher.IHStaffToMatch(s), Sets.newHashSet(p1, p2), 0);
 
     // Expect
     assertEquals(1, persons.size());
@@ -81,7 +82,7 @@ public class MatcherTest {
     p2.setMailingAddress(address);
 
     // When
-    persons = matcher.matchWithFields(s, Sets.newHashSet(p1, p2), 0);
+    persons = matcher.matchWithFields(new Matcher.IHStaffToMatch(s), Sets.newHashSet(p1, p2), 0);
 
     // Expect
     assertEquals(1, persons.size());
@@ -96,7 +97,7 @@ public class MatcherTest {
     p2.setLastName("Last");
 
     // When
-    persons = matcher.matchWithFields(s, Sets.newHashSet(p1, p2), 0);
+    persons = matcher.matchWithFields(new Matcher.IHStaffToMatch(s), Sets.newHashSet(p1, p2), 0);
 
     // Expect
     assertEquals(1, persons.size());
@@ -143,13 +144,14 @@ public class MatcherTest {
     p1.setMailingAddress(address);
 
     // When
-    Set<Person> persons = matcher.matchWithFields(s, Collections.singleton(p1), 11);
+    Set<Person> persons =
+        matcher.matchWithFields(new Matcher.IHStaffToMatch(s), Collections.singleton(p1), 11);
 
     // Expect
     assertTrue(persons.isEmpty());
 
     // When
-    persons = matcher.matchWithFields(s, Collections.singleton(p1), 0);
+    persons = matcher.matchWithFields(new Matcher.IHStaffToMatch(s), Collections.singleton(p1), 0);
 
     // Expect
     assertEquals(1, persons.size());
@@ -181,7 +183,8 @@ public class MatcherTest {
     p1.setEmail("generic@a.com");
 
     // When
-    Set<Person> persons = matcher.matchWithFields(s, Collections.singleton(p1), 11);
+    Set<Person> persons =
+        matcher.matchWithFields(new Matcher.IHStaffToMatch(s), Collections.singleton(p1), 11);
 
     // Expect
     assertTrue(persons.isEmpty());

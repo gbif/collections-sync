@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -309,23 +310,20 @@ public class IHSync {
           }
 
           // we add it to the contacts to avoid adding it again if there are duplicates in IH
-          if (!e.getContacts().contains(p)) {
-            e.getContacts().add(p);
-          }
+          e.getContacts().add(p);
         };
 
     // merge contacts from all entities
-    Set<Person> contacts = new HashSet<>();
-    entities.stream()
-        .filter(e -> e.getContacts() != null)
-        .forEach(e -> contacts.addAll(e.getContacts()));
+    Set<Person> contacts =
+        entities.stream()
+            .filter(e -> e.getContacts() != null)
+            .flatMap(e -> e.getContacts().stream())
+            .collect(Collectors.toSet());
 
-    // copy to keep track of the matches we have in order to remove the left ones at the end
+    // copy contacts to keep track of the matched ones in order to remove the left ones at the end
     Set<Person> contactsCopy = new HashSet<>(contacts);
-
-    List<IHStaff> ihStaffList = match.ihStaff != null ? match.ihStaff : Collections.emptyList();
     StaffMatch.StaffMatchBuilder staffSyncBuilder = StaffMatch.builder();
-    for (IHStaff ihStaff : ihStaffList) {
+    for (IHStaff ihStaff : match.ihStaff) {
       Set<Person> staffMatches = match.staffMatcher.apply(ihStaff, contacts);
 
       if (staffMatches.isEmpty()) {
@@ -397,18 +395,18 @@ public class IHSync {
 
     // now we remove all the contacts that are not present in IH
     BiConsumer<T, Person> removePersonFromEntity =
-      (e, p) -> {
-        // they can be null in dry runs or if the creation of a collection/institution fails
-        if (!isPersonInContacts(p.getKey(), e.getContacts())) {
-          return;
-        }
+        (e, p) -> {
+          // they can be null in dry runs or if the creation of a collection/institution fails
+          if (!isPersonInContacts(p.getKey(), e.getContacts())) {
+            return;
+          }
 
-        if (e instanceof Collection) {
-          grSciCollHttpClient.removePersonFromCollection(p.getKey(), e.getKey());
-        } else if (e instanceof Institution) {
-          grSciCollHttpClient.removePersonFromInstitution(p.getKey(), e.getKey());
-        }
-      };
+          if (e instanceof Collection) {
+            grSciCollHttpClient.removePersonFromCollection(p.getKey(), e.getKey());
+          } else if (e instanceof Institution) {
+            grSciCollHttpClient.removePersonFromInstitution(p.getKey(), e.getKey());
+          }
+        };
 
     contactsCopy.forEach(
         personToRemove -> {

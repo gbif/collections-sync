@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Singular;
@@ -50,111 +51,64 @@ public class Matcher {
             .collect(Collectors.groupingBy(IHStaff::getCode, HashMap::new, Collectors.toList()));
   }
 
-  private static final Function<IHStaff, String> CONCAT_IH_NAME =
-      s -> {
-        StringBuilder fullNameBuilder = new StringBuilder();
-        if (!Strings.isNullOrEmpty(s.getFirstName())) {
-          fullNameBuilder.append(s.getFirstName().trim());
-          fullNameBuilder.append(" ");
-        }
-        if (!Strings.isNullOrEmpty(s.getMiddleName())) {
-          fullNameBuilder.append(s.getMiddleName().trim());
-          fullNameBuilder.append(" ");
-        }
-        if (!Strings.isNullOrEmpty(s.getLastName())) {
-          fullNameBuilder.append(s.getLastName().trim());
-        }
-
-        String fullName = fullNameBuilder.toString();
-        if (Strings.isNullOrEmpty(fullName)) {
-          return null;
-        }
-
-        return fullName.trim();
-      };
-
-  private static final Function<IHStaff, String> CONCAT_IH_FIRST_NAME =
-      s -> {
-        StringBuilder firstNameBuilder = new StringBuilder();
-        if (!Strings.isNullOrEmpty(s.getFirstName())) {
-          firstNameBuilder.append(s.getFirstName().trim());
-          firstNameBuilder.append(" ");
-        }
-        if (!Strings.isNullOrEmpty(s.getMiddleName())) {
-          firstNameBuilder.append(s.getMiddleName().trim());
-        }
-
-        String firstName = firstNameBuilder.toString();
-        if (Strings.isNullOrEmpty(firstName)) {
-          return null;
-        }
-
-        return firstName.trim();
-      };
-
-  private static final Function<Person, String> CONCAT_PERSON_NAME =
-      p -> {
-        StringBuilder fullNameBuilder = new StringBuilder();
-        if (!Strings.isNullOrEmpty(p.getFirstName())) {
-          fullNameBuilder.append(p.getFirstName().trim());
-          fullNameBuilder.append(" ");
-        }
-        if (!Strings.isNullOrEmpty(p.getLastName())) {
-          fullNameBuilder.append(p.getLastName().trim());
-        }
-
-        String fullName = fullNameBuilder.toString();
-        if (Strings.isNullOrEmpty(fullName)) {
-          return null;
-        }
-
-        return fullName.trim();
-      };
-
   public Match match(IHInstitution ihInstitution) {
     String irn = encodeIRN(ihInstitution.getIrn());
+
+    // find matches
+    Set<Institution> institutionsMatched =
+        institutionsMapByIrn.getOrDefault(irn, Collections.emptySet());
+    Set<Collection> collectionsMatched =
+        collectionsMapByIrn.getOrDefault(irn, Collections.emptySet());
+
     return Match.builder()
         .ihInstitution(ihInstitution)
         .ihStaff(ihStaffMapByCode.getOrDefault(ihInstitution.getCode(), Collections.emptyList()))
-        .institutions(institutionsMapByIrn.getOrDefault(irn, Collections.emptySet()))
-        .collections(collectionsMapByIrn.getOrDefault(irn, Collections.emptySet()))
-        .staffMatcher(this::matchStaff)
+        .institutions(institutionsMatched)
+        .collections(collectionsMatched)
+        .staffMatcher(
+            createStaffMatcher(getMatchKey(institutionsMatched), getMatchKey(collectionsMatched)))
         .build();
   }
 
-  private Set<Person> matchStaff(IHStaff ihStaff, Set<Person> contacts) {
-    // try to find a match in the GrSciColl contacts
-    Set<Person> matches = matchWithContacts(ihStaff, contacts);
+  private BiFunction<IHStaff, Set<Person>, Set<Person>> createStaffMatcher(
+      UUID institutionKey, UUID collectionKey) {
+    return (ihStaff, contacts) -> {
+      IHStaffToMatch ihStaffToMatch = new IHStaffToMatch(ihStaff, institutionKey, collectionKey);
 
-    if (matches.isEmpty()) {
-      // no match among the contacts. We check now in all the GrSciColl persons.
-      matches = matchGlobally(ihStaff);
-    }
-    return matches;
+      // try to find a match in the GrSciColl contacts
+      Set<Person> matches = matchWithContacts(ihStaffToMatch, contacts);
+
+      if (matches.isEmpty()) {
+        // no match among the contacts. We check now in all the GrSciColl persons.
+        matches = matchGlobally(ihStaffToMatch);
+      }
+      return matches;
+    };
   }
 
-  private Set<Person> matchGlobally(IHStaff ihStaff) {
+  private Set<Person> matchGlobally(IHStaffToMatch ihStaffToMatch) {
     // first try with IRNs
     Set<Person> matchesWithIrn =
-        grSciCollPersonsByIrn.getOrDefault(encodeIRN(ihStaff.getIrn()), Collections.emptySet());
+        grSciCollPersonsByIrn.getOrDefault(
+            encodeIRN(ihStaffToMatch.ihStaff.getIrn()), Collections.emptySet());
 
     if (!matchesWithIrn.isEmpty()) {
       return matchesWithIrn;
     }
 
     // we try to match with fields
-    return matchWithFields(ihStaff, allGrSciCollPersons, 13);
+    return matchWithFields(ihStaffToMatch, allGrSciCollPersons, 13);
   }
 
-  private Set<Person> matchWithContacts(IHStaff ihStaff, Set<Person> grSciCollPersons) {
-    if (grSciCollPersons == null || grSciCollPersons.isEmpty()) {
+  private Set<Person> matchWithContacts(IHStaffToMatch ihStaffToMatch, Set<Person> contacts) {
+    if (contacts == null || contacts.isEmpty()) {
       return Collections.emptySet();
     }
 
     // try to find a match by using the IRN identifiers
-    String irn = encodeIRN(ihStaff.getIrn());
+    String irn = encodeIRN(ihStaffToMatch.ihStaff.getIrn());
     Set<Person> irnMatches =
-        grSciCollPersons.stream()
+        contacts.stream()
             .filter(
                 p ->
                     p.getIdentifiers().stream()
@@ -166,16 +120,17 @@ public class Matcher {
     }
 
     // no irn matches, we try to match with the fields
-    return matchWithFields(ihStaff, grSciCollPersons, 11);
+    return matchWithFields(ihStaffToMatch, contacts, 11);
   }
 
   @VisibleForTesting
-  Set<Person> matchWithFields(IHStaff ihStaff, Set<Person> persons, int minimumScore) {
+  Set<Person> matchWithFields(
+      IHStaffToMatch ihStaffToMatch, Set<Person> persons, int minimumScore) {
     if (persons.isEmpty()) {
       return Collections.emptySet();
     }
 
-    StaffNormalized ihStaffNorm = buildIHStaffNormalized(ihStaff, entityConverter);
+    StaffNormalized ihStaffNorm = buildIHStaffNormalized(ihStaffToMatch, entityConverter);
 
     int maxScore = 0;
     Set<Person> bestMatches = new HashSet<>();
@@ -200,13 +155,17 @@ public class Matcher {
   }
 
   private static StaffNormalized buildIHStaffNormalized(
-      IHStaff ihStaff, EntityConverter entityConverter) {
+      IHStaffToMatch ihStaffToMatch, EntityConverter entityConverter) {
+    IHStaff ihStaff = ihStaffToMatch.ihStaff;
+
     StaffNormalized.StaffNormalizedBuilder ihBuilder =
         StaffNormalized.builder()
             .fullName(CONCAT_IH_NAME.apply(ihStaff))
             .firstName(CONCAT_IH_FIRST_NAME.apply(ihStaff))
             .lastName(ihStaff.getLastName())
-            .position(ihStaff.getPosition());
+            .position(ihStaff.getPosition())
+            .primaryInstitutionKey(ihStaffToMatch.institutionMatched)
+            .primaryCollectionKey(ihStaffToMatch.collectionMatched);
 
     if (ihStaff.getContact() != null) {
       ihBuilder
@@ -236,7 +195,9 @@ public class Matcher {
             .position(person.getPosition())
             .email(person.getEmail())
             .phone(person.getPhone())
-            .fax(person.getFax());
+            .fax(person.getFax())
+            .primaryInstitutionKey(person.getPrimaryInstitutionKey())
+            .primaryCollectionKey(person.getPrimaryCollectionKey());
 
     if (person.getMailingAddress() != null) {
       personBuilder
@@ -323,6 +284,14 @@ public class Matcher {
     if (compareStrings.test(staff1.position, staff2.position)) {
       score += 2;
     }
+    if (staff1.primaryInstitutionKey != null
+        && Objects.equals(staff1.primaryInstitutionKey, staff2.primaryInstitutionKey)) {
+      score += 2;
+    }
+    if (staff1.primaryCollectionKey != null
+        && Objects.equals(staff1.primaryCollectionKey, staff2.primaryCollectionKey)) {
+      score += 2;
+    }
     if (compareStringsPartially.test(staff1.position, staff2.position)) {
       score += 1;
     }
@@ -358,6 +327,8 @@ public class Matcher {
     private String state;
     private String zipCode;
     private Country country;
+    private UUID primaryInstitutionKey;
+    private UUID primaryCollectionKey;
   }
 
   @Builder
@@ -406,6 +377,17 @@ public class Matcher {
     }
   }
 
+  @AllArgsConstructor
+  static class IHStaffToMatch {
+    IHStaff ihStaff;
+    UUID institutionMatched;
+    UUID collectionMatched;
+
+    IHStaffToMatch(IHStaff ihStaff) {
+      this.ihStaff = ihStaff;
+    }
+  }
+
   private static <T extends CollectionEntity & Identifiable> Map<String, Set<T>> mapByIrn(
       java.util.Collection<T> entities) {
     Map<String, Set<T>> mapByIrn = new HashMap<>();
@@ -421,4 +403,72 @@ public class Matcher {
                     i -> mapByIrn.computeIfAbsent(i.getIdentifier(), s -> new HashSet<>()).add(o)));
     return mapByIrn;
   }
+
+  private <T extends CollectionEntity> UUID getMatchKey(Set<T> matches) {
+    if (matches.iterator().hasNext()) {
+      return matches.iterator().next().getKey();
+    }
+    return null;
+  }
+
+  private static final Function<IHStaff, String> CONCAT_IH_NAME =
+      s -> {
+        StringBuilder fullNameBuilder = new StringBuilder();
+        if (!Strings.isNullOrEmpty(s.getFirstName())) {
+          fullNameBuilder.append(s.getFirstName().trim());
+          fullNameBuilder.append(" ");
+        }
+        if (!Strings.isNullOrEmpty(s.getMiddleName())) {
+          fullNameBuilder.append(s.getMiddleName().trim());
+          fullNameBuilder.append(" ");
+        }
+        if (!Strings.isNullOrEmpty(s.getLastName())) {
+          fullNameBuilder.append(s.getLastName().trim());
+        }
+
+        String fullName = fullNameBuilder.toString();
+        if (Strings.isNullOrEmpty(fullName)) {
+          return null;
+        }
+
+        return fullName.trim();
+      };
+
+  private static final Function<IHStaff, String> CONCAT_IH_FIRST_NAME =
+      s -> {
+        StringBuilder firstNameBuilder = new StringBuilder();
+        if (!Strings.isNullOrEmpty(s.getFirstName())) {
+          firstNameBuilder.append(s.getFirstName().trim());
+          firstNameBuilder.append(" ");
+        }
+        if (!Strings.isNullOrEmpty(s.getMiddleName())) {
+          firstNameBuilder.append(s.getMiddleName().trim());
+        }
+
+        String firstName = firstNameBuilder.toString();
+        if (Strings.isNullOrEmpty(firstName)) {
+          return null;
+        }
+
+        return firstName.trim();
+      };
+
+  private static final Function<Person, String> CONCAT_PERSON_NAME =
+      p -> {
+        StringBuilder fullNameBuilder = new StringBuilder();
+        if (!Strings.isNullOrEmpty(p.getFirstName())) {
+          fullNameBuilder.append(p.getFirstName().trim());
+          fullNameBuilder.append(" ");
+        }
+        if (!Strings.isNullOrEmpty(p.getLastName())) {
+          fullNameBuilder.append(p.getLastName().trim());
+        }
+
+        String fullName = fullNameBuilder.toString();
+        if (Strings.isNullOrEmpty(fullName)) {
+          return null;
+        }
+
+        return fullName.trim();
+      };
 }
