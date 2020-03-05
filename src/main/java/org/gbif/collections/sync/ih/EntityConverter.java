@@ -522,7 +522,9 @@ public class EntityConverter {
       // add identifier
       Identifier ihIdentifier = new Identifier(IdentifierType.IH_IRN, irn);
       ihIdentifier.setCreatedBy(user);
-      entity.getIdentifiers().add(ihIdentifier);
+      List<Identifier> identifiers = new ArrayList<>(entity.getIdentifiers());
+      identifiers.add(ihIdentifier);
+      entity.setIdentifiers(identifiers);
     }
   }
 
