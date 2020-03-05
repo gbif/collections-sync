@@ -10,14 +10,14 @@ pipeline {
   parameters {
     choice(name: 'ENV', choices: ['dev', 'uat', 'prod'], description: 'Choose environment')
     choice(name: 'VERSION', choices: ['releases', 'snapshots'],
-            description: 'Choose version. Keep in mind that snapshot versions can be unstable.')
+            description: 'Snapshot versions should be used only for development purposes.')
     booleanParam(name: 'DRY_RUN',
             defaultValue: false,
             description: "It only looks for differences between IH and the registry " +
                          "but doesn't update anything in the registry")
     booleanParam(name: 'SEND_NOTIFICATIONS',
             defaultValue: false,
-            description: "If checked it creates Github issues when there are conflicts")
+            description: "If checked it creates Github issues when there are conflicts or data issues")
     string(name: 'GITHUB_ASSIGNEES',
             defaultValue: '',
             description: '(Optional) If set it overrides the default assignees for Github issues.' +
