@@ -5,7 +5,7 @@ pipeline {
     jdk 'JDK8'
   }
   options {
-    buildDiscarder(logRotator(numToKeepStr: '5'))
+    buildDiscarder(logRotator(numToKeepStr: '10'))
   }
   parameters {
     choice(name: 'ENV', choices: ['dev', 'uat', 'prod'], description: 'Choose environment')
