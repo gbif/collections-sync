@@ -48,7 +48,8 @@ pipeline {
   }
   post {
     always {
-      slackSend "Build finished - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)", channel: "#ih-sync"
+      slackSend message: "Build finished - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)",
+              channel: "#ih-sync"
     }
   }
 }
