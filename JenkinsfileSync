@@ -6,6 +6,7 @@ pipeline {
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
+    timestamps ()
   }
   parameters {
     choice(name: 'ENV', choices: ['dev', 'uat', 'prod'], description: 'Choose environment')
