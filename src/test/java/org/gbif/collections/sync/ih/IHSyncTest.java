@@ -8,9 +8,11 @@ import org.gbif.api.util.IsoDateParsingUtils;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.api.vocabulary.collections.InstitutionType;
+import org.gbif.collections.sync.ih.match.MatchResult;
 import org.gbif.collections.sync.ih.model.IHEntity;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
+import org.gbif.collections.sync.ih.parsers.CountryParser;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -18,8 +20,6 @@ import java.util.*;
 import lombok.Builder;
 import lombok.Data;
 import org.junit.Test;
-
-import static org.gbif.collections.sync.ih.Matcher.Match;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -30,18 +30,18 @@ public class IHSyncTest {
 
   private static final String IRN_TEST = "1";
   private static final String TEST_USER = "test-user";
+  private static final CountryParser COUNTRY_PARSER =
+      CountryParser.from(Arrays.asList("UK", "U.K.", "U.S.A.", "United Kingdom", "United States"));
   private static final EntityConverter ENTITY_CONVERTER =
-      EntityConverter.builder()
-          .countries(Arrays.asList("UK", "U.K.", "U.S.A.", "United Kingdom", "United States"))
-          .creationUser(TEST_USER)
-          .build();
-  private static final IHSync IH_SYNC = IHSync.builder().entityConverter(ENTITY_CONVERTER).build();
+      EntityConverter.builder().countryParser(COUNTRY_PARSER).creationUser(TEST_USER).build();
+  private static final IHSync IH_SYNC =
+      IHSync.builder().countryParser(COUNTRY_PARSER).entityConverter(ENTITY_CONVERTER).build();
 
   @Test
   public void collectionToUpdateTest() {
     TestEntity<Collection, IHInstitution> collectionToUpdate = createCollectionToUpdate();
-    Match match =
-        Match.builder()
+    MatchResult match =
+        MatchResult.builder()
             .collections(Collections.singleton(collectionToUpdate.entity))
             .ihInstitution(collectionToUpdate.ih)
             .build();
@@ -54,8 +54,8 @@ public class IHSyncTest {
   @Test
   public void collectionNoChangeTest() {
     TestEntity<Collection, IHInstitution> collectionNoChange = createCollectionNoChange();
-    Match match =
-        Match.builder()
+    MatchResult match =
+        MatchResult.builder()
             .collections(Collections.singleton(collectionNoChange.entity))
             .ihInstitution(collectionNoChange.ih)
             .build();
@@ -68,8 +68,8 @@ public class IHSyncTest {
   @Test
   public void institutionToUpdateTest() {
     TestEntity<Institution, IHInstitution> institutionToUpdate = createInstitutionToUpdate();
-    Match match =
-        Match.builder()
+    MatchResult match =
+        MatchResult.builder()
             .institutions(Collections.singleton(institutionToUpdate.entity))
             .ihInstitution(institutionToUpdate.ih)
             .build();
@@ -83,8 +83,8 @@ public class IHSyncTest {
   @Test
   public void institutionNoChangeTest() {
     TestEntity<Institution, IHInstitution> institutionNoChange = createInstitutionNoChange();
-    Match match =
-        Match.builder()
+    MatchResult match =
+        MatchResult.builder()
             .institutions(Collections.singleton(institutionNoChange.entity))
             .ihInstitution(institutionNoChange.ih)
             .build();
@@ -116,7 +116,7 @@ public class IHSyncTest {
     expectedCollection.setNumberSpecimens(1000);
     expectedCollection.setIndexHerbariorumRecord(true);
 
-    Match match = Match.builder().ihInstitution(ih).build();
+    MatchResult match = MatchResult.builder().ihInstitution(ih).build();
     IHSyncResult.NoEntityMatch noEntityMatch = IH_SYNC.handleNoMatches(match).get();
     assertTrue(noEntityMatch.getNewCollection().lenientEquals(expectedCollection));
     assertTrue(noEntityMatch.getNewInstitution().lenientEquals(expectedInstitution));
@@ -127,8 +127,8 @@ public class IHSyncTest {
   public void institutionAndCollectionMatchTest() {
     TestEntity<Collection, IHInstitution> collectionToUpdate = createCollectionToUpdate();
     TestEntity<Institution, IHInstitution> institutionToUpdate = createInstitutionToUpdate();
-    Match match =
-        Match.builder()
+    MatchResult match =
+        MatchResult.builder()
             .collections(Collections.singleton(collectionToUpdate.entity))
             .institutions(Collections.singleton(institutionToUpdate.entity))
             .ihInstitution(collectionToUpdate.ih)
@@ -153,8 +153,8 @@ public class IHSyncTest {
     Collection c2 = new Collection();
     c2.setKey(UUID.randomUUID());
 
-    Match match =
-        Match.builder().ihInstitution(ihInstitution).collection(c1).collection(c2).build();
+    MatchResult match =
+        MatchResult.builder().ihInstitution(ihInstitution).collection(c1).collection(c2).build();
 
     IHSyncResult.Conflict conflictMatch = IH_SYNC.handleConflict(match);
     assertNotNull(conflictMatch.getIhEntity());
@@ -164,8 +164,8 @@ public class IHSyncTest {
   @Test
   public void staffUpdateTest() {
     TestEntity<Person, IHStaff> personToUpdate = createTestStaffToUpdate();
-    Match match =
-        Match.builder()
+    MatchResult match =
+        MatchResult.builder()
             .ihStaff(personToUpdate.ih)
             .staffMatcher((s, ppl) -> Collections.singleton(personToUpdate.entity))
             .build();
@@ -186,8 +186,8 @@ public class IHSyncTest {
   @Test
   public void staffNoChangeTest() {
     TestEntity<Person, IHStaff> personNoChange = createTestStaffNoChange();
-    Match match =
-        Match.builder()
+    MatchResult match =
+        MatchResult.builder()
             .ihStaff(personNoChange.ih)
             .staffMatcher((s, ppl) -> Collections.singleton(personNoChange.entity))
             .build();
@@ -208,7 +208,7 @@ public class IHSyncTest {
   @Test
   public void staffToRemoveTest() {
     TestEntity<Person, IHStaff> personToRemove = createTestStaffToRemove();
-    Match match = Match.builder().build();
+    MatchResult match = MatchResult.builder().build();
 
     Institution institution = new Institution();
     institution.setContacts(Collections.singletonList(personToRemove.entity));
@@ -225,8 +225,8 @@ public class IHSyncTest {
   @Test
   public void staffToCreateTest() {
     TestEntity<Person, IHStaff> personsToCreate = createTestStaffToCreate();
-    Match match =
-        Match.builder()
+    MatchResult match =
+        MatchResult.builder()
             .ihStaff(personsToCreate.ih)
             .staffMatcher((s, ppl) -> Collections.emptySet())
             .build();
@@ -250,8 +250,8 @@ public class IHSyncTest {
     Person p2 = new Person();
     p2.setKey(UUID.randomUUID());
 
-    Match match =
-        Match.builder()
+    MatchResult match =
+        MatchResult.builder()
             .ihStaff(ihStaff)
             .staffMatcher((s, ppl) -> new HashSet<>(Arrays.asList(p1, p2)))
             .build();

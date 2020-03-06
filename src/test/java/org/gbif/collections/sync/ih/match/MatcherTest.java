@@ -1,9 +1,10 @@
-package org.gbif.collections.sync.ih;
+package org.gbif.collections.sync.ih.match;
 
 import org.gbif.api.model.collections.Address;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.collections.sync.ih.model.IHStaff;
+import org.gbif.collections.sync.ih.parsers.CountryParser;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,19 +19,13 @@ import static org.junit.Assert.assertTrue;
 /** Tests the {@link Matcher}. */
 public class MatcherTest {
 
-  private static final EntityConverter ENTITY_CONVERTER =
-      EntityConverter.builder()
-          .countries(Arrays.asList("U.K.", "U.S.A.", "United Kingdom", "United States"))
-          .creationUser("test-user")
-          .build();
+  private static final CountryParser COUNTRY_PARSER =
+      CountryParser.from(Arrays.asList("U.K.", "U.S.A.", "United Kingdom", "United States"));
 
   @Test
   public void matchWithFieldsTest() {
     Matcher matcher =
-        Matcher.builder()
-            .entityConverter(ENTITY_CONVERTER)
-            .ihStaff(Collections.emptyList())
-            .build();
+        Matcher.builder().countryParser(COUNTRY_PARSER).ihStaff(Collections.emptyList()).build();
 
     // IH Staff
     IHStaff s = new IHStaff();
@@ -108,10 +103,7 @@ public class MatcherTest {
   @Test
   public void partialMatchInNamesTest() {
     Matcher matcher =
-        Matcher.builder()
-            .entityConverter(ENTITY_CONVERTER)
-            .ihStaff(Collections.emptyList())
-            .build();
+        Matcher.builder().countryParser(COUNTRY_PARSER).ihStaff(Collections.emptyList()).build();
 
     // IH Staff
     IHStaff s = new IHStaff();
@@ -160,10 +152,7 @@ public class MatcherTest {
   @Test
   public void corporateEmailTest() {
     Matcher matcher =
-        Matcher.builder()
-            .entityConverter(ENTITY_CONVERTER)
-            .ihStaff(Collections.emptyList())
-            .build();
+        Matcher.builder().countryParser(COUNTRY_PARSER).ihStaff(Collections.emptyList()).build();
 
     // IH Staff
     IHStaff s = new IHStaff();
@@ -183,10 +172,41 @@ public class MatcherTest {
     p1.setEmail("generic@a.com");
 
     // When
-    Set<Person> persons =
-        matcher.matchWithFields(new Matcher.IHStaffToMatch(s), Collections.singleton(p1), 11);
+    int score =
+        Matcher.getEqualityScore(
+            StaffNormalized.fromIHStaff(s, null, null, COUNTRY_PARSER),
+            StaffNormalized.fromGrSciCollPerson(p1));
 
     // Expect
-    assertTrue(persons.isEmpty());
+    assertEquals(0, score);
+  }
+
+  @Test
+  public void sameEmailPartialNameTest() {
+    Matcher matcher =
+        Matcher.builder().countryParser(COUNTRY_PARSER).ihStaff(Collections.emptyList()).build();
+
+    // IH Staff
+    IHStaff s = new IHStaff();
+    s.setFirstName("First");
+    s.setLastName("Lastt");
+
+    IHStaff.Contact contact = new IHStaff.Contact();
+    contact.setEmail("a@a.com");
+    s.setContact(contact);
+
+    // GrSciColl persons
+    Person p1 = new Person();
+    p1.setFirstName("F. Lastt");
+    p1.setEmail("a@a.com");
+
+    // When
+    int score =
+        Matcher.getEqualityScore(
+            StaffNormalized.fromIHStaff(s, null, null, COUNTRY_PARSER),
+            StaffNormalized.fromGrSciCollPerson(p1));
+
+    // Expect
+    assertTrue(score > 10);
   }
 }

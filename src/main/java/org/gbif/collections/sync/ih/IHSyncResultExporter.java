@@ -72,8 +72,8 @@ public class IHSyncResultExporter {
               m -> {
                 printMatchTitle(writer, "Institution Match");
                 printEntityMatch(writer, m.getMatchedInstitution());
-                printStaffMatch(writer, m.getStaffMatch());
                 printEntity(writer, "New Collection", m.getNewCollection());
+                printStaffMatch(writer, m.getStaffMatch());
               });
 
       writer.newLine();

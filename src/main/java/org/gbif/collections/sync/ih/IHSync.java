@@ -7,9 +7,11 @@ import org.gbif.collections.sync.http.clients.GithubClient;
 import org.gbif.collections.sync.http.clients.GrSciCollHttpClient;
 import org.gbif.collections.sync.http.clients.IHHttpClient;
 import org.gbif.collections.sync.ih.IHSyncResult.*;
-import org.gbif.collections.sync.ih.Matcher.Match;
+import org.gbif.collections.sync.ih.match.MatchResult;
+import org.gbif.collections.sync.ih.match.Matcher;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
+import org.gbif.collections.sync.ih.parsers.CountryParser;
 import org.gbif.collections.sync.notification.Issue;
 import org.gbif.collections.sync.notification.IssueFactory;
 
@@ -32,6 +34,7 @@ public class IHSync {
   private final boolean dryRun;
   private final boolean sendNotifications;
   private final EntityConverter entityConverter;
+  private final CountryParser countryParser;
   private final IssueFactory issueFactory;
   private final GrSciCollHttpClient grSciCollHttpClient;
   private final IHHttpClient ihHttpClient;
@@ -39,11 +42,18 @@ public class IHSync {
   private IHSyncResultBuilder syncResultBuilder = IHSyncResult.builder();
 
   @Builder
-  private IHSync(SyncConfig config, EntityConverter entityConverter) {
+  private IHSync(SyncConfig config, EntityConverter entityConverter, CountryParser countryParser) {
+    if (countryParser == null) {
+      this.countryParser =
+          CountryParser.from(IHHttpClient.getInstance(config.getIhWsUrl()).getCountries());
+    } else {
+      this.countryParser = countryParser;
+    }
+
     if (entityConverter == null) {
       this.entityConverter =
           EntityConverter.builder()
-              .countries(IHHttpClient.getInstance(config.getIhWsUrl()).getCountries())
+              .countryParser(this.countryParser)
               .creationUser(config.getRegistryWsUser())
               .build();
     } else {
@@ -97,7 +107,7 @@ public class IHSync {
         Matcher.builder()
             .allGrSciCollPersons(new HashSet<>(personsFuture.join()))
             .collections(collectionsFuture.join())
-            .entityConverter(entityConverter)
+            .countryParser(countryParser)
             .ihStaff(ihStaffFuture.join())
             .institutions(institutionsFuture.join())
             .build();
@@ -107,7 +117,7 @@ public class IHSync {
     this.syncResultBuilder = IHSyncResult.builder();
     ihInstitutions.forEach(
         ihInstitution -> {
-          Match match = matcher.match(ihInstitution);
+          MatchResult match = matcher.match(ihInstitution);
 
           if (match.onlyOneCollectionMatch()) {
             log.info("Only one collection match for IH institution {}", ihInstitution.getIrn());
@@ -140,7 +150,7 @@ public class IHSync {
   }
 
   @VisibleForTesting
-  CollectionOnlyMatch handleCollectionMatch(Match match) {
+  CollectionOnlyMatch handleCollectionMatch(MatchResult match) {
     EntityMatch<Collection> collectionEntityMatch = updateCollection(match);
 
     StaffMatch staffMatch =
@@ -153,16 +163,17 @@ public class IHSync {
   }
 
   @VisibleForTesting
-  Optional<InstitutionOnlyMatch> handleInstitutionMatch(Match match) {
+  Optional<InstitutionOnlyMatch> handleInstitutionMatch(MatchResult match) {
     EntityMatch<Institution> institutionEntityMatch = updateInstitution(match);
 
     // create new collection linked to the institution
     Collection newCollection =
         entityConverter.convertToCollection(
-            match.ihInstitution, institutionEntityMatch.getMatched().getKey());
+            match.getIhInstitution(), institutionEntityMatch.getMatched().getKey());
     if (isInvalidCollection(newCollection)) {
-      createGHIssue(issueFactory.createInvalidEntity(match.ihInstitution, "Not valid institution"));
-      syncResultBuilder.invalidEntity(match.ihInstitution);
+      createGHIssue(
+          issueFactory.createInvalidEntity(match.getIhInstitution(), "Not valid institution"));
+      syncResultBuilder.invalidEntity(match.getIhInstitution());
       return Optional.empty();
     }
 
@@ -185,14 +196,14 @@ public class IHSync {
   }
 
   @VisibleForTesting
-  Optional<NoEntityMatch> handleNoMatches(Match match) {
+  Optional<NoEntityMatch> handleNoMatches(MatchResult match) {
     // create institution
-    Institution newInstitution = entityConverter.convertToInstitution(match.ihInstitution);
+    Institution newInstitution = entityConverter.convertToInstitution(match.getIhInstitution());
     if (isInvalidInstitution(newInstitution)) {
       createGHIssue(
           issueFactory.createInvalidEntity(
-              match.ihInstitution, "Not valid institution - name is required"));
-      syncResultBuilder.invalidEntity(match.ihInstitution);
+              match.getIhInstitution(), "Not valid institution - name is required"));
+      syncResultBuilder.invalidEntity(match.getIhInstitution());
       return Optional.empty();
     }
 
@@ -206,12 +217,12 @@ public class IHSync {
 
     // create collection
     Collection newCollection =
-        entityConverter.convertToCollection(match.ihInstitution, institutionKey);
+        entityConverter.convertToCollection(match.getIhInstitution(), institutionKey);
     if (isInvalidCollection(newCollection)) {
       createGHIssue(
           issueFactory.createInvalidEntity(
-              match.ihInstitution, "Not valid institution - name is required"));
-      syncResultBuilder.invalidEntity(match.ihInstitution);
+              match.getIhInstitution(), "Not valid institution - name is required"));
+      syncResultBuilder.invalidEntity(match.getIhInstitution());
       return Optional.empty();
     }
 
@@ -236,7 +247,7 @@ public class IHSync {
   }
 
   @VisibleForTesting
-  InstitutionAndCollectionMatch handleInstitutionAndCollectionMatch(Match match) {
+  InstitutionAndCollectionMatch handleInstitutionAndCollectionMatch(MatchResult match) {
     // first we see if we need to update any of the entities
     EntityMatch<Institution> institutionEntityMatch = updateInstitution(match);
     EntityMatch<Collection> collectionEntityMatch = updateCollection(match);
@@ -254,11 +265,11 @@ public class IHSync {
         .build();
   }
 
-  private EntityMatch<Institution> updateInstitution(Match match) {
-    Institution existing = match.institutions.iterator().next();
+  private EntityMatch<Institution> updateInstitution(MatchResult match) {
+    Institution existing = match.getInstitutions().iterator().next();
 
     Institution mergedInstitution =
-        entityConverter.convertToInstitution(match.ihInstitution, existing);
+        entityConverter.convertToInstitution(match.getIhInstitution(), existing);
 
     EntityMatch.EntityMatchBuilder<Institution> entityMatchBuilder =
         EntityMatch.<Institution>builder().matched(existing).merged(mergedInstitution);
@@ -274,11 +285,11 @@ public class IHSync {
     return entityMatchBuilder.build();
   }
 
-  private EntityMatch<Collection> updateCollection(Match match) {
-    Collection existing = match.collections.iterator().next();
+  private EntityMatch<Collection> updateCollection(MatchResult match) {
+    Collection existing = match.getCollections().iterator().next();
 
     Collection mergedCollection =
-        entityConverter.convertToCollection(match.ihInstitution, existing);
+        entityConverter.convertToCollection(match.getIhInstitution(), existing);
 
     EntityMatch.EntityMatchBuilder<Collection> entityMatchBuilder =
         EntityMatch.<Collection>builder().matched(existing).merged(mergedCollection);
@@ -294,24 +305,8 @@ public class IHSync {
   }
 
   @VisibleForTesting
-  <T extends CollectionEntity & Contactable> StaffMatch handleStaff(Match match, List<T> entities) {
-
-    BiConsumer<T, Person> addPersonToEntity =
-        (e, p) -> {
-          // they can be null in dry runs or if the creation of a collection/institution fails
-          if (isPersonInContacts(p.getKey(), e.getContacts())) {
-            return;
-          }
-
-          if (e instanceof Collection) {
-            grSciCollHttpClient.addPersonToCollection(p.getKey(), e.getKey());
-          } else if (e instanceof Institution) {
-            grSciCollHttpClient.addPersonToInstitution(p.getKey(), e.getKey());
-          }
-
-          // we add it to the contacts to avoid adding it again if there are duplicates in IH
-          e.getContacts().add(p);
-        };
+  <T extends CollectionEntity & Contactable> StaffMatch handleStaff(
+      MatchResult match, List<T> entities) {
 
     // merge contacts from all entities
     Set<Person> contacts =
@@ -323,8 +318,31 @@ public class IHSync {
     // copy contacts to keep track of the matched ones in order to remove the left ones at the end
     Set<Person> contactsCopy = new HashSet<>(contacts);
     StaffMatch.StaffMatchBuilder staffSyncBuilder = StaffMatch.builder();
-    for (IHStaff ihStaff : match.ihStaff) {
-      Set<Person> staffMatches = match.staffMatcher.apply(ihStaff, contacts);
+
+    // we sort the ihStaff list to process first the ones that have more values filled, hence the
+    // match will be easier
+    List<IHStaff> ihStaffList = new ArrayList<>(match.getIhStaff());
+    ihStaffList.sort(IHStaff.COMPARATOR_BY_COMPLETENESS.reversed());
+
+    BiConsumer<T, Person> addPersonToEntity =
+      (e, p) -> {
+        // they can be null in dry runs or if the creation of a collection/institution fails
+        if (isPersonInContacts(p.getKey(), e.getContacts())) {
+          return;
+        }
+
+        if (e instanceof Collection) {
+          grSciCollHttpClient.addPersonToCollection(p.getKey(), e.getKey());
+        } else if (e instanceof Institution) {
+          grSciCollHttpClient.addPersonToInstitution(p.getKey(), e.getKey());
+        }
+
+        // we add it to the contacts to avoid adding it again if there are duplicates in IH
+        e.getContacts().add(p);
+      };
+
+    for (IHStaff ihStaff : ihStaffList) {
+      Set<Person> staffMatches = match.getStaffMatcher().apply(ihStaff, contacts);
 
       if (staffMatches.isEmpty()) {
         // create person and link it to the entity
@@ -421,9 +439,9 @@ public class IHSync {
   }
 
   @VisibleForTesting
-  Conflict handleConflict(Match match) {
-    createGHIssue(issueFactory.createConflict(match.getAllMatches(), match.ihInstitution));
-    return new Conflict(match.ihInstitution, match.getAllMatches());
+  Conflict handleConflict(MatchResult match) {
+    createGHIssue(issueFactory.createConflict(match.getAllMatches(), match.getIhInstitution()));
+    return new Conflict(match.getIhInstitution(), match.getAllMatches());
   }
 
   private static boolean isInvalidCollection(Collection collection) {
