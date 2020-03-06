@@ -1,13 +1,11 @@
 package org.gbif.collections.sync.ih;
 
 import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.vocabulary.IdentifierType;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -41,5 +39,9 @@ public class Utils {
                 .forEach(
                     i -> mapByIrn.computeIfAbsent(i.getIdentifier(), s -> new HashSet<>()).add(o)));
     return mapByIrn;
+  }
+
+  public static boolean isPersonInContacts(UUID personKey, Collection<Person> contacts) {
+    return contacts != null && contacts.stream().anyMatch(c -> c.getKey().equals(personKey));
   }
 }

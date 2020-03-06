@@ -60,7 +60,8 @@ public class MatcherTest {
 
     // When
     Set<Person> persons =
-        matcher.matchWithFields(new Matcher.IHStaffToMatch(s), Sets.newHashSet(p1, p2), 0);
+        matcher.matchWithFields(
+            new Matcher.IHStaffToMatch(s), Sets.newHashSet(p1, p2), Collections.emptySet(), 0);
 
     // Expect
     assertEquals(1, persons.size());
@@ -77,7 +78,9 @@ public class MatcherTest {
     p2.setMailingAddress(address);
 
     // When
-    persons = matcher.matchWithFields(new Matcher.IHStaffToMatch(s), Sets.newHashSet(p1, p2), 0);
+    persons =
+        matcher.matchWithFields(
+            new Matcher.IHStaffToMatch(s), Sets.newHashSet(p1, p2), Collections.emptySet(), 0);
 
     // Expect
     assertEquals(1, persons.size());
@@ -92,7 +95,9 @@ public class MatcherTest {
     p2.setLastName("Last");
 
     // When
-    persons = matcher.matchWithFields(new Matcher.IHStaffToMatch(s), Sets.newHashSet(p1, p2), 0);
+    persons =
+        matcher.matchWithFields(
+            new Matcher.IHStaffToMatch(s), Sets.newHashSet(p1, p2), Collections.emptySet(), 0);
 
     // Expect
     assertEquals(1, persons.size());
@@ -137,13 +142,16 @@ public class MatcherTest {
 
     // When
     Set<Person> persons =
-        matcher.matchWithFields(new Matcher.IHStaffToMatch(s), Collections.singleton(p1), 11);
+        matcher.matchWithFields(
+            new Matcher.IHStaffToMatch(s), Collections.singleton(p1), Collections.emptySet(), 11);
 
     // Expect
     assertTrue(persons.isEmpty());
 
     // When
-    persons = matcher.matchWithFields(new Matcher.IHStaffToMatch(s), Collections.singleton(p1), 0);
+    persons =
+        matcher.matchWithFields(
+            new Matcher.IHStaffToMatch(s), Collections.singleton(p1), Collections.emptySet(), 0);
 
     // Expect
     assertEquals(1, persons.size());
@@ -175,7 +183,8 @@ public class MatcherTest {
     int score =
         Matcher.getEqualityScore(
             StaffNormalized.fromIHStaff(s, null, null, COUNTRY_PARSER),
-            StaffNormalized.fromGrSciCollPerson(p1));
+            StaffNormalized.fromGrSciCollPerson(p1),
+            false);
 
     // Expect
     assertEquals(0, score);
@@ -204,7 +213,8 @@ public class MatcherTest {
     int score =
         Matcher.getEqualityScore(
             StaffNormalized.fromIHStaff(s, null, null, COUNTRY_PARSER),
-            StaffNormalized.fromGrSciCollPerson(p1));
+            StaffNormalized.fromGrSciCollPerson(p1),
+            false);
 
     // Expect
     assertTrue(score > 10);

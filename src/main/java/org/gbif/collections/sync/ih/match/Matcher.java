@@ -4,9 +4,9 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
-import org.gbif.collections.sync.ih.parsers.CountryParser;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
+import org.gbif.collections.sync.ih.parsers.CountryParser;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -20,6 +20,7 @@ import lombok.Builder;
 
 import static org.gbif.collections.sync.ih.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.ih.Utils.encodeIRN;
+import static org.gbif.collections.sync.ih.Utils.isPersonInContacts;
 import static org.gbif.collections.sync.ih.Utils.mapByIrn;
 
 /** Matches IH entities to GrSciColl ones. */
@@ -80,57 +81,23 @@ public class Matcher {
     return (ihStaff, contacts) -> {
       IHStaffToMatch ihStaffToMatch = new IHStaffToMatch(ihStaff, institutionKey, collectionKey);
 
-      // try to find a match in the GrSciColl contacts
-      Set<Person> matches = matchWithContacts(ihStaffToMatch, contacts);
+      // first try with IRNs
+      Set<Person> matchesWithIrn =
+          grSciCollPersonsByIrn.getOrDefault(
+              encodeIRN(ihStaffToMatch.ihStaff.getIrn()), Collections.emptySet());
 
-      if (matches.isEmpty()) {
-        // no match among the contacts. We check now in all the GrSciColl persons.
-        matches = matchGlobally(ihStaffToMatch);
+      if (!matchesWithIrn.isEmpty()) {
+        return matchesWithIrn;
       }
-      return matches;
+
+      // if couldn't find any we try to match by comparing the fields of each person
+      return matchWithFields(ihStaffToMatch, allGrSciCollPersons, contacts, 13);
     };
-  }
-
-  private Set<Person> matchGlobally(IHStaffToMatch ihStaffToMatch) {
-    // first try with IRNs
-    Set<Person> matchesWithIrn =
-        grSciCollPersonsByIrn.getOrDefault(
-            encodeIRN(ihStaffToMatch.ihStaff.getIrn()), Collections.emptySet());
-
-    if (!matchesWithIrn.isEmpty()) {
-      return matchesWithIrn;
-    }
-
-    // we try to match with fields
-    return matchWithFields(ihStaffToMatch, allGrSciCollPersons, 13);
-  }
-
-  private Set<Person> matchWithContacts(IHStaffToMatch ihStaffToMatch, Set<Person> contacts) {
-    if (contacts == null || contacts.isEmpty()) {
-      return Collections.emptySet();
-    }
-
-    // try to find a match by using the IRN identifiers
-    String irn = encodeIRN(ihStaffToMatch.ihStaff.getIrn());
-    Set<Person> irnMatches =
-        contacts.stream()
-            .filter(
-                p ->
-                    p.getIdentifiers().stream()
-                        .anyMatch(i -> Objects.equals(irn, i.getIdentifier())))
-            .collect(Collectors.toSet());
-
-    if (!irnMatches.isEmpty()) {
-      return irnMatches;
-    }
-
-    // no irn matches, we try to match with the fields
-    return matchWithFields(ihStaffToMatch, contacts, 11);
   }
 
   @VisibleForTesting
   Set<Person> matchWithFields(
-      IHStaffToMatch ihStaffToMatch, Set<Person> persons, int minimumScore) {
+      IHStaffToMatch ihStaffToMatch, Set<Person> persons, Set<Person> contacts, int minimumScore) {
     if (persons.isEmpty()) {
       return Collections.emptySet();
     }
@@ -151,8 +118,9 @@ public class Matcher {
       }
 
       StaffNormalized personNorm = StaffNormalized.fromGrSciCollPerson(person);
-      int equalityScore = getEqualityScore(ihStaffNorm, personNorm);
-
+      // calculate matching score
+      int equalityScore =
+          getEqualityScore(ihStaffNorm, personNorm, isPersonInContacts(person.getKey(), contacts));
       if (equalityScore >= minimumScore && equalityScore > maxScore) {
         bestMatches.clear();
         bestMatches.add(person);
@@ -165,8 +133,14 @@ public class Matcher {
     return bestMatches;
   }
 
+  /**
+   * It calculates the matching score between 2 staff normalized. The fields have different weights
+   * based on their importance to contribute to a better match. Matching at least the email or the
+   * name is required. Also, contacts of the entity have an extra score since they are more likely
+   * to be a good match.
+   */
   @VisibleForTesting
-  static int getEqualityScore(StaffNormalized staff1, StaffNormalized staff2) {
+  static int getEqualityScore(StaffNormalized staff1, StaffNormalized staff2, boolean isContact) {
     BiPredicate<List<String>, List<String>> compareLists =
         (l1, l2) -> {
           if (l1 != null && !l1.isEmpty() && l2 != null && !l2.isEmpty()) {
@@ -265,6 +239,9 @@ public class Matcher {
       score += 1;
     }
     if (compareStrings.test(staff1.zipCode, staff2.zipCode)) {
+      score += 1;
+    }
+    if (isContact) {
       score += 1;
     }
 

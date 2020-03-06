@@ -27,6 +27,8 @@ import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
+import static org.gbif.collections.sync.ih.Utils.isPersonInContacts;
+
 /** Syncs IH entities with GrSciColl ones present in GBIF registry. */
 @Slf4j
 public class IHSync {
@@ -325,21 +327,21 @@ public class IHSync {
     ihStaffList.sort(IHStaff.COMPARATOR_BY_COMPLETENESS.reversed());
 
     BiConsumer<T, Person> addPersonToEntity =
-      (e, p) -> {
-        // they can be null in dry runs or if the creation of a collection/institution fails
-        if (isPersonInContacts(p.getKey(), e.getContacts())) {
-          return;
-        }
+        (e, p) -> {
+          // they can be null in dry runs or if the creation of a collection/institution fails
+          if (isPersonInContacts(p.getKey(), e.getContacts())) {
+            return;
+          }
 
-        if (e instanceof Collection) {
-          grSciCollHttpClient.addPersonToCollection(p.getKey(), e.getKey());
-        } else if (e instanceof Institution) {
-          grSciCollHttpClient.addPersonToInstitution(p.getKey(), e.getKey());
-        }
+          if (e instanceof Collection) {
+            grSciCollHttpClient.addPersonToCollection(p.getKey(), e.getKey());
+          } else if (e instanceof Institution) {
+            grSciCollHttpClient.addPersonToInstitution(p.getKey(), e.getKey());
+          }
 
-        // we add it to the contacts to avoid adding it again if there are duplicates in IH
-        e.getContacts().add(p);
-      };
+          // we add it to the contacts to avoid adding it again if there are duplicates in IH
+          e.getContacts().add(p);
+        };
 
     for (IHStaff ihStaff : ihStaffList) {
       Set<Person> staffMatches = match.getStaffMatcher().apply(ihStaff, contacts);
@@ -454,10 +456,6 @@ public class IHSync {
 
   private static boolean isInvalidPerson(Person person) {
     return Strings.isNullOrEmpty(person.getFirstName());
-  }
-
-  private static boolean isPersonInContacts(UUID personKey, List<Person> contacts) {
-    return contacts != null && contacts.stream().anyMatch(c -> c.getKey().equals(personKey));
   }
 
   private UUID executeCreateEntityOrAddFail(
