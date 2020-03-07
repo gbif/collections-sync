@@ -37,12 +37,12 @@ public class IHParser {
 
     String listNormalized = stringList.replaceAll("[\n;]", ",");
     return Arrays.stream(listNormalized.split(","))
-        .filter(IHParser::isValidString)
+        .filter(IHParser::hasValue)
         .map(IHParser::normalizeString)
         .collect(Collectors.toList());
   }
 
-  public static boolean isValidString(String value) {
+  public static boolean hasValue(String value) {
     return !Strings.isNullOrEmpty(value) && !value.equalsIgnoreCase("null");
   }
 
@@ -86,9 +86,9 @@ public class IHParser {
     }
   }
 
-  public static Optional<Date> parseDate(String dateAsString) {
-    if (!isValidString(dateAsString)) {
-      return Optional.empty();
+  public static Date parseDate(String dateAsString) {
+    if (!hasValue(dateAsString)) {
+      return null;
     }
 
     // some dates came with a dot at the end
@@ -98,18 +98,18 @@ public class IHParser {
 
     for (SimpleDateFormat dateFormat : DATE_FORMATS) {
       try {
-        return Optional.of(dateFormat.parse(dateAsString));
+        return dateFormat.parse(dateAsString);
       } catch (Exception e) {
         log.debug("Failed parsing date {}", dateAsString, e);
       }
     }
 
     log.warn("Couldn't parse date {}", dateAsString);
-    return Optional.empty();
+    return null;
   }
 
   public static Optional<String> getFirstString(String stringList) {
-    if (!isValidString(stringList)) {
+    if (!hasValue(stringList)) {
       return Optional.empty();
     }
 
@@ -122,7 +122,7 @@ public class IHParser {
       firstValue = stringList.split("\n")[0];
     }
 
-    if (isValidString(firstValue)) {
+    if (hasValue(firstValue)) {
       return Optional.of(firstValue.trim());
     }
 

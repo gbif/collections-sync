@@ -74,8 +74,7 @@ public class IHSyncTest {
             .ihInstitution(institutionToUpdate.ih)
             .build();
 
-    IHSyncResult.InstitutionOnlyMatch institutionOnlyMatch =
-        IH_SYNC.handleInstitutionMatch(match).get();
+    IHSyncResult.InstitutionOnlyMatch institutionOnlyMatch = IH_SYNC.handleInstitutionMatch(match);
     assertEntityMatch(institutionOnlyMatch.getMatchedInstitution(), institutionToUpdate, true);
     assertEmptyStaffMatch(institutionOnlyMatch.getStaffMatch());
   }
@@ -89,8 +88,7 @@ public class IHSyncTest {
             .ihInstitution(institutionNoChange.ih)
             .build();
 
-    IHSyncResult.InstitutionOnlyMatch institutionOnlyMatch =
-        IH_SYNC.handleInstitutionMatch(match).get();
+    IHSyncResult.InstitutionOnlyMatch institutionOnlyMatch = IH_SYNC.handleInstitutionMatch(match);
     assertEntityMatch(institutionOnlyMatch.getMatchedInstitution(), institutionNoChange, false);
     assertEmptyStaffMatch(institutionOnlyMatch.getStaffMatch());
   }
@@ -116,8 +114,14 @@ public class IHSyncTest {
     expectedCollection.setNumberSpecimens(1000);
     expectedCollection.setIndexHerbariorumRecord(true);
 
+    // add identifier to expected entities
+    Identifier newIdentifier = new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(IRN_TEST));
+    newIdentifier.setCreatedBy(TEST_USER);
+    expectedInstitution.getIdentifiers().add(newIdentifier);
+    expectedCollection.getIdentifiers().add(newIdentifier);
+
     MatchResult match = MatchResult.builder().ihInstitution(ih).build();
-    IHSyncResult.NoEntityMatch noEntityMatch = IH_SYNC.handleNoMatches(match).get();
+    IHSyncResult.NoEntityMatch noEntityMatch = IH_SYNC.handleNoMatches(match);
     assertTrue(noEntityMatch.getNewCollection().lenientEquals(expectedCollection));
     assertTrue(noEntityMatch.getNewInstitution().lenientEquals(expectedInstitution));
     assertEmptyStaffMatch(noEntityMatch.getStaffMatch());
@@ -243,6 +247,7 @@ public class IHSyncTest {
   public void staffConflictTest() {
     IHStaff ihStaff = new IHStaff();
     ihStaff.setIrn(IRN_TEST);
+    ihStaff.setFirstName("foo");
 
     Person p1 = new Person();
     p1.setKey(UUID.randomUUID());
@@ -488,7 +493,6 @@ public class IHSyncTest {
     expected.setLastName(s.getLastName());
     expected.setPosition(s.getPosition());
     expected.setEmail(s.getContact().getEmail());
-    expected.setPhone(p.getPhone());
     Address expectedAddress = new Address();
     expectedAddress.setCity(address.getCity());
     expectedAddress.setProvince(address.getState());
@@ -503,11 +507,13 @@ public class IHSyncTest {
 
   private TestEntity<Person, IHStaff> createTestStaffNoChange() {
     Person p = new Person();
+    p.setFirstName("foo");
     p.setKey(UUID.randomUUID());
     p.setEmail("foo@foo.com");
     p.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(IRN_TEST)));
 
     IHStaff s = new IHStaff();
+    s.setFirstName("foo");
     s.setIrn(IRN_TEST);
     IHStaff.Contact contact = new IHStaff.Contact();
     contact.setEmail("foo@foo.com");

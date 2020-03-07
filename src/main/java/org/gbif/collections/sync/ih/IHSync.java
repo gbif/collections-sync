@@ -119,6 +119,10 @@ public class IHSync {
     this.syncResultBuilder = IHSyncResult.builder();
     ihInstitutions.forEach(
         ihInstitution -> {
+          if (!isValidIhInstitution(ihInstitution)) {
+            return;
+          }
+
           MatchResult match = matcher.match(ihInstitution);
 
           if (match.onlyOneCollectionMatch()) {
@@ -126,10 +130,10 @@ public class IHSync {
             syncResultBuilder.collectionOnlyMatch(handleCollectionMatch(match));
           } else if (match.onlyOneInstitutionMatch()) {
             log.info("Only one institution match for IH institution {}", ihInstitution.getIrn());
-            handleInstitutionMatch(match).ifPresent(syncResultBuilder::institutionOnlyMatch);
+            syncResultBuilder.institutionOnlyMatch(handleInstitutionMatch(match));
           } else if (match.noMatches()) {
             log.info("No match for IH institution {}", ihInstitution.getIrn());
-            handleNoMatches(match).ifPresent(syncResultBuilder::noMatch);
+            syncResultBuilder.noMatch(handleNoMatches(match));
           } else if (match.institutionAndCollectionMatch()) {
             log.info(
                 "One collection and one institution match for IH institution {}",
@@ -165,19 +169,13 @@ public class IHSync {
   }
 
   @VisibleForTesting
-  Optional<InstitutionOnlyMatch> handleInstitutionMatch(MatchResult match) {
+  InstitutionOnlyMatch handleInstitutionMatch(MatchResult match) {
     EntityMatch<Institution> institutionEntityMatch = updateInstitution(match);
 
     // create new collection linked to the institution
     Collection newCollection =
         entityConverter.convertToCollection(
             match.getIhInstitution(), institutionEntityMatch.getMatched().getKey());
-    if (isInvalidCollection(newCollection)) {
-      createGHIssue(
-          issueFactory.createInvalidEntity(match.getIhInstitution(), "Not valid institution"));
-      syncResultBuilder.invalidEntity(match.getIhInstitution());
-      return Optional.empty();
-    }
 
     UUID createdKey =
         executeCreateEntityOrAddFail(
@@ -189,26 +187,17 @@ public class IHSync {
     StaffMatch staffMatch =
         handleStaff(match, Arrays.asList(institutionEntityMatch.getMatched(), newCollection));
 
-    return Optional.of(
-        InstitutionOnlyMatch.builder()
-            .matchedInstitution(institutionEntityMatch)
-            .newCollection(newCollection)
-            .staffMatch(staffMatch)
-            .build());
+    return InstitutionOnlyMatch.builder()
+        .matchedInstitution(institutionEntityMatch)
+        .newCollection(newCollection)
+        .staffMatch(staffMatch)
+        .build();
   }
 
   @VisibleForTesting
-  Optional<NoEntityMatch> handleNoMatches(MatchResult match) {
+  NoEntityMatch handleNoMatches(MatchResult match) {
     // create institution
     Institution newInstitution = entityConverter.convertToInstitution(match.getIhInstitution());
-    if (isInvalidInstitution(newInstitution)) {
-      createGHIssue(
-          issueFactory.createInvalidEntity(
-              match.getIhInstitution(), "Not valid institution - name is required"));
-      syncResultBuilder.invalidEntity(match.getIhInstitution());
-      return Optional.empty();
-    }
-
     UUID institutionKey =
         executeCreateEntityOrAddFail(
             () -> grSciCollHttpClient.createInstitution(newInstitution),
@@ -220,13 +209,6 @@ public class IHSync {
     // create collection
     Collection newCollection =
         entityConverter.convertToCollection(match.getIhInstitution(), institutionKey);
-    if (isInvalidCollection(newCollection)) {
-      createGHIssue(
-          issueFactory.createInvalidEntity(
-              match.getIhInstitution(), "Not valid institution - name is required"));
-      syncResultBuilder.invalidEntity(match.getIhInstitution());
-      return Optional.empty();
-    }
 
     UUID collectionKey =
         executeCreateEntityOrAddFail(
@@ -240,12 +222,11 @@ public class IHSync {
     // same staff for both entities
     StaffMatch staffMatch = handleStaff(match, Arrays.asList(newInstitution, newCollection));
 
-    return Optional.of(
-        NoEntityMatch.builder()
-            .newCollection(newCollection)
-            .newInstitution(newInstitution)
-            .staffMatch(staffMatch)
-            .build());
+    return NoEntityMatch.builder()
+        .newCollection(newCollection)
+        .newInstitution(newInstitution)
+        .staffMatch(staffMatch)
+        .build();
   }
 
   @VisibleForTesting
@@ -344,19 +325,16 @@ public class IHSync {
         };
 
     for (IHStaff ihStaff : ihStaffList) {
+      if (!isValidIhStaff(ihStaff)) {
+        continue;
+      }
+
       Set<Person> staffMatches = match.getStaffMatcher().apply(ihStaff, contacts);
 
       if (staffMatches.isEmpty()) {
         // create person and link it to the entity
         log.info("No match for IH Staff {}", ihStaff.getIrn());
         Person newPerson = entityConverter.convertToPerson(ihStaff);
-        if (isInvalidPerson(newPerson)) {
-          createGHIssue(
-              issueFactory.createInvalidEntity(
-                  ihStaff, "Not valid person - first name is required"));
-          syncResultBuilder.invalidEntity(ihStaff);
-          continue;
-        }
 
         executeOrAddFail(
             () -> {
@@ -446,16 +424,27 @@ public class IHSync {
     return new Conflict(match.getIhInstitution(), match.getAllMatches());
   }
 
-  private static boolean isInvalidCollection(Collection collection) {
-    return Strings.isNullOrEmpty(collection.getName());
+  private boolean isValidIhInstitution(IHInstitution ihInstitution) {
+    if (Strings.isNullOrEmpty(ihInstitution.getOrganization())
+        || Strings.isNullOrEmpty(ihInstitution.getCode())) {
+      createGHIssue(
+          issueFactory.createInvalidEntity(
+              ihInstitution, "Not valid institution - name and code are required"));
+      syncResultBuilder.invalidEntity(ihInstitution);
+      return false;
+    }
+    return true;
   }
 
-  private static boolean isInvalidInstitution(Institution institution) {
-    return Strings.isNullOrEmpty(institution.getName());
-  }
-
-  private static boolean isInvalidPerson(Person person) {
-    return Strings.isNullOrEmpty(person.getFirstName());
+  private boolean isValidIhStaff(IHStaff ihStaff) {
+    if (Strings.isNullOrEmpty(ihStaff.getFirstName())
+        && Strings.isNullOrEmpty(ihStaff.getMiddleName())) {
+      createGHIssue(
+          issueFactory.createInvalidEntity(ihStaff, "Not valid person - first name is required"));
+      syncResultBuilder.invalidEntity(ihStaff);
+      return false;
+    }
+    return true;
   }
 
   private UUID executeCreateEntityOrAddFail(

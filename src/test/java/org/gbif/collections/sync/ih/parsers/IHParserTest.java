@@ -11,6 +11,7 @@ import static org.gbif.collections.sync.ih.parsers.IHParser.parseDate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /** Tests the {@link IHParser}. */
@@ -40,13 +41,13 @@ public class IHParserTest {
 
   @Test
   public void parseDateTest() {
-    assertTrue(parseDate("2019").isPresent());
-    assertTrue(parseDate("2019.").isPresent());
-    assertTrue(parseDate("2019-08-08").isPresent());
-    assertTrue(parseDate("2019-08").isPresent());
-    assertTrue(parseDate("12/01/2019").isPresent());
-    assertTrue(parseDate("June 2019").isPresent());
-    assertTrue(parseDate("Junio 2019").isPresent());
+    assertNotNull(parseDate("2019"));
+    assertNotNull(parseDate("2019."));
+    assertNotNull(parseDate("2019-08-08"));
+    assertNotNull(parseDate("2019-08"));
+    assertNotNull(parseDate("12/01/2019"));
+    assertNotNull(parseDate("June 2019"));
+    assertNotNull(parseDate("Junio 2019"));
   }
 
   @Test
