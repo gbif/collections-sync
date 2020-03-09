@@ -77,6 +77,12 @@ public class IHSync {
       this.ihHttpClient = null;
       this.githubClient = null;
     }
+
+    log.info(
+        "Sync created with dryRun {}, sendNotifications {} and GrSciCollUrl {}",
+        this.dryRun,
+        this.sendNotifications,
+        config.getRegistryWsUrl());
   }
 
   public IHSyncResult sync() {
