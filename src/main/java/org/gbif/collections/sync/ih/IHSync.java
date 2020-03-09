@@ -79,7 +79,9 @@ public class IHSync {
     }
 
     log.info(
-        "Sync created with dryRun {} and sendNotifications {}", this.dryRun, this.sendNotifications);
+        "Sync created with dryRun {} and sendNotifications {}",
+        this.dryRun,
+        this.sendNotifications);
   }
 
   public IHSyncResult sync() {
@@ -260,7 +262,7 @@ public class IHSync {
     EntityMatch.EntityMatchBuilder<Institution> entityMatchBuilder =
         EntityMatch.<Institution>builder().matched(existing).merged(mergedInstitution);
     if (!mergedInstitution.lenientEquals(existing)) {
-      executeOrAddFailAsync(
+      executeOrAddFail(
           () -> grSciCollHttpClient.updateInstitution(mergedInstitution),
           e ->
               new FailedAction(
@@ -280,7 +282,7 @@ public class IHSync {
     EntityMatch.EntityMatchBuilder<Collection> entityMatchBuilder =
         EntityMatch.<Collection>builder().matched(existing).merged(mergedCollection);
     if (!mergedCollection.lenientEquals(existing)) {
-      executeOrAddFailAsync(
+      executeOrAddFail(
           () -> grSciCollHttpClient.updateCollection(mergedCollection),
           e ->
               new FailedAction(mergedCollection, "Failed to update collection: " + e.getMessage()));
@@ -364,12 +366,12 @@ public class IHSync {
             EntityMatch.<Person>builder().matched(matchedPerson).merged(mergedPerson);
         if (!mergedPerson.lenientEquals(matchedPerson)) {
           // update person
-          executeOrAddFailAsync(
+          executeOrAddFail(
               () -> grSciCollHttpClient.updatePerson(mergedPerson),
               e -> new FailedAction(mergedPerson, "Failed to update person: " + e.getMessage()));
 
           // add identifiers if needed
-          executeOrAddFailAsync(
+          executeOrAddFail(
               () ->
                   mergedPerson.getIdentifiers().stream()
                       .filter(i -> i.getKey() == null)
@@ -412,7 +414,7 @@ public class IHSync {
     contactsCopy.forEach(
         personToRemove -> {
           log.info("Removing contact {}", personToRemove.getKey());
-          executeOrAddFailAsync(
+          executeOrAddFail(
               () -> entities.forEach(e -> removePersonFromEntity.accept(e, personToRemove)),
               e -> new FailedAction(personToRemove, "Failed to remove person: " + e.getMessage()));
           staffSyncBuilder.removedPerson(personToRemove);
