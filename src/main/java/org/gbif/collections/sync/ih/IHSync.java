@@ -79,10 +79,7 @@ public class IHSync {
     }
 
     log.info(
-        "Sync created with dryRun {}, sendNotifications {} and GrSciCollUrl {}",
-        this.dryRun,
-        this.sendNotifications,
-        config.getRegistryWsUrl());
+        "Sync created with dryRun {} and sendNotifications {}", this.dryRun, this.sendNotifications);
   }
 
   public IHSyncResult sync() {
