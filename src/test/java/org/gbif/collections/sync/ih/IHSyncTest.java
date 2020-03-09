@@ -14,12 +14,14 @@ import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 import org.gbif.collections.sync.ih.parsers.CountryParser;
 
-import java.math.BigDecimal;
 import java.util.*;
 
 import lombok.Builder;
 import lombok.Data;
 import org.junit.Test;
+
+import static org.gbif.collections.sync.ih.Utils.TO_BIGDECIMAL;
+import static org.gbif.collections.sync.ih.Utils.encodeIRN;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -115,7 +117,7 @@ public class IHSyncTest {
     expectedCollection.setIndexHerbariorumRecord(true);
 
     // add identifier to expected entities
-    Identifier newIdentifier = new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(IRN_TEST));
+    Identifier newIdentifier = new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST));
     newIdentifier.setCreatedBy(TEST_USER);
     expectedInstitution.getIdentifiers().add(newIdentifier);
     expectedCollection.getIdentifiers().add(newIdentifier);
@@ -296,7 +298,7 @@ public class IHSyncTest {
     i.setName("bar");
     i.setIndexHerbariorumRecord(true);
     i.setNumberSpecimens(1000);
-    i.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(IRN_TEST)));
+    i.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST)));
 
     IHInstitution ih = new IHInstitution();
     ih.setIrn(IRN_TEST);
@@ -350,8 +352,8 @@ public class IHSyncTest {
     i.setCode("COD");
     i.setName("University OLD");
     i.setType(InstitutionType.HERBARIUM);
-    i.setLatitude(new BigDecimal("36.0424"));
-    i.setLongitude(new BigDecimal("-94.1624"));
+    i.setLatitude(TO_BIGDECIMAL.apply(36.0424));
+    i.setLongitude(TO_BIGDECIMAL.apply(-94.1624));
 
     Address address = new Address();
     address.setCity("FAYETTEVILLE");
@@ -367,8 +369,8 @@ public class IHSyncTest {
     expected.setName(ih.getOrganization());
     expected.setType(i.getType());
     expected.setIndexHerbariorumRecord(true);
-    expected.setLatitude(BigDecimal.valueOf(ih.getLocation().getLat()));
-    expected.setLongitude(BigDecimal.valueOf(ih.getLocation().getLon()));
+    expected.setLatitude(TO_BIGDECIMAL.apply(ih.getLocation().getLat()));
+    expected.setLongitude(TO_BIGDECIMAL.apply(ih.getLocation().getLon()));
     expected.setEmail(Collections.singletonList(ih.getContact().getEmail()));
     expected.setActive(true);
     expected.setFoundingDate(IsoDateParsingUtils.parseDate(ih.getDateFounded()));
@@ -383,7 +385,7 @@ public class IHSyncTest {
     physicalAddress.setCountry(Country.UNITED_STATES);
     expected.setAddress(physicalAddress);
 
-    Identifier newIdentifier = new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(IRN_TEST));
+    Identifier newIdentifier = new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST));
     newIdentifier.setCreatedBy(TEST_USER);
     expected.getIdentifiers().add(newIdentifier);
 
@@ -400,7 +402,7 @@ public class IHSyncTest {
     c.setCode("A");
     c.setIndexHerbariorumRecord(true);
     c.setEmail(Collections.singletonList("aa@aa.com"));
-    c.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(IRN_TEST)));
+    c.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST)));
 
     IHInstitution ih = new IHInstitution();
     ih.setIrn(IRN_TEST);
@@ -417,7 +419,7 @@ public class IHSyncTest {
     c.setKey(UUID.randomUUID());
     c.setCode("B");
     c.setEmail(Collections.singletonList("bb@bb.com"));
-    c.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(IRN_TEST)));
+    c.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST)));
 
     IHInstitution ih = createIHInstitution();
 
@@ -428,7 +430,7 @@ public class IHSyncTest {
     expected.setIndexHerbariorumRecord(true);
     expected.setNumberSpecimens(ih.getSpecimenTotal());
     expected.setEmail(Collections.singletonList(ih.getContact().getEmail()));
-    expected.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(IRN_TEST)));
+    expected.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST)));
     expected.setActive(true);
     expected.setNumberSpecimens(ih.getSpecimenTotal());
     expected.setTaxonomicCoverage(ih.getTaxonomicCoverage());
@@ -498,7 +500,7 @@ public class IHSyncTest {
     expectedAddress.setProvince(address.getState());
     expectedAddress.setCountry(Country.UNITED_STATES);
     expected.setMailingAddress(expectedAddress);
-    Identifier newIdentifier = new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(IRN_TEST));
+    Identifier newIdentifier = new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST));
     newIdentifier.setCreatedBy(TEST_USER);
     expected.getIdentifiers().add(newIdentifier);
 
@@ -510,7 +512,7 @@ public class IHSyncTest {
     p.setFirstName("foo");
     p.setKey(UUID.randomUUID());
     p.setEmail("foo@foo.com");
-    p.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(IRN_TEST)));
+    p.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST)));
 
     IHStaff s = new IHStaff();
     s.setFirstName("foo");

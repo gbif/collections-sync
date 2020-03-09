@@ -5,13 +5,20 @@ import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.vocabulary.IdentifierType;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
+import java.util.function.DoubleFunction;
+import java.util.function.Function;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Utils {
+
+  static final DoubleFunction<BigDecimal> TO_BIGDECIMAL =
+      v -> BigDecimal.valueOf(v).setScale(6, RoundingMode.CEILING);
 
   /**
    * Encodes the IH IRN into the format stored on the GRSciColl identifier. E.g. 123 ->

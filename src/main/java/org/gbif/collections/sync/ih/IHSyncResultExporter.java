@@ -1,6 +1,7 @@
 package org.gbif.collections.sync.ih;
 
 import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Person;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -45,9 +47,23 @@ public class IHSyncResultExporter {
           writer, "Institution & Collection Matches: " + result.getInstAndCollMatches().size());
       printWithNewLineAfter(writer, "No Matches: " + result.getNoMatches().size());
       printWithNewLineAfter(writer, "Conflicts: " + result.getConflicts().size());
-      printWithNewLineAfter(writer, "Staff Conflicts: " + getNumberStaffConflicts(result));
       printWithNewLineAfter(writer, "Failed Actions: " + result.getFailedActions().size());
       printWithNewLineAfter(writer, "Invalid entities: " + result.getInvalidEntities().size());
+
+      Counts counts = getSummaryCounts(result);
+      writer.newLine();
+      printWithNewLineAfter(writer, "Institutions created: " + counts.institutionsCreated);
+      printWithNewLineAfter(writer, "Institutions updated: " + counts.institutionsUpdated);
+      printWithNewLineAfter(writer, "Institutions no change: " + counts.institutionsNoChange);
+      printWithNewLineAfter(writer, "Collections created: " + counts.collectionsCreated);
+      printWithNewLineAfter(writer, "Collections updated: " + counts.collectionsUpdated);
+      printWithNewLineAfter(writer, "Collections no change: " + counts.collectionsNoChange);
+      printWithNewLineAfter(writer, "Persons created: " + counts.countStaffMatch.personsCreated);
+      printWithNewLineAfter(writer, "Persons updated: " + counts.countStaffMatch.personsUpdated);
+      printWithNewLineAfter(writer, "Persons no change: " + counts.countStaffMatch.personsNoChange);
+      printWithNewLineAfter(writer, "Persons removed: " + counts.countStaffMatch.personsRemoved);
+      printWithNewLineAfter(writer, "Staff conflicts: " + counts.countStaffMatch.staffConflicts);
+
       writer.newLine();
       writer.newLine();
 
@@ -247,24 +263,90 @@ public class IHSyncResultExporter {
     writer.newLine();
   }
 
-  private static int getNumberStaffConflicts(IHSyncResult result) {
-    int numberConflicts = 0;
-    numberConflicts +=
-        result.getNoMatches().stream()
-            .mapToLong(m -> m.getStaffMatch().getConflicts().size())
-            .sum();
-    numberConflicts +=
-        result.getInstAndCollMatches().stream()
-            .mapToLong(m -> m.getStaffMatch().getConflicts().size())
-            .sum();
-    numberConflicts +=
-        result.getInstitutionOnlyMatches().stream()
-            .mapToLong(m -> m.getStaffMatch().getConflicts().size())
-            .sum();
-    numberConflicts +=
-        result.getCollectionOnlyMatches().stream()
-            .mapToLong(m -> m.getStaffMatch().getConflicts().size())
-            .sum();
-    return numberConflicts;
+  private static Counts getSummaryCounts(IHSyncResult result) {
+    Counts counts = new Counts();
+
+    Consumer<IHSyncResult.StaffMatch> countStaff =
+        staffMatch -> {
+          if (staffMatch != null) {
+            counts.countStaffMatch.personsCreated += staffMatch.getNewPersons().size();
+            counts.countStaffMatch.personsRemoved += staffMatch.getRemovedPersons().size();
+            counts.countStaffMatch.staffConflicts += staffMatch.getConflicts().size();
+            for (IHSyncResult.EntityMatch<Person> p : staffMatch.getMatchedPersons()) {
+              if (p.isUpdate()) {
+                counts.countStaffMatch.personsUpdated++;
+              } else {
+                counts.countStaffMatch.personsNoChange++;
+              }
+            }
+          }
+        };
+
+    for (IHSyncResult.CollectionOnlyMatch m : result.getCollectionOnlyMatches()) {
+      if (m.getMatchedCollection().isUpdate()) {
+        counts.collectionsUpdated++;
+      } else {
+        counts.collectionsNoChange++;
+      }
+      countStaff.accept(m.getStaffMatch());
+    }
+
+    for (IHSyncResult.InstitutionOnlyMatch m : result.getInstitutionOnlyMatches()) {
+      if (m.getMatchedInstitution().isUpdate()) {
+        counts.institutionsUpdated++;
+      } else {
+        counts.institutionsNoChange++;
+      }
+
+      if (m.getNewCollection() != null) {
+        counts.collectionsCreated++;
+      }
+      countStaff.accept(m.getStaffMatch());
+    }
+
+    for (IHSyncResult.InstitutionAndCollectionMatch m : result.getInstAndCollMatches()) {
+      if (m.getMatchedInstitution().isUpdate()) {
+        counts.institutionsUpdated++;
+      } else {
+        counts.institutionsNoChange++;
+      }
+
+      if (m.getMatchedCollection().isUpdate()) {
+        counts.collectionsUpdated++;
+      } else {
+        counts.collectionsNoChange++;
+      }
+      countStaff.accept(m.getStaffMatch());
+    }
+
+    for (IHSyncResult.NoEntityMatch m : result.getNoMatches()) {
+      if (m.getNewInstitution() != null) {
+        counts.institutionsCreated++;
+      }
+      if (m.getNewCollection() != null) {
+        counts.collectionsCreated++;
+      }
+      countStaff.accept(m.getStaffMatch());
+    }
+
+    return counts;
+  }
+
+  private static class Counts {
+    int institutionsCreated = 0;
+    int institutionsUpdated = 0;
+    int institutionsNoChange = 0;
+    int collectionsCreated = 0;
+    int collectionsUpdated = 0;
+    int collectionsNoChange = 0;
+    CountStaffMatch countStaffMatch = new CountStaffMatch();
+
+    private static class CountStaffMatch {
+      private int personsCreated;
+      private int personsUpdated;
+      private int personsNoChange;
+      private int personsRemoved;
+      private int staffConflicts;
+    }
   }
 }

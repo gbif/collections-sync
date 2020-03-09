@@ -14,7 +14,6 @@ import org.gbif.collections.sync.ih.parsers.IHParser;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
@@ -27,6 +26,7 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.BeanUtils;
 
+import static org.gbif.collections.sync.ih.Utils.TO_BIGDECIMAL;
 import static org.gbif.collections.sync.ih.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.ih.model.IHInstitution.CollectionSummary;
 import static org.gbif.collections.sync.ih.model.IHInstitution.Location;
@@ -86,14 +86,9 @@ public class EntityConverter {
 
   @VisibleForTesting
   static void setLocation(IHInstitution ihInstitution, Institution institution) {
-    if (ihInstitution.getLocation() == null) {
-      // we usually receive both coordinates as 0 when they are actually null
-      institution.setLatitude(null);
-      institution.setLongitude(null);
-      return;
-    }
-
-    if (ihInstitution.getLocation().getLat() == 0 && ihInstitution.getLocation().getLon() == 0) {
+    if (ihInstitution.getLocation() == null
+        || (Objects.equals(ihInstitution.getLocation().getLat(), 0d)
+            && Objects.equals(ihInstitution.getLocation().getLon(), 0d))) {
       // we usually receive both coordinates as 0 when they are actually null
       institution.setLatitude(null);
       institution.setLongitude(null);
@@ -102,7 +97,7 @@ public class EntityConverter {
 
     Location location = ihInstitution.getLocation();
     if (location.getLat() != null) {
-      BigDecimal lat = BigDecimal.valueOf(location.getLat()).setScale(6, RoundingMode.CEILING);
+      BigDecimal lat = TO_BIGDECIMAL.apply(location.getLat());
       if (lat.compareTo(BigDecimal.valueOf(-90)) >= 0
           && lat.compareTo(BigDecimal.valueOf(90)) <= 0) {
         institution.setLatitude(lat);
@@ -117,7 +112,7 @@ public class EntityConverter {
     }
 
     if (location.getLon() != null) {
-      BigDecimal lon = BigDecimal.valueOf(location.getLon()).setScale(6, RoundingMode.CEILING);
+      BigDecimal lon = TO_BIGDECIMAL.apply(location.getLon());
       if (lon.compareTo(BigDecimal.valueOf(-180)) >= 0
           && lon.compareTo(BigDecimal.valueOf(180)) <= 0) {
         institution.setLongitude(lon);

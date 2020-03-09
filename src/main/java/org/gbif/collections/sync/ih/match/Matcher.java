@@ -91,7 +91,7 @@ public class Matcher {
       }
 
       // if couldn't find any we try to match by comparing the fields of each person
-      return matchWithFields(ihStaffToMatch, allGrSciCollPersons, contacts, 13);
+      return matchWithFields(ihStaffToMatch, allGrSciCollPersons, contacts, 14);
     };
   }
 

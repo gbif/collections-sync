@@ -12,6 +12,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import static org.gbif.collections.sync.ih.Utils.TO_BIGDECIMAL;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -85,16 +87,16 @@ public class EntityConverterTest {
     EntityConverter.setLocation(ihInstitution, institution);
 
     // Expect
-    assertEquals(BigDecimal.valueOf(10.2), institution.getLatitude());
-    assertEquals(BigDecimal.valueOf(40.2), institution.getLongitude());
+    assertEquals(institution.getLatitude(), institution.getLatitude());
+    assertEquals(TO_BIGDECIMAL.apply(40.2), institution.getLongitude());
 
     // When
     location.setLat(20.2);
     EntityConverter.setLocation(ihInstitution, institution);
 
     // Expect
-    assertEquals(BigDecimal.valueOf(20.2), institution.getLatitude());
-    assertEquals(BigDecimal.valueOf(40.2), institution.getLongitude());
+    assertEquals(TO_BIGDECIMAL.apply(20.2), institution.getLatitude());
+    assertEquals(TO_BIGDECIMAL.apply(40.2), institution.getLongitude());
 
     // When
     location.setLat(null);
@@ -102,7 +104,7 @@ public class EntityConverterTest {
 
     // Expect
     assertNull(institution.getLatitude());
-    assertEquals(BigDecimal.valueOf(40.2), institution.getLongitude());
+    assertEquals(TO_BIGDECIMAL.apply(40.2), institution.getLongitude());
 
     // When
     ihInstitution.setLocation(null);

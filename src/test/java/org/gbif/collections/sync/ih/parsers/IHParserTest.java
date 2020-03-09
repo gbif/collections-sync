@@ -1,6 +1,8 @@
 package org.gbif.collections.sync.ih.parsers;
 
 import java.net.URI;
+import java.util.Calendar;
+import java.util.Date;
 
 import org.junit.Test;
 
@@ -11,7 +13,6 @@ import static org.gbif.collections.sync.ih.parsers.IHParser.parseDate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /** Tests the {@link IHParser}. */
@@ -41,13 +42,54 @@ public class IHParserTest {
 
   @Test
   public void parseDateTest() {
-    assertNotNull(parseDate("2019"));
-    assertNotNull(parseDate("2019."));
-    assertNotNull(parseDate("2019-08-08"));
-    assertNotNull(parseDate("2019-08"));
-    assertNotNull(parseDate("12/01/2019"));
-    assertNotNull(parseDate("June 2019"));
-    assertNotNull(parseDate("Junio 2019"));
+    Date date = parseDate("2019");
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(date);
+    assertEquals(2019, cal.get(Calendar.YEAR));
+    assertEquals(0, cal.get(Calendar.MONTH));
+    assertEquals(1, cal.get(Calendar.DAY_OF_MONTH));
+
+    date = parseDate("2019.");
+    cal.setTime(date);
+    assertEquals(2019, cal.get(Calendar.YEAR));
+    assertEquals(0, cal.get(Calendar.MONTH));
+    assertEquals(1, cal.get(Calendar.DAY_OF_MONTH));
+
+    date = parseDate("2019-08");
+    cal.setTime(date);
+    assertEquals(2019, cal.get(Calendar.YEAR));
+    assertEquals(7, cal.get(Calendar.MONTH));
+    assertEquals(1, cal.get(Calendar.DAY_OF_MONTH));
+
+    date = parseDate("2019-08-08");
+    cal.setTime(date);
+    assertEquals(2019, cal.get(Calendar.YEAR));
+    assertEquals(7, cal.get(Calendar.MONTH));
+    assertEquals(8, cal.get(Calendar.DAY_OF_MONTH));
+
+    date = parseDate("08/08/2019");
+    cal.setTime(date);
+    assertEquals(2019, cal.get(Calendar.YEAR));
+    assertEquals(7, cal.get(Calendar.MONTH));
+    assertEquals(8, cal.get(Calendar.DAY_OF_MONTH));
+
+    date = parseDate("June 2019");
+    cal.setTime(date);
+    assertEquals(2019, cal.get(Calendar.YEAR));
+    assertEquals(5, cal.get(Calendar.MONTH));
+    assertEquals(1, cal.get(Calendar.DAY_OF_MONTH));
+
+    date = parseDate("Junio 2019");
+    cal.setTime(date);
+    assertEquals(2019, cal.get(Calendar.YEAR));
+    assertEquals(5, cal.get(Calendar.MONTH));
+    assertEquals(1, cal.get(Calendar.DAY_OF_MONTH));
+
+    date = parseDate("1 January 2019");
+    cal.setTime(date);
+    assertEquals(2019, cal.get(Calendar.YEAR));
+    assertEquals(0, cal.get(Calendar.MONTH));
+    assertEquals(1, cal.get(Calendar.DAY_OF_MONTH));
   }
 
   @Test

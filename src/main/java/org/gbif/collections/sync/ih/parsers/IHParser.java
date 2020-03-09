@@ -24,10 +24,11 @@ public class IHParser {
     // date formats supported
     DATE_FORMATS.add(new SimpleDateFormat("yyyy-MM-dd"));
     DATE_FORMATS.add(new SimpleDateFormat("yyyy-MM"));
-    DATE_FORMATS.add(new SimpleDateFormat("yyyy"));
     DATE_FORMATS.add(new SimpleDateFormat("dd/MM/yyyy"));
+    DATE_FORMATS.add(new SimpleDateFormat("dd MMMM yyyy", Locale.US));
     DATE_FORMATS.add(new SimpleDateFormat("MMMM yyyy", Locale.US));
     DATE_FORMATS.add(new SimpleDateFormat("MMMM yyyy", new Locale("ES")));
+    DATE_FORMATS.add(new SimpleDateFormat("yyyy"));
   }
 
   public static List<String> parseStringList(String stringList) {
