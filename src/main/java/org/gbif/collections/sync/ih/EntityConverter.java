@@ -73,7 +73,10 @@ public class EntityConverter {
     institution.setEmail(getIhEmails(ihInstitution));
     institution.setPhone(getIhPhones(ihInstitution));
     institution.setHomepage(getIhHomepage(ihInstitution));
-    institution.setFoundingDate(parseDate(ihInstitution.getDateFounded()));
+    institution.setFoundingDate(
+        parseDate(
+            ihInstitution.getDateFounded(),
+            "Invalid date for institution " + ihInstitution.getIrn()));
 
     addIdentifierIfNotExists(institution, Utils.encodeIRN(ihInstitution.getIrn()), creationUser);
 
@@ -375,7 +378,9 @@ public class EntityConverter {
     // when there are multiple URLs we try to get the first one
     Optional<String> webUrlOpt = getFirstString(ih.getContact().getWebUrl());
 
-    return webUrlOpt.flatMap(IHParser::parseUri).orElse(null);
+    return webUrlOpt
+        .flatMap(v -> IHParser.parseUri(v, "Invalid URL for institution " + ih.getIrn()))
+        .orElse(null);
   }
 
   private static void addIdentifierIfNotExists(Identifiable entity, String irn, String user) {
@@ -397,8 +402,8 @@ public class EntityConverter {
 
     if (!first.isPresent()) {
       setter.accept(null);
-    } else if (validator.test(value)) {
-      setter.accept(value);
+    } else if (validator.test(first.get())) {
+      setter.accept(first.get());
     } else {
       log.warn("{}: {}", errorMsg, value);
     }

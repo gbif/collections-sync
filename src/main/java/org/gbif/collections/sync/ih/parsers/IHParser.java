@@ -68,6 +68,10 @@ public class IHParser {
   }
 
   public static Optional<URI> parseUri(String uri) {
+    return parseUri(uri, "Invalid URI");
+  }
+
+  public static Optional<URI> parseUri(String uri, String errorMsg) {
     // we try to clean the URL first
     String webUrl = WHITESPACE_PATTERN.matcher(uri).replaceAll("");
 
@@ -82,12 +86,16 @@ public class IHParser {
     try {
       return Optional.of(URI.create(webUrl));
     } catch (Exception ex) {
-      log.warn("Error parsing url {}", webUrl, ex);
+      log.warn("{}: {}", errorMsg, webUrl, ex);
       return Optional.empty();
     }
   }
 
   public static Date parseDate(String dateAsString) {
+    return parseDate(dateAsString, "Invalid date");
+  }
+
+  public static Date parseDate(String dateAsString, String errorMsg) {
     if (!hasValue(dateAsString)) {
       return null;
     }
@@ -101,11 +109,11 @@ public class IHParser {
       try {
         return dateFormat.parse(dateAsString);
       } catch (Exception e) {
-        log.debug("Failed parsing date {}", dateAsString, e);
+        log.debug("Failed parsing date {}: ", dateAsString, e);
       }
     }
 
-    log.warn("Couldn't parse date {}", dateAsString);
+    log.warn("{}: {}", errorMsg, dateAsString);
     return null;
   }
 
