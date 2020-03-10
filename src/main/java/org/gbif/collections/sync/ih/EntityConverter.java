@@ -400,13 +400,16 @@ public class EntityConverter {
       String value, Predicate<String> validator, Consumer<String> setter, String errorMsg) {
     Optional<String> first = getFirstString(value);
 
-    if (!first.isPresent()) {
-      setter.accept(null);
-    } else if (validator.test(first.get())) {
-      setter.accept(first.get());
-    } else {
-      log.warn("{}: {}", errorMsg, value);
+    if (first.isPresent()) {
+      if (validator.test(first.get())) {
+        setter.accept(first.get());
+        return;
+      } else {
+        log.warn("{}: {}", errorMsg, value);
+      }
     }
+
+    setter.accept(null);
   }
 
   private static List<String> getStringListValue(List<String> list) {
