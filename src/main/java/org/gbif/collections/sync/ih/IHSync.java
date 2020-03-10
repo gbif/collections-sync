@@ -262,7 +262,7 @@ public class IHSync {
     EntityMatch.EntityMatchBuilder<Institution> entityMatchBuilder =
         EntityMatch.<Institution>builder().matched(existing).merged(mergedInstitution);
     if (!mergedInstitution.lenientEquals(existing)) {
-      executeOrAddFail(
+      executeOrAddFailAsync(
           () -> grSciCollHttpClient.updateInstitution(mergedInstitution),
           e ->
               new FailedAction(
@@ -282,7 +282,7 @@ public class IHSync {
     EntityMatch.EntityMatchBuilder<Collection> entityMatchBuilder =
         EntityMatch.<Collection>builder().matched(existing).merged(mergedCollection);
     if (!mergedCollection.lenientEquals(existing)) {
-      executeOrAddFail(
+      executeOrAddFailAsync(
           () -> grSciCollHttpClient.updateCollection(mergedCollection),
           e ->
               new FailedAction(mergedCollection, "Failed to update collection: " + e.getMessage()));
@@ -366,12 +366,12 @@ public class IHSync {
             EntityMatch.<Person>builder().matched(matchedPerson).merged(mergedPerson);
         if (!mergedPerson.lenientEquals(matchedPerson)) {
           // update person
-          executeOrAddFail(
+          executeOrAddFailAsync(
               () -> grSciCollHttpClient.updatePerson(mergedPerson),
               e -> new FailedAction(mergedPerson, "Failed to update person: " + e.getMessage()));
 
           // add identifiers if needed
-          executeOrAddFail(
+          executeOrAddFailAsync(
               () ->
                   mergedPerson.getIdentifiers().stream()
                       .filter(i -> i.getKey() == null)
@@ -384,7 +384,7 @@ public class IHSync {
           // if the match was global we'd need to link it to the entity. The same if we're
           // syncing staff from different entities: one entity could have the contact already
           // but not the other
-          executeOrAddFail(
+          executeOrAddFailAsync(
               () -> entities.forEach(e -> addPersonToEntity.accept(e, mergedPerson)),
               e ->
                   new FailedAction(
