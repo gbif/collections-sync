@@ -29,7 +29,10 @@ public class GithubClient {
     Objects.requireNonNull(password);
 
     OkHttpClient okHttpClient =
-        new OkHttpClient.Builder().addInterceptor(new BasicAuthInterceptor(user, password)).build();
+        new OkHttpClient.Builder()
+            .cache(null)
+            .addInterceptor(new BasicAuthInterceptor(user, password))
+            .build();
 
     Retrofit retrofit =
         new Retrofit.Builder()

@@ -29,6 +29,7 @@ public class IHHttpClient {
 
     OkHttpClient.Builder okHttpClientBuilder =
         new OkHttpClient.Builder()
+            .cache(null)
             .connectTimeout(Duration.ofMinutes(2))
             .readTimeout(Duration.ofMinutes(2));
 
