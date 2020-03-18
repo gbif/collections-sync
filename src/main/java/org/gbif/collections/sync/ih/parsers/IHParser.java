@@ -137,6 +137,6 @@ public class IHParser {
       return Optional.of(firstValue.trim());
     }
 
-    return Optional.of(stringList);
+    return Optional.of(stringList.trim());
   }
 }
