@@ -48,7 +48,9 @@ public class IHParser {
   }
 
   public static String normalizeString(String value) {
-    return Strings.isNullOrEmpty(value) ? null : StringUtils.normalizeSpace(value.toLowerCase());
+    return Strings.isNullOrEmpty(value)
+        ? null
+        : StringUtils.normalizeSpace(value.toLowerCase()).trim();
   }
 
   public static boolean isValidEmail(String email) {
