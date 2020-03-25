@@ -29,7 +29,7 @@
     <retrofit.version>2.7.1</retrofit.version>
     <okhttp.version>4.3.1</okhttp.version>
     <okio.version>2.4.3</okio.version>
-    <lombok.version>1.18.10</lombok.version>
+    <lombok.version>1.18.12</lombok.version>
     <jcommander.version>1.78</jcommander.version>
     <gbif-api.version>0.104</gbif-api.version>
     <commons-beanutils.version>1.9.2</commons-beanutils.version>
@@ -137,7 +137,6 @@
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <version>${lombok.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.beust</groupId>
