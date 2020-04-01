@@ -11,17 +11,17 @@ import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.function.UnaryOperator;
+
+import com.google.common.collect.Sets;
 
 /** Factory to create {@link Issue}. */
 public class IssueFactory {
 
-  private static IssueFactory instance;
-
+  public static final String IH_SYNC_LABEL = "GrSciColl-IH sync";
   private static final String INVALID_ENTITY_TITLE = "Invalid IH entity with IRN %s";
   private static final String ENTITY_CONFLICT_TITLE =
       "IH %s with IRN %s matches with multiple GrSciColl entities";
@@ -29,7 +29,6 @@ public class IssueFactory {
       "Some operations have failed updating the registry in the IH sync";
   private static final String NEW_LINE = "\n";
   private static final String CODE_SEPARATOR = "```";
-  private static final String IH_SYNC_LABEL = "GrSciColl-IH sync";
   private static final String FAIL_LABEL = "IH sync fail";
 
   private static final UnaryOperator<String> PORTAL_URL_NORMALIZER =
@@ -40,12 +39,15 @@ public class IssueFactory {
         return url;
       };
 
+  private static IssueFactory instance;
+
   private final SyncConfig.NotificationConfig config;
   private final String ihInstitutionLink;
   private final String ihStaffLink;
   private final String registryInstitutionLink;
   private final String registryCollectionLink;
   private final String registryPersonLink;
+  private final String syncTimestampLabel;
 
   private IssueFactory(SyncConfig.NotificationConfig config) {
     this.config = config;
@@ -59,6 +61,8 @@ public class IssueFactory {
         PORTAL_URL_NORMALIZER.apply(config.getRegistryPortalUrl()) + "/collection/%s";
     this.registryPersonLink =
         PORTAL_URL_NORMALIZER.apply(config.getRegistryPortalUrl()) + "/person/%s";
+    syncTimestampLabel =
+        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
   }
 
   public static IssueFactory getInstance(SyncConfig config) {
@@ -71,7 +75,7 @@ public class IssueFactory {
 
   public static IssueFactory fromDefaults() {
     SyncConfig.NotificationConfig config = new SyncConfig.NotificationConfig();
-    config.setGhIssuesAssignees(Collections.emptyList());
+    config.setGhIssuesAssignees(Collections.emptySet());
     return new IssueFactory(config);
   }
 
@@ -86,25 +90,24 @@ public class IssueFactory {
   private <T extends CollectionEntity> Issue createConflict(
       List<T> entities, IHEntity ihEntity, EntityType ihEntityType) {
     // create body
-    StringBuilder body = new StringBuilder();
-    body.append("The IH ")
-        .append(createLink(ihEntity.getIrn(), ihEntityType))
-        .append(":")
-        .append(formatEntity(ihEntity))
-        .append("have multiple candidates in GrSciColl: " + NEW_LINE);
-    entities.forEach(
-        e ->
-            body.append(createLink(e.getKey().toString(), getEntityType(e), true))
-                .append(formatEntity(e)));
-    body.append("A IH ")
-        .append(ihEntityType.title)
-        .append(" should be associated to only one GrSciColl entity. Please resolve the conflict.");
+    StringBuilder body =
+        new StringBuilder()
+            .append("The IH ")
+            .append(createLink(ihEntity.getIrn(), ihEntityType))
+            .append(":")
+            .append(formatEntity(ihEntity))
+            .append("have multiple candidates in GrSciColl: " + NEW_LINE)
+            .append(formatEntities(entities))
+            .append("A IH ")
+            .append(ihEntityType.title)
+            .append(
+                " should be associated to only one GrSciColl entity. Please resolve the conflict.");
 
     return Issue.builder()
         .title(String.format(ENTITY_CONFLICT_TITLE, ihEntityType.title, ihEntity.getIrn()))
         .body(body.toString())
-        .assignees(config.getGhIssuesAssignees())
-        .labels(Collections.singletonList(IH_SYNC_LABEL))
+        .assignees(new HashSet<>(config.getGhIssuesAssignees()))
+        .labels(Sets.newHashSet(IH_SYNC_LABEL, syncTimestampLabel))
         .build();
   }
 
@@ -118,8 +121,8 @@ public class IssueFactory {
     return Issue.builder()
         .title(String.format(INVALID_ENTITY_TITLE, entity.getIrn()))
         .body(body)
-        .assignees(config.getGhIssuesAssignees())
-        .labels(Collections.singletonList(IH_SYNC_LABEL))
+        .assignees(new HashSet<>(config.getGhIssuesAssignees()))
+        .labels(Sets.newHashSet(IH_SYNC_LABEL, syncTimestampLabel))
         .build();
   }
 
@@ -146,8 +149,8 @@ public class IssueFactory {
     return Issue.builder()
         .title(FAILS_TITLE)
         .body(body.toString())
-        .assignees(config.getGhIssuesAssignees())
-        .labels(Collections.singletonList(FAIL_LABEL))
+        .assignees(new HashSet<>(config.getGhIssuesAssignees()))
+        .labels(Sets.newHashSet(FAIL_LABEL, syncTimestampLabel))
         .build();
   }
 
@@ -159,6 +162,28 @@ public class IssueFactory {
         + NEW_LINE
         + CODE_SEPARATOR
         + NEW_LINE;
+  }
+
+  private <T extends CollectionEntity> String formatEntities(List<T> entities) {
+    StringBuilder sb = new StringBuilder();
+
+    for (int i = 0; i < entities.size(); i++) {
+      T entity = entities.get(i);
+      sb.append(i + 1)
+          .append(". ")
+          .append(createLink(entity.getKey().toString(), getEntityType(entity), true))
+          .append(NEW_LINE);
+    }
+
+    sb.append(NEW_LINE).append(CODE_SEPARATOR).append(NEW_LINE);
+
+    for (int i = 0; i < entities.size(); i++) {
+      T entity = entities.get(i);
+      sb.append(i + 1).append(". ").append(entity.toString()).append(NEW_LINE);
+    }
+
+    sb.append(CODE_SEPARATOR).append(NEW_LINE);
+    return sb.toString();
   }
 
   private String createLink(String id, EntityType entityType) {

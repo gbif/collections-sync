@@ -5,7 +5,7 @@ pipeline {
     jdk 'JDK8'
   }
   options {
-    buildDiscarder(logRotator(numToKeepStr: '10'))
+    buildDiscarder(logRotator(numToKeepStr: '20'))
     timestamps ()
   }
   parameters {

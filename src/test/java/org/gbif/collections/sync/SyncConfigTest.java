@@ -35,7 +35,7 @@ public class SyncConfigTest {
     CliSyncApp.CliArgs cliArgs = new CliSyncApp.CliArgs();
     cliArgs.setConfPath(Paths.get(CONFIG_TEST_PATH).toFile().getAbsolutePath());
     cliArgs.setDryRun(false);
-    cliArgs.setGithubAssignees(Collections.singletonList("test"));
+    cliArgs.setGithubAssignees(Collections.singleton("test"));
 
     SyncConfig config = SyncConfig.fromCliArgs(cliArgs);
 
