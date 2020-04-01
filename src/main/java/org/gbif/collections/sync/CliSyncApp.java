@@ -5,7 +5,7 @@ import org.gbif.collections.sync.ih.IHSyncResult;
 import org.gbif.collections.sync.ih.IHSyncResultExporter;
 
 import java.nio.file.Paths;
-import java.util.List;
+import java.util.Set;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -44,13 +44,17 @@ public class CliSyncApp {
         required = true)
     private String confPath;
 
-    @Parameter(names = {"--dryRun", "-dr"}, arity = 1)
+    @Parameter(
+        names = {"--dryRun", "-dr"},
+        arity = 1)
     private Boolean dryRun;
 
-    @Parameter(names = {"--sendNotifications", "-n"}, arity = 1)
+    @Parameter(
+        names = {"--sendNotifications", "-n"},
+        arity = 1)
     private Boolean sendNotifications;
 
     @Parameter(names = {"--githubAssignees", "-ga"})
-    private List<String> githubAssignees;
+    private Set<String> githubAssignees;
   }
 }

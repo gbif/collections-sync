@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -490,12 +491,32 @@ public class IHSync {
 
   private void createGHIssue(Issue issue) {
     if (sendNotifications) {
-      CompletableFuture.runAsync(() -> githubClient.createIssue(issue))
+      Optional<Issue> existingIssueOpt = githubClient.findIssueWithSameTitle(issue.getTitle());
+      Runnable runnable;
+      String errorMsg;
+      if (existingIssueOpt.isPresent()) {
+        // if it exists we update the labels to add the one of this sync. We also merge the
+        // assignees in case the original ones were modified in Github
+        Issue existingIssue = existingIssueOpt.get();
+        issue.setNumber(existingIssue.getNumber());
+        issue.getLabels().addAll(existingIssue.getLabels());
+        issue.getAssignees().addAll(existingIssue.getAssignees());
+
+        runnable = () -> githubClient.updateIssue(issue);
+        errorMsg = "Failed to add sync timestamp label to issue: ";
+      } else {
+        // if it doesn't exist we create it
+        runnable = () -> githubClient.createIssue(issue);
+        errorMsg = "Failed to create issue: ";
+      }
+
+      // do the call
+      CompletableFuture.runAsync(runnable)
           .whenCompleteAsync(
               (r, e) -> {
                 if (e != null) {
                   syncResultBuilder.failedAction(
-                      new FailedAction(issue, "Failed to create issue: " + e.getMessage()));
+                      new FailedAction(issue, errorMsg + e.getMessage()));
                 }
               });
     }

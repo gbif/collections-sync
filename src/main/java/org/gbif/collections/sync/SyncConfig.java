@@ -3,8 +3,9 @@ package org.gbif.collections.sync;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.List;
+import java.util.Collection;
 import java.util.Objects;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -40,7 +41,7 @@ public class SyncConfig {
     private String githubPassword;
     private String ihPortalUrl;
     private String registryPortalUrl;
-    private List<String> ghIssuesAssignees;
+    private Set<String> ghIssuesAssignees;
   }
 
   public static SyncConfig fromFileName(String configFileName) {
@@ -76,7 +77,7 @@ public class SyncConfig {
       config.setSendNotifications(args.getSendNotifications());
     }
 
-    if (config.isSendNotifications() && !isEmptyList(args.getGithubAssignees())) {
+    if (config.isSendNotifications() && !isEmptyCollection(args.getGithubAssignees())) {
       config.getNotification().setGhIssuesAssignees(args.getGithubAssignees());
     }
 
@@ -126,7 +127,7 @@ public class SyncConfig {
     }
   }
 
-  private static boolean isEmptyList(List<String> list) {
+  private static boolean isEmptyCollection(Collection<String> list) {
     if (list == null || list.isEmpty()) {
       return true;
     }
