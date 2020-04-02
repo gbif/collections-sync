@@ -17,8 +17,10 @@ import java.util.*;
 import java.util.function.UnaryOperator;
 
 import com.google.common.collect.Sets;
+import lombok.extern.slf4j.Slf4j;
 
 /** Factory to create {@link Issue}. */
+@Slf4j
 public class IssueFactory {
 
   public static final String IH_SYNC_LABEL = "GrSciColl-IH sync";
@@ -63,6 +65,7 @@ public class IssueFactory {
         PORTAL_URL_NORMALIZER.apply(config.getRegistryPortalUrl()) + "/person/%s";
     syncTimestampLabel =
         LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    log.info("Issue factory created with sync timestamp label: {}", syncTimestampLabel);
   }
 
   public static IssueFactory getInstance(SyncConfig config) {
