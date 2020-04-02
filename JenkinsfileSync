@@ -6,7 +6,7 @@ pipeline {
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '20'))
-    timestamps ()
+    timestamps()
   }
   parameters {
     choice(name: 'ENV', choices: ['dev', 'uat', 'prod'], description: 'Choose environment')
@@ -49,7 +49,7 @@ pipeline {
   }
   post {
     failure {
-      slackSend message: "IH Sync failed! - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)",
+      slackSend message: "IH Sync failed for env ${ENV} and dryRun ${DRY_RUN} - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)",
               channel: "#ih-sync"
     }
   }
