@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
@@ -27,6 +29,11 @@ public class IHHttpClient {
   private IHHttpClient(String ihWsUrl) {
     Objects.requireNonNull(ihWsUrl);
 
+    ObjectMapper mapper =
+        new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
     OkHttpClient.Builder okHttpClientBuilder =
         new OkHttpClient.Builder()
             .cache(null)
@@ -37,7 +44,7 @@ public class IHHttpClient {
         new Retrofit.Builder()
             .client(okHttpClientBuilder.build())
             .baseUrl(ihWsUrl)
-            .addConverterFactory(JacksonConverterFactory.create())
+            .addConverterFactory(JacksonConverterFactory.create(mapper))
             .build();
     api = retrofit.create(API.class);
   }
