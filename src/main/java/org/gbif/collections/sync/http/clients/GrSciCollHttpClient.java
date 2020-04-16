@@ -5,6 +5,7 @@ import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.common.paging.PagingResponse;
 import org.gbif.api.model.registry.Identifier;
+import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.collections.sync.SyncConfig;
 import org.gbif.collections.sync.http.BasicAuthInterceptor;
@@ -105,6 +106,14 @@ public class GrSciCollHttpClient {
     syncCall(api.updateInstitution(institution.getKey(), institution));
   }
 
+  public void addIdentifierToInstitution(UUID institutionKey, Identifier identifier) {
+    syncCall(api.addIdentifierToInstitution(institutionKey, identifier));
+  }
+
+  public void addMachineTagToInstitution(UUID institutionKey, MachineTag machineTag) {
+    syncCall(api.addMachineTagToInstitution(institutionKey, machineTag));
+  }
+
   /** Returns all institutions in GrSciCol. */
   public List<Collection> getCollections() {
     List<Collection> result = new ArrayList<>();
@@ -127,6 +136,14 @@ public class GrSciCollHttpClient {
 
   public void updateCollection(Collection collection) {
     syncCall(api.updateCollection(collection.getKey(), collection));
+  }
+
+  public void addIdentifierToCollection(UUID collectionKey, Identifier identifier) {
+    syncCall(api.addIdentifierToCollection(collectionKey, identifier));
+  }
+
+  public void addMachineTagToCollection(UUID collectionKey, MachineTag machineTag) {
+    syncCall(api.addMachineTagToCollection(collectionKey, machineTag));
   }
 
   /** Returns all persons in GrSciCol. */
@@ -177,6 +194,10 @@ public class GrSciCollHttpClient {
     syncCall(api.removePersonFromCollection(collectionKey, personKey));
   }
 
+  public Person getPerson(UUID key) {
+    return syncCall(api.getPerson(key));
+  }
+
   private interface API {
     @GET("institution")
     Call<PagingResponse<Institution>> listInstitutions(
@@ -188,6 +209,14 @@ public class GrSciCollHttpClient {
     @PUT("institution/{key}")
     Call<Void> updateInstitution(@Path("key") UUID key, @Body Institution institution);
 
+    @POST("institution/{key}/identifier")
+    Call<Void> addIdentifierToInstitution(
+        @Path("key") UUID institutionKey, @Body Identifier identifier);
+
+    @POST("institution/{key}/machineTag")
+    Call<Void> addMachineTagToInstitution(
+        @Path("key") UUID institutionKey, @Body MachineTag machineTag);
+
     @GET("collection")
     Call<PagingResponse<Collection>> listCollections(
         @Query("limit") int limit, @Query("offset") int offset);
@@ -198,9 +227,20 @@ public class GrSciCollHttpClient {
     @PUT("collection/{key}")
     Call<Void> updateCollection(@Path("key") UUID key, @Body Collection collection);
 
+    @POST("collection/{key}/identifier")
+    Call<Void> addIdentifierToCollection(
+        @Path("key") UUID collectionKey, @Body Identifier identifier);
+
+    @POST("collection/{key}/machineTag")
+    Call<Void> addMachineTagToCollection(
+        @Path("key") UUID collectionKey, @Body MachineTag machineTag);
+
     @GET("person")
     Call<PagingResponse<Person>> listPersons(
         @Query("limit") int limit, @Query("offset") int offset);
+
+    @GET("person/{key}")
+    Call<Person> getPerson(@Path("key") UUID key);
 
     @POST("person")
     Call<UUID> createPerson(@Body Person person);

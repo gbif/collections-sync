@@ -15,6 +15,8 @@ public class SyncConfigTest {
 
   private static final String CONFIG_TEST_PATH = "src/test/resources/sync-config.yaml";
 
+  // TODO: add idigbio config
+
   @Test
   public void loadConfigFromFileTest() {
     String path = Paths.get(CONFIG_TEST_PATH).toFile().getAbsolutePath();
@@ -22,7 +24,7 @@ public class SyncConfigTest {
 
     assertNotNull(config);
     assertNotNull(config.getRegistryWsUrl());
-    assertNotNull(config.getIhWsUrl());
+    assertNotNull(config.getIhConfig().getIhWsUrl());
     assertTrue(config.isSaveResultsToFile());
     assertTrue(config.isDryRun());
     assertTrue(config.isSendNotifications());
@@ -32,7 +34,7 @@ public class SyncConfigTest {
 
   @Test
   public void loadConfigFromCliArgsTest() {
-    CliSyncApp.CliArgs cliArgs = new CliSyncApp.CliArgs();
+    CliSyncArgs cliArgs = new CliSyncArgs();
     cliArgs.setConfPath(Paths.get(CONFIG_TEST_PATH).toFile().getAbsolutePath());
     cliArgs.setDryRun(false);
     cliArgs.setGithubAssignees(Collections.singleton("test"));
@@ -41,7 +43,7 @@ public class SyncConfigTest {
 
     assertNotNull(config);
     assertNotNull(config.getRegistryWsUrl());
-    assertNotNull(config.getIhWsUrl());
+    assertNotNull(config.getIhConfig().getIhWsUrl());
     assertTrue(config.isSaveResultsToFile());
     assertFalse(config.isDryRun());
     assertTrue(config.isSendNotifications());

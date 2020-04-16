@@ -3,7 +3,7 @@ package org.gbif.collections.sync.ih;
 import org.gbif.api.model.collections.Address;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.collections.sync.ih.model.IHInstitution;
-import org.gbif.collections.sync.ih.parsers.CountryParser;
+import org.gbif.collections.sync.parsers.CountryParser;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -12,7 +12,7 @@ import java.util.List;
 
 import org.junit.Test;
 
-import static org.gbif.collections.sync.ih.Utils.TO_BIGDECIMAL;
+import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;

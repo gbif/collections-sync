@@ -6,10 +6,11 @@ import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
+import org.gbif.collections.sync.Utils;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
-import org.gbif.collections.sync.ih.parsers.CountryParser;
-import org.gbif.collections.sync.ih.parsers.IHParser;
+import org.gbif.collections.sync.parsers.CountryParser;
+import org.gbif.collections.sync.parsers.DataParser;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -26,14 +27,10 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.BeanUtils;
 
-import static org.gbif.collections.sync.ih.Utils.TO_BIGDECIMAL;
-import static org.gbif.collections.sync.ih.Utils.containsIrnIdentifier;
+import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.ih.model.IHInstitution.CollectionSummary;
 import static org.gbif.collections.sync.ih.model.IHInstitution.Location;
-import static org.gbif.collections.sync.ih.parsers.IHParser.getFirstString;
-import static org.gbif.collections.sync.ih.parsers.IHParser.hasValue;
-import static org.gbif.collections.sync.ih.parsers.IHParser.parseDate;
-import static org.gbif.collections.sync.ih.parsers.IHParser.parseStringList;
+import static org.gbif.collections.sync.parsers.DataParser.*;
 
 /** Converts IH insitutions to the GrSciColl entities {@link Institution} and {@link Collection}. */
 @Slf4j
@@ -87,7 +84,6 @@ public class EntityConverter {
     return "Active".equalsIgnoreCase(status);
   }
 
-  @VisibleForTesting
   static void setLocation(IHInstitution ihInstitution, Institution institution) {
     if (ihInstitution.getLocation() == null
         || (Objects.equals(ihInstitution.getLocation().getLat(), 0d)
@@ -233,17 +229,17 @@ public class EntityConverter {
     if (ihStaff.getContact() != null) {
       setFirstValue(
           ihStaff.getContact().getEmail(),
-          IHParser::isValidEmail,
+          DataParser::isValidEmail,
           person::setEmail,
           "Invalid email of IH Staff " + ihStaff.getIrn());
       setFirstValue(
           ihStaff.getContact().getPhone(),
-          IHParser::isValidPhone,
+          DataParser::isValidPhone,
           person::setPhone,
           "Invalid phone of IH Staff " + ihStaff.getIrn());
       setFirstValue(
           ihStaff.getContact().getFax(),
-          IHParser::isValidFax,
+          DataParser::isValidFax,
           person::setFax,
           "Invalid fax of IH Staff " + ihStaff.getIrn());
     } else {
@@ -290,7 +286,7 @@ public class EntityConverter {
     }
 
     String firstName = firstNameBuilder.toString();
-    if (Strings.isNullOrEmpty(firstName)) {
+    if (org.gbif.common.shaded.com.google.common.base.Strings.isNullOrEmpty(firstName)) {
       return Optional.empty();
     }
 
@@ -315,7 +311,8 @@ public class EntityConverter {
     contactable.getAddress().setPostalCode(getStringValue(ih.getAddress().getPhysicalZipCode()));
 
     Country physicalAddressCountry = null;
-    if (!Strings.isNullOrEmpty(ih.getAddress().getPhysicalCountry())) {
+    if (!org.gbif.common.shaded.com.google.common.base.Strings.isNullOrEmpty(
+        ih.getAddress().getPhysicalCountry())) {
       physicalAddressCountry = countryParser.parse(ih.getAddress().getPhysicalCountry());
       if (physicalAddressCountry == null) {
         log.warn(
@@ -354,7 +351,7 @@ public class EntityConverter {
   static List<String> getIhEmails(IHInstitution ih) {
     if (ih.getContact() != null && ih.getContact().getEmail() != null) {
       return parseStringList(ih.getContact().getEmail()).stream()
-          .filter(IHParser::isValidEmail)
+          .filter(DataParser::isValidEmail)
           .collect(Collectors.toList());
     }
     return Collections.emptyList();
@@ -364,7 +361,7 @@ public class EntityConverter {
   static List<String> getIhPhones(IHInstitution ih) {
     if (ih.getContact() != null && ih.getContact().getPhone() != null) {
       return parseStringList(ih.getContact().getPhone()).stream()
-          .filter(IHParser::isValidPhone)
+          .filter(DataParser::isValidPhone)
           .collect(Collectors.toList());
     }
     return Collections.emptyList();
@@ -379,7 +376,7 @@ public class EntityConverter {
     Optional<String> webUrlOpt = getFirstString(ih.getContact().getWebUrl());
 
     return webUrlOpt
-        .flatMap(v -> IHParser.parseUri(v, "Invalid URL for institution " + ih.getIrn()))
+        .flatMap(v -> parseUri(v, "Invalid URL for institution " + ih.getIrn()))
         .orElse(null);
   }
 
@@ -390,10 +387,6 @@ public class EntityConverter {
       ihIdentifier.setCreatedBy(user);
       entity.getIdentifiers().add(ihIdentifier);
     }
-  }
-
-  private static String getStringValue(String value) {
-    return hasValue(value) ? value : null;
   }
 
   private static void setFirstValue(
@@ -410,9 +403,5 @@ public class EntityConverter {
     }
 
     setter.accept(null);
-  }
-
-  private static List<String> getStringListValue(List<String> list) {
-    return list != null ? list : Collections.emptyList();
   }
 }

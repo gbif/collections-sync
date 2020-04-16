@@ -3,17 +3,17 @@ package org.gbif.collections.sync.ih;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.*;
 import org.gbif.collections.sync.SyncConfig;
+import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.http.clients.GithubClient;
 import org.gbif.collections.sync.http.clients.GrSciCollHttpClient;
 import org.gbif.collections.sync.http.clients.IHHttpClient;
-import org.gbif.collections.sync.ih.IHSyncResult.*;
 import org.gbif.collections.sync.ih.match.MatchResult;
 import org.gbif.collections.sync.ih.match.Matcher;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
-import org.gbif.collections.sync.ih.parsers.CountryParser;
+import org.gbif.collections.sync.notification.IHIssueFactory;
 import org.gbif.collections.sync.notification.Issue;
-import org.gbif.collections.sync.notification.IssueFactory;
+import org.gbif.collections.sync.parsers.CountryParser;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -27,7 +27,8 @@ import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.gbif.collections.sync.ih.Utils.isPersonInContacts;
+import static org.gbif.collections.sync.SyncResult.*;
+import static org.gbif.collections.sync.Utils.isPersonInContacts;
 
 /** Syncs IH entities with GrSciColl ones present in GBIF registry. */
 @Slf4j
@@ -37,17 +38,18 @@ public class IHSync {
   private final boolean sendNotifications;
   private final EntityConverter entityConverter;
   private final CountryParser countryParser;
-  private final IssueFactory issueFactory;
+  private final IHIssueFactory issueFactory;
   private final GrSciCollHttpClient grSciCollHttpClient;
   private final IHHttpClient ihHttpClient;
   private final GithubClient githubClient;
-  private IHSyncResultBuilder syncResultBuilder = IHSyncResult.builder();
+  private SyncResultBuilder syncResultBuilder = SyncResult.builder();
 
   @Builder
   private IHSync(SyncConfig config, EntityConverter entityConverter, CountryParser countryParser) {
     if (countryParser == null) {
       this.countryParser =
-          CountryParser.from(IHHttpClient.getInstance(config.getIhWsUrl()).getCountries());
+          CountryParser.from(
+              IHHttpClient.getInstance(config.getIhConfig().getIhWsUrl()).getCountries());
     } else {
       this.countryParser = countryParser;
     }
@@ -65,14 +67,14 @@ public class IHSync {
     if (config != null) {
       this.dryRun = config.isDryRun();
       this.sendNotifications = config.isSendNotifications();
-      this.issueFactory = IssueFactory.getInstance(config);
+      this.issueFactory = IHIssueFactory.getInstance(config);
       this.grSciCollHttpClient = GrSciCollHttpClient.getInstance(config);
-      this.ihHttpClient = IHHttpClient.getInstance(config.getIhWsUrl());
+      this.ihHttpClient = IHHttpClient.getInstance(config.getIhConfig().getIhWsUrl());
       this.githubClient = GithubClient.getInstance(config);
     } else {
       this.dryRun = true;
       this.sendNotifications = false;
-      this.issueFactory = IssueFactory.fromDefaults();
+      this.issueFactory = IHIssueFactory.fromDefaults();
       this.grSciCollHttpClient = null;
       this.ihHttpClient = null;
       this.githubClient = null;
@@ -84,7 +86,7 @@ public class IHSync {
         this.sendNotifications);
   }
 
-  public IHSyncResult sync() {
+  public SyncResult sync() {
     Objects.requireNonNull(ihHttpClient);
     Objects.requireNonNull(grSciCollHttpClient);
 
@@ -121,7 +123,7 @@ public class IHSync {
 
     // do the sync
     log.info("Starting the sync");
-    this.syncResultBuilder = IHSyncResult.builder();
+    this.syncResultBuilder = SyncResult.builder();
     ihInstitutions.forEach(
         ihInstitution -> {
           if (!isValidIhInstitution(ihInstitution)) {
@@ -150,7 +152,7 @@ public class IHSync {
           }
         });
 
-    IHSyncResult result = syncResultBuilder.build();
+    SyncResult result = syncResultBuilder.build();
 
     // create a notification with all the fails
     if (!result.getFailedActions().isEmpty()) {
@@ -162,7 +164,7 @@ public class IHSync {
 
   @VisibleForTesting
   CollectionOnlyMatch handleCollectionMatch(MatchResult match) {
-    EntityMatch<Collection> collectionEntityMatch = updateCollection(match);
+    SyncResult.EntityMatch<Collection> collectionEntityMatch = updateCollection(match);
 
     StaffMatch staffMatch =
         handleStaff(match, Collections.singletonList(collectionEntityMatch.getMatched()));

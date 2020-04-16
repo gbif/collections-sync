@@ -3,7 +3,6 @@ package org.gbif.collections.sync.http.clients;
 import org.gbif.collections.sync.SyncConfig;
 import org.gbif.collections.sync.http.BasicAuthInterceptor;
 import org.gbif.collections.sync.notification.Issue;
-import org.gbif.collections.sync.notification.IssueFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -18,6 +17,7 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 import retrofit2.http.*;
 
 import static org.gbif.collections.sync.http.SyncCall.syncCall;
+import static org.gbif.collections.sync.notification.IHIssueFactory.IH_SYNC_LABEL;
 
 /** Lightweight client for the Github API. */
 public class GithubClient {
@@ -83,9 +83,7 @@ public class GithubClient {
 
     // first call
     List<IssueResult> issues =
-        syncCall(
-            api.listIssues(
-                Collections.singletonList(IssueFactory.IH_SYNC_LABEL), state, page, perPage));
+        syncCall(api.listIssues(Collections.singletonList(IH_SYNC_LABEL), state, page, perPage));
 
     // paginate over issues till we find a match
     while (!issues.isEmpty()) {
@@ -110,8 +108,7 @@ public class GithubClient {
 
       issues =
           syncCall(
-              api.listIssues(
-                  Collections.singletonList(IssueFactory.IH_SYNC_LABEL), state, page++, perPage));
+              api.listIssues(Collections.singletonList(IH_SYNC_LABEL), state, page++, perPage));
     }
 
     return Optional.empty();

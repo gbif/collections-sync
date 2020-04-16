@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -27,11 +28,13 @@ public class SyncConfig {
   private String registryWsUrl;
   private String registryWsUser;
   private String registryWsPassword;
-  private String ihWsUrl;
   private NotificationConfig notification = new NotificationConfig();
   private boolean saveResultsToFile;
   private boolean dryRun;
   private boolean sendNotifications;
+  private IHConfig ihConfig;
+  @JsonProperty("iDigBioConfig")
+  private IDigBioConfig iDigBioConfig;
 
   @Getter
   @Setter
@@ -39,9 +42,23 @@ public class SyncConfig {
     private String githubWsUrl;
     private String githubUser;
     private String githubPassword;
-    private String ihPortalUrl;
     private String registryPortalUrl;
     private Set<String> ghIssuesAssignees;
+  }
+
+  @Getter
+  @Setter
+  public static class IHConfig {
+    private String ihWsUrl;
+    private String ihPortalUrl;
+  }
+
+  @Getter
+  @Setter
+  public static class IDigBioConfig {
+    private String exportFilePath;
+    @JsonProperty("iDigBioPortalUrl")
+    private String iDigBioPortalUrl;
   }
 
   public static SyncConfig fromFileName(String configFileName) {
@@ -64,7 +81,7 @@ public class SyncConfig {
     return validateConfig(config);
   }
 
-  public static SyncConfig fromCliArgs(CliSyncApp.CliArgs args) {
+  public static SyncConfig fromCliArgs(CliSyncArgs args) {
     Objects.requireNonNull(args);
 
     SyncConfig config = fromFileName(args.getConfPath());
@@ -86,9 +103,8 @@ public class SyncConfig {
 
   private static SyncConfig validateConfig(SyncConfig config) {
     // do some checks for required fields
-    if (Strings.isNullOrEmpty(config.getRegistryWsUrl())
-        || Strings.isNullOrEmpty(config.getIhWsUrl())) {
-      throw new IllegalArgumentException("Registry and IH WS URLs are required");
+    if (Strings.isNullOrEmpty(config.getRegistryWsUrl())) {
+      throw new IllegalArgumentException("Registry URL is required");
     }
 
     if (!config.isDryRun()
@@ -102,7 +118,35 @@ public class SyncConfig {
       validateNotificationConfig(config.getNotification());
     }
 
+    if (config.getIhConfig() != null) {
+      validateIhConfig(config.getIhConfig());
+    }
+
+    if (config.getIDigBioConfig() != null) {
+      validateIDigBioConfig(config.getIDigBioConfig());
+    }
+
     return config;
+  }
+
+  private static void validateIhConfig(IHConfig ihConfig) {
+    if (Strings.isNullOrEmpty(ihConfig.getIhWsUrl())) {
+      throw new IllegalArgumentException("IH WS URL is required");
+    }
+
+    if (Strings.isNullOrEmpty(ihConfig.getIhPortalUrl())) {
+      throw new IllegalArgumentException("IH portal URL is required");
+    }
+  }
+
+  private static void validateIDigBioConfig(IDigBioConfig iDigBioConfig) {
+    if (Strings.isNullOrEmpty(iDigBioConfig.getExportFilePath())) {
+      throw new IllegalArgumentException("iDigBio export file is required");
+    }
+
+    if (Strings.isNullOrEmpty(iDigBioConfig.getIDigBioPortalUrl())) {
+      throw new IllegalArgumentException("iDigBio portal URL is required");
+    }
   }
 
   private static void validateNotificationConfig(NotificationConfig notificationConfig) {
@@ -119,11 +163,6 @@ public class SyncConfig {
         || Strings.isNullOrEmpty(notificationConfig.getGithubPassword())) {
       throw new IllegalArgumentException(
           "Github credentials are required if we are sending notifications");
-    }
-
-    if (Strings.isNullOrEmpty(notificationConfig.getRegistryPortalUrl())
-        || Strings.isNullOrEmpty(notificationConfig.getIhPortalUrl())) {
-      throw new IllegalArgumentException("Portal URLs are required");
     }
   }
 
