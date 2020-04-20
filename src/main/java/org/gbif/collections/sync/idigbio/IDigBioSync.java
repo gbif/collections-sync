@@ -1,7 +1,27 @@
 package org.gbif.collections.sync.idigbio;
 
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.*;
+import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Contactable;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.vocabulary.IdentifierType;
@@ -16,15 +36,6 @@ import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.notification.IDigBioIssueFactory;
 import org.gbif.collections.sync.notification.Issue;
 
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,8 +46,18 @@ import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.gbif.collections.sync.SyncResult.*;
+import static org.gbif.collections.sync.SyncResult.CollectionOnlyMatch;
+import static org.gbif.collections.sync.SyncResult.Conflict;
+import static org.gbif.collections.sync.SyncResult.EntityMatch;
+import static org.gbif.collections.sync.SyncResult.FailedAction;
+import static org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
+import static org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
+import static org.gbif.collections.sync.SyncResult.NoEntityMatch;
+import static org.gbif.collections.sync.SyncResult.OutdatedEntity;
+import static org.gbif.collections.sync.SyncResult.StaffMatch;
+import static org.gbif.collections.sync.SyncResult.SyncResultBuilder;
 import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
+import static org.gbif.collections.sync.Utils.decodeIRN;
 import static org.gbif.collections.sync.Utils.isPersonInContacts;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.isIDigBioMoreRecent;
 import static org.gbif.collections.sync.parsers.DataParser.parseDate;
@@ -243,7 +264,7 @@ public class IDigBioSync {
 
   private EntityMatch<Institution> updateInstitution(MatchResult match) {
     // if it's a IH entity and iDigBio is more up to date we create an issue for IH to check
-    checkOutdatedIHInstitution(match.getCollectionMatched(), match.getIDigBioRecord());
+    checkOutdatedIHInstitution(match.getInstitutionMatched(), match.getIDigBioRecord());
 
     Institution mergedInstitution =
         EntityConverter.convertToInstitution(
@@ -323,7 +344,8 @@ public class IDigBioSync {
               .filter(i -> i.getType() == IdentifierType.IH_IRN)
               .findFirst();
       if (irnIdentifier.isPresent()) {
-        IHInstitution ihInstitution = ihInstitutionsByIrn.get(irnIdentifier.get().getIdentifier());
+        IHInstitution ihInstitution =
+            ihInstitutionsByIrn.get(decodeIRN(irnIdentifier.get().getIdentifier()));
         if (isIDigBioMoreRecent(iDigBioRecord, parseDate(ihInstitution.getDateModified()))) {
           createGHIssue(
               issueFactory.createOutdatedIHInstitutionIssue(ihInstitution, iDigBioRecord));

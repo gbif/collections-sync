@@ -1,5 +1,12 @@
 package org.gbif.collections.sync.idigbio;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.gbif.api.model.collections.Address;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
@@ -10,17 +17,12 @@ import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.collections.sync.parsers.DataParser;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import org.apache.commons.beanutils.BeanUtils;
 
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.beanutils.BeanUtils;
 
 import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.isIDigBioMoreRecent;
@@ -162,8 +164,20 @@ public class EntityConverter {
 
       if (!containsIrnIdentifier(collection)) {
         // only for non-IH
-        getStringValueOpt(record.getCollectionCode()).ifPresent(collection::setCode);
-        getStringValueOpt(record.getCollection()).ifPresent(collection::setName);
+        Optional<String> collectionCode = getStringValueOpt(record.getCollectionCode());
+        if (collectionCode.isPresent()) {
+          collection.setCode(collectionCode.get());
+        } else {
+          getStringValueOpt(record.getInstitutionCode()).ifPresent(collection::setCode);
+        }
+
+        Optional<String> collectionName = getStringValueOpt(record.getCollection());
+        if (collectionName.isPresent()) {
+          collection.setName(collectionName.get());
+        } else {
+          getStringValueOpt(record.getInstitution()).ifPresent(collection::setName);
+        }
+
         getStringValueOpt(record.getCollectionUrl())
             .flatMap(DataParser::parseUri)
             .ifPresent(collection::setHomepage);
@@ -172,6 +186,11 @@ public class EntityConverter {
         } else {
           try {
             getStringValueOpt(record.getCollectionExtent())
+                .map(v -> v.replaceAll("[,<~\\+]", ""))
+                .map(v -> v.replaceAll("\\(.*\\)", ""))
+                .map(v -> v.replace("Approximately", ""))
+                .map(v -> v.replace("objects", ""))
+                .map(v -> v.replace("specimens", "").trim())
                 .map(Integer::valueOf)
                 .ifPresent(collection::setNumberSpecimens);
           } catch (NumberFormatException e) {

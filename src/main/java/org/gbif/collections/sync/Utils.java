@@ -1,11 +1,16 @@
 package org.gbif.collections.sync;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.vocabulary.IdentifierType;
-
-import java.util.*;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -19,6 +24,10 @@ public class Utils {
    */
   public static String encodeIRN(String irn) {
     return "gbif:ih:irn:" + irn;
+  }
+
+  public static String decodeIRN(String irn) {
+    return irn.replace("gbif:ih:irn:", "");
   }
 
   public static boolean containsIrnIdentifier(Identifiable entity) {

@@ -1,11 +1,16 @@
 package org.gbif.collections.sync.idigbio;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -78,6 +83,7 @@ public class IDigBioRecord {
 
   @JsonInclude(Include.NON_NULL)
   @JsonProperty("_grbioInstMatch")
+  @JsonDeserialize(using = InstMatchDeserializer.class)
   private UUID grbioInstMatch;
 
   @JsonInclude(Include.NON_NULL)
@@ -96,5 +102,17 @@ public class IDigBioRecord {
     private String city;
     private String state;
     private String zip;
+  }
+
+  public static class InstMatchDeserializer extends JsonDeserializer<UUID> {
+
+    @Override
+    public UUID deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+      if (p.getText().startsWith("[")) {
+        return UUID.fromString(p.nextTextValue());
+      } else {
+        return UUID.fromString(p.getText());
+      }
+    }
   }
 }
