@@ -1,5 +1,13 @@
 package org.gbif.collections.sync.http.clients;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
@@ -10,25 +18,25 @@ import org.gbif.api.vocabulary.Country;
 import org.gbif.collections.sync.SyncConfig;
 import org.gbif.collections.sync.http.BasicAuthInterceptor;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.deser.std.DateDeserializers.DateDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
-import retrofit2.http.*;
+import retrofit2.http.Body;
+import retrofit2.http.DELETE;
+import retrofit2.http.GET;
+import retrofit2.http.POST;
+import retrofit2.http.PUT;
+import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 import static org.gbif.collections.sync.http.SyncCall.syncCall;
 
@@ -38,7 +46,7 @@ public class GrSciCollHttpClient {
   private static GrSciCollHttpClient instance;
   private final API api;
 
-  private GrSciCollHttpClient(String grSciCollWsUrl, String user, String password) {
+  public GrSciCollHttpClient(String grSciCollWsUrl, String user, String password) {
     Objects.requireNonNull(grSciCollWsUrl);
 
     ObjectMapper mapper =
@@ -47,8 +55,10 @@ public class GrSciCollHttpClient {
             .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
     SimpleModule module = new SimpleModule();
     module.addDeserializer(Country.class, new CountryIsoDeserializer());
+    module.addDeserializer(Date.class, new CustomDateDeserializer());
     mapper.registerModule(module);
 
     OkHttpClient.Builder okHttpClientBuilder =
@@ -285,6 +295,18 @@ public class GrSciCollHttpClient {
         throw new IOException(
             "Unable to deserialize country from provided value (not an ISO 2 character?): "
                 + jp.getText());
+      }
+    }
+  }
+
+  private static class CustomDateDeserializer extends DateDeserializer {
+
+    @Override
+    public Date deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+      try {
+        return super.deserialize(p, ctxt);
+      } catch (Exception ex) {
+        return null;
       }
     }
   }

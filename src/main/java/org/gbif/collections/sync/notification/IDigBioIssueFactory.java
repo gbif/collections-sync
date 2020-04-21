@@ -1,25 +1,30 @@
 package org.gbif.collections.sync.notification;
 
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.UnaryOperator;
+
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.SyncConfig;
 import org.gbif.collections.sync.idigbio.IDigBioRecord;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 
-import java.net.URI;
-import java.util.*;
-import java.util.function.UnaryOperator;
-
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.removeUuidNamespace;
+import static org.gbif.collections.sync.Utils.removeUuidNamespace;
 
 /** Factory to create {@link Issue}. */
 @Slf4j
 public class IDigBioIssueFactory extends BaseIssueFactory {
 
   private static final String IDIGBIO_IMPORT_LABEL = "iDigBio import";
+  private static final String INVALID_ENTITY_TITLE = "Invalid iDigBio entity";
   private static final String ENTITY_CONFLICT_TITLE =
       "%s with UUID %s matches with multiple GrSciColl entities";
   private static final String OUTDATED_IH_INSTITUTION_TITLE =
@@ -115,6 +120,17 @@ public class IDigBioIssueFactory extends BaseIssueFactory {
     return Issue.builder()
         .title(String.format(OUTDATED_IH_INSTITUTION_TITLE, ihInstitution.getIrn()))
         .body(body.toString())
+        .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
+        .labels(Sets.newHashSet(IDIGBIO_IMPORT_LABEL, syncTimestampLabel))
+        .build();
+  }
+
+  public Issue createInvalidEntity(IDigBioRecord iDigBioRecord, String message) {
+    String body = message + NEW_LINE + formatEntity(iDigBioRecord);
+
+    return Issue.builder()
+        .title(INVALID_ENTITY_TITLE)
+        .body(body)
         .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
         .labels(Sets.newHashSet(IDIGBIO_IMPORT_LABEL, syncTimestampLabel))
         .build();

@@ -1,6 +1,7 @@
 package org.gbif.collections.sync.idigbio;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
@@ -25,10 +26,12 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.isIDigBioMoreRecent;
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.removeUuidNamespace;
+import static org.gbif.collections.sync.Utils.removeUuidNamespace;
 import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
+import static org.gbif.collections.sync.parsers.DataParser.TO_LOCAL_DATE_TIME_UTC;
+import static org.gbif.collections.sync.parsers.DataParser.getStringValue;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValueOpt;
+import static org.gbif.collections.sync.parsers.DataParser.normalizeString;
 import static org.gbif.collections.sync.parsers.DataParser.parseStringList;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -69,7 +72,7 @@ public class EntityConverter {
 
     // non-IH and more updated in iDigBio
     if (!containsIrnIdentifier(institution)
-        && isIDigBioMoreRecent(record, institution.getModified())) {
+        && shouldUpdateRecord(record, institution.getModified())) {
       getStringValueOpt(record.getInstitution()).ifPresent(institution::setName);
 
       if (record.getLat() != null) {
@@ -152,7 +155,7 @@ public class EntityConverter {
                   .add(new MachineTag(IDIGBIO_NAMESPACE, "CollectionUUID", v));
             });
 
-    if (isIDigBioMoreRecent(record, collection.getModified())) {
+    if (shouldUpdateRecord(record, collection.getModified())) {
       // common fields that have to be updated as long as idigbio is more up to date, even for IH
       // entities
       getStringValueOpt(record.getDescription()).ifPresent(collection::setDescription);
@@ -185,6 +188,7 @@ public class EntityConverter {
           collection.setNumberSpecimens(record.getCataloguedSpecimens());
         } else {
           try {
+            // TODO: check with Cat
             getStringValueOpt(record.getCollectionExtent())
                 .map(v -> v.replaceAll("[,<~\\+]", ""))
                 .map(v -> v.replaceAll("\\(.*\\)", ""))
@@ -218,10 +222,10 @@ public class EntityConverter {
     if (address == null) {
       address = new Address();
     }
-    address.setAddress(iDigBioAddress.getAddress());
-    address.setCity(iDigBioAddress.getCity());
-    address.setPostalCode(iDigBioAddress.getZip());
-    address.setProvince(iDigBioAddress.getState());
+    address.setAddress(getStringValue(iDigBioAddress.getAddress()));
+    address.setCity(getStringValue(iDigBioAddress.getCity()));
+    address.setPostalCode(getStringValue(iDigBioAddress.getZip()));
+    address.setProvince(getStringValue(iDigBioAddress.getState()));
     address.setCountry(Country.UNITED_STATES);
 
     return address;
@@ -245,9 +249,9 @@ public class EntityConverter {
       }
     }
 
-    person.setFirstName(iDigBioRecord.getContact());
-    person.setEmail(iDigBioRecord.getContactEmail());
-    person.setPosition(iDigBioRecord.getContactRole());
+    person.setFirstName(normalizeString(iDigBioRecord.getContact()));
+    person.setEmail(normalizeString(iDigBioRecord.getContactEmail()));
+    person.setPosition(normalizeString(iDigBioRecord.getContactRole()));
 
     return person;
   }
@@ -264,5 +268,11 @@ public class EntityConverter {
             || !Strings.isNullOrEmpty(idigbioAddress.getCity())
             || !Strings.isNullOrEmpty(idigbioAddress.getState())
             || !Strings.isNullOrEmpty(idigbioAddress.getZip()));
+  }
+
+  public static boolean shouldUpdateRecord(IDigBioRecord record, Date grSciCollEntityDate) {
+    return record.getModifiedDate() == null
+        || grSciCollEntityDate == null
+        || record.getModifiedDate().isAfter(TO_LOCAL_DATE_TIME_UTC.apply(grSciCollEntityDate));
   }
 }

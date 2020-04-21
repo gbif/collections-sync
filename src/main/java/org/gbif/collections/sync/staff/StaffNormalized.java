@@ -1,14 +1,14 @@
 package org.gbif.collections.sync.staff;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.collections.sync.idigbio.IDigBioRecord;
 import org.gbif.collections.sync.ih.model.IHStaff;
 import org.gbif.collections.sync.parsers.CountryParser;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
 
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +19,7 @@ import static org.gbif.collections.sync.parsers.DataParser.parseStringList;
 import static org.gbif.collections.sync.staff.StaffUtils.concatIHFirstName;
 import static org.gbif.collections.sync.staff.StaffUtils.concatIHName;
 import static org.gbif.collections.sync.staff.StaffUtils.concatPersonName;
+import static org.gbif.collections.sync.staff.StaffUtils.normalizeName;
 
 /** Normalized representation of a staff to be able to compare staff between different systems. */
 @Data
@@ -49,7 +50,7 @@ public class StaffNormalized {
         StaffNormalized.builder()
             .fullName(concatIHName(ihStaff))
             .firstName(concatIHFirstName(ihStaff))
-            .lastName(normalizeString(ihStaff.getLastName()))
+            .lastName(normalizeName(ihStaff.getLastName()))
             .position(normalizeString(ihStaff.getPosition()))
             .primaryInstitutionKey(institutionMatched)
             .primaryCollectionKey(collectionMatched);
@@ -77,8 +78,8 @@ public class StaffNormalized {
     StaffNormalized.StaffNormalizedBuilder personBuilder =
         StaffNormalized.builder()
             .fullName(concatPersonName(person))
-            .firstName(normalizeString(person.getFirstName()))
-            .lastName(normalizeString(person.getLastName()))
+            .firstName(normalizeName(person.getFirstName()))
+            .lastName(normalizeName(person.getLastName()))
             .position(normalizeString(person.getPosition()))
             .emails(parseStringList(person.getEmail()))
             .phones(parseStringList(person.getPhone()))
@@ -102,14 +103,14 @@ public class StaffNormalized {
     StaffNormalizedBuilder builder = StaffNormalized.builder();
 
     if (hasValue(record.getContact())) {
-      builder.fullName(normalizeString(record.getContact().toLowerCase()));
+      builder.fullName(normalizeName(record.getContact()));
     }
 
     if (hasValue(record.getContactEmail())) {
       builder.emails(Collections.singletonList(normalizeString(record.getContactEmail())));
     }
 
-    if (hasValue(record.getContactEmail())) {
+    if (hasValue(record.getContactRole())) {
       builder.position(normalizeString(record.getContactRole()));
     }
 

@@ -54,4 +54,8 @@ public class Utils {
   public static boolean isPersonInContacts(UUID personKey, Collection<Person> contacts) {
     return contacts != null && contacts.stream().anyMatch(c -> c.getKey().equals(personKey));
   }
+
+  public static String removeUuidNamespace(String identifier) {
+    return identifier.replace("urn:uuid:", "");
+  }
 }

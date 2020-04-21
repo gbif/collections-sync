@@ -1,7 +1,25 @@
 package org.gbif.collections.sync.ih;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.*;
+import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Contactable;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.SyncConfig;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.http.clients.GithubClient;
@@ -15,19 +33,20 @@ import org.gbif.collections.sync.notification.IHIssueFactory;
 import org.gbif.collections.sync.notification.Issue;
 import org.gbif.collections.sync.parsers.CountryParser;
 
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.gbif.collections.sync.SyncResult.*;
+import static org.gbif.collections.sync.SyncResult.CollectionOnlyMatch;
+import static org.gbif.collections.sync.SyncResult.Conflict;
+import static org.gbif.collections.sync.SyncResult.EntityMatch;
+import static org.gbif.collections.sync.SyncResult.FailedAction;
+import static org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
+import static org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
+import static org.gbif.collections.sync.SyncResult.NoEntityMatch;
+import static org.gbif.collections.sync.SyncResult.StaffMatch;
+import static org.gbif.collections.sync.SyncResult.SyncResultBuilder;
 import static org.gbif.collections.sync.Utils.isPersonInContacts;
 
 /** Syncs IH entities with GrSciColl ones present in GBIF registry. */
@@ -185,7 +204,7 @@ public class IHSync {
             match.getIhInstitution(), institutionEntityMatch.getMatched().getKey());
 
     UUID createdKey =
-        executeCreateEntityOrAddFail(
+        executeAndReturnOrAddFail(
             () -> grSciCollHttpClient.createCollection(newCollection),
             e -> new FailedAction(newCollection, "Failed to create collection: " + e.getMessage()));
     newCollection.setKey(createdKey);
@@ -206,7 +225,7 @@ public class IHSync {
     // create institution
     Institution newInstitution = entityConverter.convertToInstitution(match.getIhInstitution());
     UUID institutionKey =
-        executeCreateEntityOrAddFail(
+        executeAndReturnOrAddFail(
             () -> grSciCollHttpClient.createInstitution(newInstitution),
             e ->
                 new FailedAction(
@@ -218,7 +237,7 @@ public class IHSync {
         entityConverter.convertToCollection(match.getIhInstitution(), institutionKey);
 
     UUID collectionKey =
-        executeCreateEntityOrAddFail(
+        executeAndReturnOrAddFail(
             () -> grSciCollHttpClient.createCollection(newCollection),
             e ->
                 new FailedAction(
@@ -454,8 +473,8 @@ public class IHSync {
     return true;
   }
 
-  private UUID executeCreateEntityOrAddFail(
-      Supplier<UUID> execution, Function<Throwable, FailedAction> failCreator) {
+  private <T> T executeAndReturnOrAddFail(
+      Supplier<T> execution, Function<Throwable, FailedAction> failCreator) {
     if (!dryRun) {
       try {
         return execution.get();

@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -59,13 +60,11 @@ import static org.gbif.collections.sync.SyncResult.SyncResultBuilder;
 import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.Utils.decodeIRN;
 import static org.gbif.collections.sync.Utils.isPersonInContacts;
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.isIDigBioMoreRecent;
+import static org.gbif.collections.sync.parsers.DataParser.TO_LOCAL_DATE_TIME_UTC;
 import static org.gbif.collections.sync.parsers.DataParser.parseDate;
 
 @Slf4j
 public class IDigBioSync {
-
-  // TODO: add invalid entities??
 
   private final boolean dryRun;
   private final boolean sendNotifications;
@@ -126,8 +125,11 @@ public class IDigBioSync {
 
     List<IDigBioRecord> records = readIDigBioExport(iDigBioConfig);
     for (IDigBioRecord record : records) {
-      MatchResult match = matcher.match(record);
+      if (!isValidIDigBioRecord(record)) {
+        continue;
+      }
 
+      MatchResult match = matcher.match(record);
       if (match.onlyCollectionMatch()) {
         syncResultBuilder.collectionOnlyMatch(handleCollectionMatch(match));
       } else if (match.onlyInstitutionMatch()) {
@@ -186,7 +188,7 @@ public class IDigBioSync {
             match.getIDigBioRecord(), institutionEntityMatch.getMatched().getKey());
 
     UUID createdKey =
-        executeCreateEntityOrAddFail(
+        executeAndReturnOrAddFail(
             () -> grSciCollHttpClient.createCollection(newCollection),
             e -> new FailedAction(newCollection, "Failed to create collection: " + e.getMessage()));
     newCollection.setKey(createdKey);
@@ -207,7 +209,7 @@ public class IDigBioSync {
     // create institution
     Institution newInstitution = EntityConverter.convertToInstitution(match.getIDigBioRecord());
     UUID institutionKey =
-        executeCreateEntityOrAddFail(
+        executeAndReturnOrAddFail(
             () -> grSciCollHttpClient.createInstitution(newInstitution),
             e ->
                 new FailedAction(
@@ -219,7 +221,7 @@ public class IDigBioSync {
         EntityConverter.convertToCollection(match.getIDigBioRecord(), institutionKey);
 
     UUID collectionKey =
-        executeCreateEntityOrAddFail(
+        executeAndReturnOrAddFail(
             () -> grSciCollHttpClient.createCollection(newCollection),
             e ->
                 new FailedAction(
@@ -263,7 +265,6 @@ public class IDigBioSync {
   }
 
   private EntityMatch<Institution> updateInstitution(MatchResult match) {
-    // if it's a IH entity and iDigBio is more up to date we create an issue for IH to check
     checkOutdatedIHInstitution(match.getInstitutionMatched(), match.getIDigBioRecord());
 
     Institution mergedInstitution =
@@ -338,6 +339,7 @@ public class IDigBioSync {
 
   private <T extends CollectionEntity & Identifiable> void checkOutdatedIHInstitution(
       T entity, IDigBioRecord iDigBioRecord) {
+    // if it's a IH entity and iDigBio is more up to date we create an issue for IH to check
     if (containsIrnIdentifier(entity)) {
       Optional<Identifier> irnIdentifier =
           entity.getIdentifiers().stream()
@@ -386,18 +388,25 @@ public class IDigBioSync {
       log.info("No match for staff for record: {}", match.getIDigBioRecord());
       Person newPerson = EntityConverter.convertToPerson(match.getIDigBioRecord());
 
-      executeOrAddFail(
-          () -> {
-            UUID createdKey = grSciCollHttpClient.createPerson(newPerson);
-            newPerson.setKey(createdKey);
+      // create new person in the registry and link it to the entities
+      Person createdPerson =
+          executeAndReturnOrAddFail(
+              () -> {
+                UUID createdKey = grSciCollHttpClient.createPerson(newPerson);
+                newPerson.setKey(createdKey);
+                entities.forEach(e -> addPersonToEntity.accept(e, newPerson));
 
-            // add it to the set with all persons
-            Person createdPerson = grSciCollHttpClient.getPerson(createdKey);
-            grscicollPersons.add(createdPerson);
+                // return the newly created person in order to add it to the set with all persons
+                return grSciCollHttpClient.getPerson(createdKey);
+              },
+              e -> new FailedAction(newPerson, "Failed to create person: " + e.getMessage()));
 
-            entities.forEach(e -> addPersonToEntity.accept(e, newPerson));
-          },
-          e -> new FailedAction(newPerson, "Failed to create person: " + e.getMessage()));
+      if (createdPerson == null) {
+        // this is needed for dry runs
+        createdPerson = newPerson;
+      }
+      grscicollPersons.add(createdPerson);
+
       staffSyncBuilder.newPerson(newPerson);
     } else if (matches.size() > 1) {
       // conflict. Multiple candidates matched
@@ -509,8 +518,8 @@ public class IDigBioSync {
     }
   }
 
-  private UUID executeCreateEntityOrAddFail(
-      Supplier<UUID> execution, Function<Throwable, FailedAction> failCreator) {
+  private <T> T executeAndReturnOrAddFail(
+      Supplier<T> execution, Function<Throwable, FailedAction> failCreator) {
     if (!dryRun) {
       try {
         return execution.get();
@@ -522,9 +531,26 @@ public class IDigBioSync {
     return null;
   }
 
+  private boolean isValidIDigBioRecord(IDigBioRecord iDigBioRecord) {
+    if (Strings.isNullOrEmpty(iDigBioRecord.getInstitutionCode())
+        && Strings.isNullOrEmpty(iDigBioRecord.getInstitution())
+        && Strings.isNullOrEmpty(iDigBioRecord.getCollectionCode())
+        && Strings.isNullOrEmpty(iDigBioRecord.getCollection())) {
+      syncResultBuilder.invalidEntity(iDigBioRecord);
+      return false;
+    }
+    return true;
+  }
+
   private boolean containsContact(IDigBioRecord iDigBioRecord) {
     return !Strings.isNullOrEmpty(iDigBioRecord.getContact())
         || !Strings.isNullOrEmpty(iDigBioRecord.getContactEmail())
         || !Strings.isNullOrEmpty(iDigBioRecord.getContactRole());
+  }
+
+  private static boolean isIDigBioMoreRecent(IDigBioRecord record, Date grSciCollEntityDate) {
+    return record.getModifiedDate() != null
+        && grSciCollEntityDate != null
+        && record.getModifiedDate().isAfter(TO_LOCAL_DATE_TIME_UTC.apply(grSciCollEntityDate));
   }
 }

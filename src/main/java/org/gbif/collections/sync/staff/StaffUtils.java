@@ -1,9 +1,9 @@
 package org.gbif.collections.sync.staff;
 
+import java.util.List;
+
 import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.ih.model.IHStaff;
-
-import java.util.List;
 
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
@@ -68,7 +68,7 @@ public class StaffUtils {
       return null;
     }
 
-    return normalizeString(firstName);
+    return normalizeName(firstName);
   }
 
   public static final String concatIHName(IHStaff s) {
@@ -84,7 +84,7 @@ public class StaffUtils {
       return null;
     }
 
-    return normalizeString(fullName);
+    return normalizeName(fullName);
   }
 
   public static final String concatPersonName(Person p) {
@@ -104,6 +104,13 @@ public class StaffUtils {
       return null;
     }
 
-    return normalizeString(fullName);
+    return normalizeName(fullName);
+  }
+
+  public static String normalizeName(String name) {
+    if (Strings.isNullOrEmpty(name)) {
+      return name;
+    }
+    return normalizeString(name.replaceAll("[,.]", ""));
   }
 }

@@ -6,17 +6,24 @@ import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.function.DoubleFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
@@ -28,7 +35,7 @@ public class DataParser {
   public static final Function<Date, LocalDateTime> TO_LOCAL_DATE_TIME_UTC =
       d -> d.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime();
 
-  private static final Pattern WHITESPACE_PATTERN = Pattern.compile("[\\s+]");
+  private static final Pattern WHITESPACE_PATTERN = Pattern.compile("[\\h\\s+]");
   private static final Pattern CONTAINS_NUMBER = Pattern.compile(".*[0-9].*");
   private static final List<SimpleDateFormat> DATE_FORMATS = new ArrayList<>();
 
@@ -87,7 +94,7 @@ public class DataParser {
 
   public static Optional<URI> parseUri(String uri, String errorMsg) {
     // we try to clean the URL first
-    String webUrl = WHITESPACE_PATTERN.matcher(uri).replaceAll("");
+    String webUrl = WHITESPACE_PATTERN.matcher(uri.trim()).replaceAll("");
 
     if (webUrl.startsWith("http//:")) {
       webUrl = webUrl.replace("http//:", "http://");
@@ -153,11 +160,11 @@ public class DataParser {
   }
 
   public static String getStringValue(String value) {
-    return hasValue(value) ? value : null;
+    return hasValue(value) ? value.trim() : null;
   }
 
   public static Optional<String> getStringValueOpt(String value) {
-    return hasValue(value) ? Optional.of(value) : Optional.empty();
+    return hasValue(value) ? Optional.of(value.trim()) : Optional.empty();
   }
 
   public static List<String> getStringListValue(List<String> list) {
