@@ -424,15 +424,21 @@ public class IDigBioSync {
           EntityMatch.<Person>builder().matched(matchedPerson).merged(mergedPerson);
       if (!mergedPerson.lenientEquals(matchedPerson)) {
         // update person
-        executeOrAddFailAsync(
-            () -> {
-              grSciCollHttpClient.updatePerson(mergedPerson);
-              // update it in the set with all persons
-              Person updatedPerson = grSciCollHttpClient.getPerson(mergedPerson.getKey());
-              grscicollPersons.remove(matchedPerson);
-              grscicollPersons.add(updatedPerson);
-            },
-            e -> new FailedAction(mergedPerson, "Failed to update person: " + e.getMessage()));
+        Person updatedPerson =
+            executeAndReturnOrAddFail(
+                () -> {
+                  grSciCollHttpClient.updatePerson(mergedPerson);
+                  return grSciCollHttpClient.getPerson(mergedPerson.getKey());
+                },
+                e -> new FailedAction(mergedPerson, "Failed to update person: " + e.getMessage()));
+
+        // update the person in the set with all persons
+        if (updatedPerson == null) {
+          // needed for dry runs
+          updatedPerson = mergedPerson;
+        }
+        grscicollPersons.remove(matchedPerson);
+        grscicollPersons.add(updatedPerson);
 
         // add identifiers if needed
         executeOrAddFailAsync(
@@ -445,9 +451,7 @@ public class IDigBioSync {
                 new FailedAction(
                     mergedPerson, "Failed to add identifiers to person: " + e.getMessage()));
 
-        // if the match was global we'd need to link it to the entity. The same if we're
-        // syncing staff from different entities: one entity could have the contact already
-        // but not the other
+        // add to the entity if needed
         executeOrAddFailAsync(
             () -> entities.forEach(e -> addPersonToEntity.accept(e, mergedPerson)),
             e ->

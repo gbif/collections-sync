@@ -170,4 +170,8 @@ public class DataParser {
   public static List<String> getStringListValue(List<String> list) {
     return list != null ? list : Collections.emptyList();
   }
+
+  public static String cleanString(String string) {
+    return Strings.isNullOrEmpty(string) ? null : StringUtils.normalizeSpace(string).trim();
+  }
 }

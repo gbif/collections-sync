@@ -1,13 +1,19 @@
 package org.gbif.collections.sync.idigbio.match;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.idigbio.IDigBioRecord;
 import org.gbif.collections.sync.staff.StaffNormalized;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 import lombok.Builder;
 
@@ -63,7 +69,7 @@ public class Matcher {
 
       if (positionMatch && primaryInstMatch && primaryCollMatch) {
         exactMatches.add(person);
-      } else {
+      } else if (person.getPosition() == null || positionMatch) {
         fuzzyMatches.add(person);
       }
     }

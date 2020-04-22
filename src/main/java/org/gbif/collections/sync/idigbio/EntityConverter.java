@@ -29,9 +29,9 @@ import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.Utils.removeUuidNamespace;
 import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
 import static org.gbif.collections.sync.parsers.DataParser.TO_LOCAL_DATE_TIME_UTC;
+import static org.gbif.collections.sync.parsers.DataParser.cleanString;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValue;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValueOpt;
-import static org.gbif.collections.sync.parsers.DataParser.normalizeString;
 import static org.gbif.collections.sync.parsers.DataParser.parseStringList;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -87,15 +87,22 @@ public class EntityConverter {
   }
 
   private static void setInstitutionCodes(Institution institution, Set<String> idigbioCodes) {
-    if (!idigbioCodes.isEmpty() && !idigbioCodes.contains(institution.getCode())) {
+    if (!idigbioCodes.isEmpty()
+        && idigbioCodes.stream().anyMatch(c -> !c.equalsIgnoreCase(institution.getCode()))) {
       if (containsIrnIdentifier(institution)) {
         // if they don't match we keep the IH one and add the other to the alternatives
-        idigbioCodes.forEach(
-            c -> institution.getAlternativeCodes().put(c, "Code migrated from iDigBio"));
+        idigbioCodes.stream()
+            .filter(c -> !c.equalsIgnoreCase(institution.getCode()))
+            .forEach(c -> institution.getAlternativeCodes().put(c, "Code migrated from iDigBio"));
       } else {
         // we set the iDigBio one as main code and the others as alternative
-        Iterator<String> codesIterator = idigbioCodes.iterator();
-        String newCode = codesIterator.next();
+        Set<String> newCodes =
+            idigbioCodes.stream()
+                .filter(c -> !c.equalsIgnoreCase(institution.getCode()))
+                .collect(Collectors.toSet());
+
+        Iterator<String> newCodesIterator = newCodes.iterator();
+        String newCode = newCodesIterator.next();
         institution
             .getAlternativeCodes()
             .put(
@@ -103,8 +110,10 @@ public class EntityConverter {
                 "code replaced by the one migrated from iDigBio: " + newCode);
         institution.setCode(newCode);
 
-        while (codesIterator.hasNext()) {
-          institution.getAlternativeCodes().put(codesIterator.next(), "Code migrated from iDigBio");
+        while (newCodesIterator.hasNext()) {
+          institution
+              .getAlternativeCodes()
+              .put(newCodesIterator.next(), "Code migrated from iDigBio");
         }
       }
     }
@@ -249,9 +258,9 @@ public class EntityConverter {
       }
     }
 
-    person.setFirstName(normalizeString(iDigBioRecord.getContact()));
-    person.setEmail(normalizeString(iDigBioRecord.getContactEmail()));
-    person.setPosition(normalizeString(iDigBioRecord.getContactRole()));
+    person.setFirstName(cleanString(iDigBioRecord.getContact()));
+    person.setEmail(cleanString(iDigBioRecord.getContactEmail()));
+    person.setPosition(cleanString(iDigBioRecord.getContactRole()));
 
     return person;
   }
