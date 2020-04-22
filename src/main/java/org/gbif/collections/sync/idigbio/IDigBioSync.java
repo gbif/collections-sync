@@ -61,6 +61,7 @@ import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.Utils.decodeIRN;
 import static org.gbif.collections.sync.Utils.isPersonInContacts;
 import static org.gbif.collections.sync.parsers.DataParser.TO_LOCAL_DATE_TIME_UTC;
+import static org.gbif.collections.sync.parsers.DataParser.cleanString;
 import static org.gbif.collections.sync.parsers.DataParser.parseDate;
 
 @Slf4j
@@ -360,6 +361,24 @@ public class IDigBioSync {
   private <T extends CollectionEntity & Contactable> StaffMatch handleStaff(
       MatchResult match, List<T> entities) {
     if (!containsContact(match.getIDigBioRecord())) {
+      return StaffMatch.builder().build();
+    }
+
+    if (Strings.isNullOrEmpty(match.getIDigBioRecord().getContact())
+        && !Strings.isNullOrEmpty(match.getIDigBioRecord().getContactEmail())) {
+      // if it doesn't have name we just add the email to the entity emails. The position is discarded in this case
+      entities.forEach(
+          e -> {
+            if (e instanceof Institution) {
+              ((Institution) e)
+                  .getEmail()
+                  .add(cleanString(match.getIDigBioRecord().getContactEmail()));
+            } else if (e instanceof Collection) {
+              ((Collection) e)
+                  .getEmail()
+                  .add(cleanString(match.getIDigBioRecord().getContactEmail()));
+            }
+          });
       return StaffMatch.builder().build();
     }
 
