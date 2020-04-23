@@ -164,8 +164,8 @@ public class EntityConverter {
     collection.setNumberSpecimens(ihInstitution.getSpecimenTotal());
     collection.setCollectionSummary(getCollectionSummary(ihInstitution.getCollectionsSummary()));
     collection.setIncorporatedCollections(
-        getStringListValue(ihInstitution.getIncorporatedHerbaria()));
-    collection.setImportantCollectors(getStringListValue(ihInstitution.getImportantCollectors()));
+        getListValue(ihInstitution.getIncorporatedHerbaria()));
+    collection.setImportantCollectors(getListValue(ihInstitution.getImportantCollectors()));
 
     setAddress(collection, ihInstitution);
     collection.setEmail(getIhEmails(ihInstitution));

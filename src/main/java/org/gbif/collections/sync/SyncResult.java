@@ -1,12 +1,12 @@
 package org.gbif.collections.sync;
 
+import java.util.List;
+import java.util.Set;
+
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
-
-import java.util.List;
-import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,9 +44,6 @@ public class SyncResult {
 
   @Singular(value = "invalidEntity")
   private List<Object> invalidEntities;
-
-  @Singular(value = "outdatedEntity")
-  private List<OutdatedEntity> outdatedEntities;
 
   @Data
   @Builder
@@ -116,12 +113,5 @@ public class SyncResult {
   public static class Conflict {
     private Object entity;
     private List<CollectionEntity> grSciCollEntities;
-  }
-
-  @Data
-  @AllArgsConstructor
-  public static class OutdatedEntity {
-    private Object outdated;
-    private Object updated;
   }
 }

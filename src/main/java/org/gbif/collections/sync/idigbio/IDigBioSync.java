@@ -60,7 +60,6 @@ public class IDigBioSync {
   private final boolean sendNotifications;
   private final SyncConfig.IDigBioConfig iDigBioConfig;
   private final GrSciCollHttpClient grSciCollHttpClient;
-  private final IHHttpClient ihHttpClient;
   private final GithubClient githubClient;
   private final IDigBioIssueFactory issueFactory;
   private SyncResult.SyncResultBuilder syncResultBuilder;
@@ -72,7 +71,6 @@ public class IDigBioSync {
       this.dryRun = config.isDryRun();
       this.sendNotifications = config.isSendNotifications();
       this.grSciCollHttpClient = GrSciCollHttpClient.getInstance(config);
-      this.ihHttpClient = IHHttpClient.getInstance(config.getIhConfig().getIhWsUrl());
       this.githubClient = GithubClient.getInstance(config);
       this.issueFactory = IDigBioIssueFactory.getInstance(config);
       this.iDigBioConfig = config.getIDigBioConfig();
@@ -80,7 +78,6 @@ public class IDigBioSync {
       this.dryRun = true;
       this.sendNotifications = false;
       this.grSciCollHttpClient = null;
-      this.ihHttpClient = null;
       this.githubClient = null;
       this.issueFactory = IDigBioIssueFactory.fromDefaults();
       this.iDigBioConfig = null;
@@ -341,8 +338,6 @@ public class IDigBioSync {
       return StaffMatch.builder().build();
     }
 
-    Set<Person> matches = Matcher.matchContact(match.getIDigBioRecord(), grSciCollPersons);
-
     BiConsumer<T, Person> addPersonToEntity =
         (e, p) -> {
           // they can be null in dry runs or if the creation of a collection/institution fails
@@ -360,6 +355,7 @@ public class IDigBioSync {
           e.getContacts().add(p);
         };
 
+    Set<Person> matches = Matcher.matchContact(match.getIDigBioRecord(), grSciCollPersons);
     StaffMatch.StaffMatchBuilder staffSyncBuilder = StaffMatch.builder();
     if (matches.isEmpty()) {
       // create person and link it to the entity

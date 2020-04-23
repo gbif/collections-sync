@@ -62,6 +62,17 @@ public class DataParser {
         .collect(Collectors.toList());
   }
 
+  public static List<String> getStringList(String stringList) {
+    if (Strings.isNullOrEmpty(stringList)) {
+      return Collections.emptyList();
+    }
+
+    String listNormalized = stringList.replaceAll("[\n;]", ",");
+    return Arrays.stream(listNormalized.split(","))
+        .filter(DataParser::hasValue)
+        .collect(Collectors.toList());
+  }
+
   public static boolean hasValue(String value) {
     return !Strings.isNullOrEmpty(value) && !value.equalsIgnoreCase("null");
   }
@@ -167,7 +178,7 @@ public class DataParser {
     return hasValue(value) ? Optional.of(value.trim()) : Optional.empty();
   }
 
-  public static List<String> getStringListValue(List<String> list) {
+  public static List<String> getListValue(List<String> list) {
     return list != null ? list : Collections.emptyList();
   }
 

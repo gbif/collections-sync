@@ -300,7 +300,7 @@ public class EntityConverterTest {
 
   private IDigBioRecord createIDigBioCollection() {
     IDigBioRecord iDigBioRecord = new IDigBioRecord();
-    iDigBioRecord.setCollectionCode("c1");
+    iDigBioRecord.setCollectionCode("collCode1");
     iDigBioRecord.setCollection("inst1");
     iDigBioRecord.setDescription("descr");
     iDigBioRecord.setDescriptionForSpecialists("specialists");

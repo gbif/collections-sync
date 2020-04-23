@@ -15,8 +15,6 @@ public class SyncConfigTest {
 
   private static final String CONFIG_TEST_PATH = "src/test/resources/sync-config.yaml";
 
-  // TODO: add idigbio config
-
   @Test
   public void loadConfigFromFileTest() {
     String path = Paths.get(CONFIG_TEST_PATH).toFile().getAbsolutePath();
@@ -30,6 +28,12 @@ public class SyncConfigTest {
     assertTrue(config.isSendNotifications());
     assertNotNull(config.getNotification());
     assertFalse(config.getNotification().getGhIssuesAssignees().isEmpty());
+    assertNotNull(config.getIhConfig());
+    assertNotNull(config.getIhConfig().getIhWsUrl());
+    assertNotNull(config.getIhConfig().getIhPortalUrl());
+    assertNotNull(config.getIDigBioConfig());
+    assertNotNull(config.getIDigBioConfig().getExportFilePath());
+    assertNotNull(config.getIDigBioConfig().getIDigBioPortalUrl());
   }
 
   @Test

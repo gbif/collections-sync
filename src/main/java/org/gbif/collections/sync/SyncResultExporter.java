@@ -1,8 +1,5 @@
 package org.gbif.collections.sync;
 
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Person;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,6 +9,9 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
+
+import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Person;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -49,7 +49,6 @@ public class SyncResultExporter {
       printWithNewLineAfter(writer, "Conflicts: " + result.getConflicts().size());
       printWithNewLineAfter(writer, "Failed Actions: " + result.getFailedActions().size());
       printWithNewLineAfter(writer, "Invalid entities: " + result.getInvalidEntities().size());
-      printWithNewLineAfter(writer, "Outdated entities: " + result.getOutdatedEntities().size());
 
       Counts counts = getSummaryCounts(result);
       writer.newLine();
@@ -126,10 +125,6 @@ public class SyncResultExporter {
 
       // fails
       printSection(writer, "Invalid entities", result.getInvalidEntities());
-
-      // outdated entities
-      printSection(writer, "Outdated entities", result.getOutdatedEntities());
-
     } catch (Exception e) {
       log.warn("Couldn't save diff results", e);
     }

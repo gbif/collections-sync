@@ -3,6 +3,7 @@ package org.gbif.collections.sync.notification;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.SyncConfig;
+import org.gbif.collections.sync.SyncConfig.IHConfig;
 import org.gbif.collections.sync.ih.model.IHEntity;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
@@ -40,6 +41,7 @@ public class IHIssueFactory extends BaseIssueFactory {
     notificationConfig.setGhIssuesAssignees(Collections.emptySet());
     SyncConfig config = new SyncConfig();
     config.setNotification(notificationConfig);
+    config.setIhConfig(new IHConfig());
     return new IHIssueFactory(config);
   }
 

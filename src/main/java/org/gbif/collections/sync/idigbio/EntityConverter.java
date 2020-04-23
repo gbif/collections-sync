@@ -30,9 +30,9 @@ import static org.gbif.collections.sync.Utils.removeUuidNamespace;
 import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
 import static org.gbif.collections.sync.parsers.DataParser.TO_LOCAL_DATE_TIME_UTC;
 import static org.gbif.collections.sync.parsers.DataParser.cleanString;
+import static org.gbif.collections.sync.parsers.DataParser.getStringList;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValue;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValueOpt;
-import static org.gbif.collections.sync.parsers.DataParser.parseStringList;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
@@ -103,11 +103,13 @@ public class EntityConverter {
 
         Iterator<String> newCodesIterator = newCodes.iterator();
         String newCode = newCodesIterator.next();
-        institution
-            .getAlternativeCodes()
-            .put(
-                institution.getCode(),
-                "code replaced by the one migrated from iDigBio: " + newCode);
+        if (institution.getCode() != null) {
+          institution
+              .getAlternativeCodes()
+              .put(
+                  institution.getCode(),
+                  "code replaced by the one migrated from iDigBio: " + newCode);
+        }
         institution.setCode(newCode);
 
         while (newCodesIterator.hasNext()) {
@@ -263,7 +265,7 @@ public class EntityConverter {
   }
 
   private static Set<String> getIdigbioCode(String idigbioCode) {
-    return parseStringList(idigbioCode).stream()
+    return getStringList(idigbioCode).stream()
         .map(s -> s.replace(IH_SUFFIX_IDIGBIO, ""))
         .collect(Collectors.toSet());
   }

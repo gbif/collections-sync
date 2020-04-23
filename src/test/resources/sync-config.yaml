@@ -1,13 +1,17 @@
 registryWsUrl: http://test.com/
-ihWsUrl: http://test2.com/
 saveResultsToFile: true
 dryRun: true
 sendNotifications: true
 notification:
   registryPortalUrl: https://a.com/
-  ihPortalUrl: https://b.com/
-  githubWsUrl: https://c.com/
+  githubWsUrl: https://b.com/
   githubUser: bar
   githubPassword: fake
   ghIssuesAssignees:
     - foo
+ihConfig:
+  ihWsUrl: http://test2.com/
+  ihPortalUrl: https://c.com/
+iDigBioConfig:
+  exportFilePath: src/main/resources/manualMatches.json
+  iDigBioPortalUrl: https://d.com/
