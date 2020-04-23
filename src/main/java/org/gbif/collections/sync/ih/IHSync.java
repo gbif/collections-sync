@@ -22,6 +22,14 @@ import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.SyncConfig;
 import org.gbif.collections.sync.SyncResult;
+import org.gbif.collections.sync.SyncResult.CollectionOnlyMatch;
+import org.gbif.collections.sync.SyncResult.Conflict;
+import org.gbif.collections.sync.SyncResult.EntityMatch;
+import org.gbif.collections.sync.SyncResult.FailedAction;
+import org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
+import org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
+import org.gbif.collections.sync.SyncResult.NoEntityMatch;
+import org.gbif.collections.sync.SyncResult.StaffMatch;
 import org.gbif.collections.sync.http.clients.GithubClient;
 import org.gbif.collections.sync.http.clients.GrSciCollHttpClient;
 import org.gbif.collections.sync.http.clients.IHHttpClient;
@@ -38,15 +46,6 @@ import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.gbif.collections.sync.SyncResult.CollectionOnlyMatch;
-import static org.gbif.collections.sync.SyncResult.Conflict;
-import static org.gbif.collections.sync.SyncResult.EntityMatch;
-import static org.gbif.collections.sync.SyncResult.FailedAction;
-import static org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
-import static org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
-import static org.gbif.collections.sync.SyncResult.NoEntityMatch;
-import static org.gbif.collections.sync.SyncResult.StaffMatch;
-import static org.gbif.collections.sync.SyncResult.SyncResultBuilder;
 import static org.gbif.collections.sync.Utils.isPersonInContacts;
 
 /** Syncs IH entities with GrSciColl ones present in GBIF registry. */
@@ -61,7 +60,7 @@ public class IHSync {
   private final GrSciCollHttpClient grSciCollHttpClient;
   private final IHHttpClient ihHttpClient;
   private final GithubClient githubClient;
-  private SyncResultBuilder syncResultBuilder = SyncResult.builder();
+  private SyncResult.SyncResultBuilder syncResultBuilder = SyncResult.builder();
 
   @Builder
   private IHSync(SyncConfig config, EntityConverter entityConverter, CountryParser countryParser) {

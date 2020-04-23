@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -16,24 +15,27 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contactable;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
-import org.gbif.api.model.registry.Identifiable;
-import org.gbif.api.model.registry.Identifier;
-import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.collections.sync.SyncConfig;
 import org.gbif.collections.sync.SyncResult;
+import org.gbif.collections.sync.SyncResult.CollectionOnlyMatch;
+import org.gbif.collections.sync.SyncResult.Conflict;
+import org.gbif.collections.sync.SyncResult.EntityMatch;
+import org.gbif.collections.sync.SyncResult.FailedAction;
+import org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
+import org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
+import org.gbif.collections.sync.SyncResult.NoEntityMatch;
+import org.gbif.collections.sync.SyncResult.StaffMatch;
 import org.gbif.collections.sync.http.clients.GithubClient;
 import org.gbif.collections.sync.http.clients.GrSciCollHttpClient;
 import org.gbif.collections.sync.http.clients.IHHttpClient;
 import org.gbif.collections.sync.idigbio.match.MatchResult;
 import org.gbif.collections.sync.idigbio.match.Matcher;
-import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.notification.IDigBioIssueFactory;
 import org.gbif.collections.sync.notification.Issue;
 
@@ -47,22 +49,9 @@ import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.gbif.collections.sync.SyncResult.CollectionOnlyMatch;
-import static org.gbif.collections.sync.SyncResult.Conflict;
-import static org.gbif.collections.sync.SyncResult.EntityMatch;
-import static org.gbif.collections.sync.SyncResult.FailedAction;
-import static org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
-import static org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
-import static org.gbif.collections.sync.SyncResult.NoEntityMatch;
-import static org.gbif.collections.sync.SyncResult.OutdatedEntity;
-import static org.gbif.collections.sync.SyncResult.StaffMatch;
-import static org.gbif.collections.sync.SyncResult.SyncResultBuilder;
-import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
-import static org.gbif.collections.sync.Utils.decodeIRN;
 import static org.gbif.collections.sync.Utils.isPersonInContacts;
 import static org.gbif.collections.sync.parsers.DataParser.TO_LOCAL_DATE_TIME_UTC;
 import static org.gbif.collections.sync.parsers.DataParser.cleanString;
-import static org.gbif.collections.sync.parsers.DataParser.parseDate;
 
 @Slf4j
 public class IDigBioSync {
@@ -74,10 +63,8 @@ public class IDigBioSync {
   private final IHHttpClient ihHttpClient;
   private final GithubClient githubClient;
   private final IDigBioIssueFactory issueFactory;
-  private SyncResultBuilder syncResultBuilder;
-  private Matcher matcher;
-  private Set<Person> grscicollPersons;
-  private Map<String, IHInstitution> ihInstitutionsByIrn;
+  private SyncResult.SyncResultBuilder syncResultBuilder;
+  private Set<Person> grSciCollPersons;
 
   @Builder
   private IDigBioSync(SyncConfig config) {
@@ -107,21 +94,16 @@ public class IDigBioSync {
         CompletableFuture.supplyAsync(grSciCollHttpClient::getCollections);
     CompletableFuture<List<Person>> personsFuture =
         CompletableFuture.supplyAsync(grSciCollHttpClient::getPersons);
-    CompletableFuture<List<IHInstitution>> ihInstitutionFuture =
-        CompletableFuture.supplyAsync(ihHttpClient::getInstitutions);
 
     log.info("Loading data from WSs");
     CompletableFuture.allOf(institutionsFuture, collectionsFuture, personsFuture).join();
 
-    this.matcher =
+    Matcher matcher =
         Matcher.builder()
             .institutions(institutionsFuture.join())
             .collections(collectionsFuture.join())
             .build();
-    this.grscicollPersons = new HashSet<>(personsFuture.join());
-    this.ihInstitutionsByIrn =
-        ihInstitutionFuture.join().stream()
-            .collect(Collectors.toMap(IHInstitution::getIrn, v -> v));
+    this.grSciCollPersons = new HashSet<>(personsFuture.join());
     this.syncResultBuilder = SyncResult.builder();
 
     List<IDigBioRecord> records = readIDigBioExport(iDigBioConfig);
@@ -131,6 +113,7 @@ public class IDigBioSync {
       }
 
       MatchResult match = matcher.match(record);
+
       if (match.onlyCollectionMatch()) {
         syncResultBuilder.collectionOnlyMatch(handleCollectionMatch(match));
       } else if (match.onlyInstitutionMatch()) {
@@ -168,7 +151,7 @@ public class IDigBioSync {
 
   @VisibleForTesting
   CollectionOnlyMatch handleCollectionMatch(MatchResult match) {
-    SyncResult.EntityMatch<Collection> collectionEntityMatch = updateCollection(match);
+    EntityMatch<Collection> collectionEntityMatch = updateCollection(match);
 
     StaffMatch staffMatch =
         handleStaff(match, Collections.singletonList(match.getCollectionMatched()));
@@ -266,8 +249,6 @@ public class IDigBioSync {
   }
 
   private EntityMatch<Institution> updateInstitution(MatchResult match) {
-    checkOutdatedIHInstitution(match.getInstitutionMatched(), match.getIDigBioRecord());
-
     Institution mergedInstitution =
         EntityConverter.convertToInstitution(
             match.getInstitutionMatched(), match.getIDigBioRecord());
@@ -303,9 +284,6 @@ public class IDigBioSync {
   }
 
   private SyncResult.EntityMatch<Collection> updateCollection(MatchResult match) {
-    // if it's a IH entity and iDigBio is more up to date we create an issue for IH to check
-    checkOutdatedIHInstitution(match.getCollectionMatched(), match.getIDigBioRecord());
-
     Collection mergedCollection =
         EntityConverter.convertToCollection(match.getCollectionMatched(), match.getIDigBioRecord());
 
@@ -338,26 +316,6 @@ public class IDigBioSync {
     return entityMatchBuilder.build();
   }
 
-  private <T extends CollectionEntity & Identifiable> void checkOutdatedIHInstitution(
-      T entity, IDigBioRecord iDigBioRecord) {
-    // if it's a IH entity and iDigBio is more up to date we create an issue for IH to check
-    if (containsIrnIdentifier(entity)) {
-      Optional<Identifier> irnIdentifier =
-          entity.getIdentifiers().stream()
-              .filter(i -> i.getType() == IdentifierType.IH_IRN)
-              .findFirst();
-      if (irnIdentifier.isPresent()) {
-        IHInstitution ihInstitution =
-            ihInstitutionsByIrn.get(decodeIRN(irnIdentifier.get().getIdentifier()));
-        if (isIDigBioMoreRecent(iDigBioRecord, parseDate(ihInstitution.getDateModified()))) {
-          createGHIssue(
-              issueFactory.createOutdatedIHInstitutionIssue(ihInstitution, iDigBioRecord));
-          syncResultBuilder.outdatedEntity(new OutdatedEntity(ihInstitution, iDigBioRecord));
-        }
-      }
-    }
-  }
-
   private <T extends CollectionEntity & Contactable> StaffMatch handleStaff(
       MatchResult match, List<T> entities) {
     if (!containsContact(match.getIDigBioRecord())) {
@@ -366,7 +324,8 @@ public class IDigBioSync {
 
     if (Strings.isNullOrEmpty(match.getIDigBioRecord().getContact())
         && !Strings.isNullOrEmpty(match.getIDigBioRecord().getContactEmail())) {
-      // if it doesn't have name we just add the email to the entity emails. The position is discarded in this case
+      // if it doesn't have name we just add the email to the entity emails. The position is
+      // discarded in this case
       entities.forEach(
           e -> {
             if (e instanceof Institution) {
@@ -382,7 +341,7 @@ public class IDigBioSync {
       return StaffMatch.builder().build();
     }
 
-    Set<Person> matches = Matcher.matchContact(match.getIDigBioRecord(), grscicollPersons);
+    Set<Person> matches = Matcher.matchContact(match.getIDigBioRecord(), grSciCollPersons);
 
     BiConsumer<T, Person> addPersonToEntity =
         (e, p) -> {
@@ -424,7 +383,7 @@ public class IDigBioSync {
         // this is needed for dry runs
         createdPerson = newPerson;
       }
-      grscicollPersons.add(createdPerson);
+      grSciCollPersons.add(createdPerson);
 
       staffSyncBuilder.newPerson(newPerson);
     } else if (matches.size() > 1) {
@@ -456,8 +415,8 @@ public class IDigBioSync {
           // needed for dry runs
           updatedPerson = mergedPerson;
         }
-        grscicollPersons.remove(matchedPerson);
-        grscicollPersons.add(updatedPerson);
+        grSciCollPersons.remove(matchedPerson);
+        grSciCollPersons.add(updatedPerson);
 
         // add identifiers if needed
         executeOrAddFailAsync(

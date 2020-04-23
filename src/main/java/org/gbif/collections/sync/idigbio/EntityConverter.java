@@ -197,11 +197,8 @@ public class EntityConverter {
           collection.setNumberSpecimens(record.getCataloguedSpecimens());
         } else {
           try {
-            // TODO: check with Cat
             getStringValueOpt(record.getCollectionExtent())
-                .map(v -> v.replaceAll("[,<~\\+]", ""))
-                .map(v -> v.replaceAll("\\(.*\\)", ""))
-                .map(v -> v.replace("Approximately", ""))
+                .map(v -> v.replaceAll("[,]", ""))
                 .map(v -> v.replace("objects", ""))
                 .map(v -> v.replace("specimens", "").trim())
                 .map(Integer::valueOf)
@@ -279,7 +276,7 @@ public class EntityConverter {
             || !Strings.isNullOrEmpty(idigbioAddress.getZip()));
   }
 
-  public static boolean shouldUpdateRecord(IDigBioRecord record, Date grSciCollEntityDate) {
+  private static boolean shouldUpdateRecord(IDigBioRecord record, Date grSciCollEntityDate) {
     return record.getModifiedDate() == null
         || grSciCollEntityDate == null
         || record.getModifiedDate().isAfter(TO_LOCAL_DATE_TIME_UTC.apply(grSciCollEntityDate));

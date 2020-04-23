@@ -121,7 +121,7 @@ public class SyncResult {
   @Data
   @AllArgsConstructor
   public static class OutdatedEntity {
-    private Object outdatedEntity;
-    private Object updatedEntity;
+    private Object outdated;
+    private Object updated;
   }
 }
