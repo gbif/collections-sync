@@ -5,7 +5,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +32,6 @@ import org.gbif.collections.sync.SyncResult.NoEntityMatch;
 import org.gbif.collections.sync.SyncResult.StaffMatch;
 import org.gbif.collections.sync.http.clients.GithubClient;
 import org.gbif.collections.sync.http.clients.GrSciCollHttpClient;
-import org.gbif.collections.sync.http.clients.IHHttpClient;
 import org.gbif.collections.sync.idigbio.match.MatchResult;
 import org.gbif.collections.sync.idigbio.match.Matcher;
 import org.gbif.collections.sync.notification.IDigBioIssueFactory;
@@ -50,7 +48,6 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.Utils.isPersonInContacts;
-import static org.gbif.collections.sync.parsers.DataParser.TO_LOCAL_DATE_TIME_UTC;
 import static org.gbif.collections.sync.parsers.DataParser.cleanString;
 
 @Slf4j
@@ -105,18 +102,19 @@ public class IDigBioSync {
 
     List<IDigBioRecord> records = readIDigBioExport(iDigBioConfig);
     for (IDigBioRecord record : records) {
-      if (!isValidIDigBioRecord(record)) {
+      if (isInvalidRecord(record)) {
         continue;
       }
 
       MatchResult match = matcher.match(record);
-
       if (match.onlyCollectionMatch()) {
         syncResultBuilder.collectionOnlyMatch(handleCollectionMatch(match));
       } else if (match.onlyInstitutionMatch()) {
         syncResultBuilder.institutionOnlyMatch(handleInstitutionMatch(match));
       } else if (match.noMatches()) {
-        syncResultBuilder.noMatch(handleNoMatches(match));
+        if (hasCodeAndName(record)) {
+          syncResultBuilder.noMatch(handleNoMatches(match));
+        }
       } else if (match.institutionAndCollectionMatch()) {
         syncResultBuilder.instAndCollMatch(handleInstitutionAndCollectionMatch(match));
       } else {
@@ -166,7 +164,7 @@ public class IDigBioSync {
     // create new collection linked to the institution
     Collection newCollection =
         EntityConverter.convertToCollection(
-            match.getIDigBioRecord(), institutionEntityMatch.getMatched().getKey());
+            match.getIDigBioRecord(), institutionEntityMatch.getMatched());
 
     UUID createdKey =
         executeAndReturnOrAddFail(
@@ -199,7 +197,7 @@ public class IDigBioSync {
 
     // create collection
     Collection newCollection =
-        EntityConverter.convertToCollection(match.getIDigBioRecord(), institutionKey);
+        EntityConverter.convertToCollection(match.getIDigBioRecord(), newInstitution);
 
     UUID collectionKey =
         executeAndReturnOrAddFail(
@@ -509,26 +507,30 @@ public class IDigBioSync {
     return null;
   }
 
-  private boolean isValidIDigBioRecord(IDigBioRecord iDigBioRecord) {
-    if (Strings.isNullOrEmpty(iDigBioRecord.getInstitutionCode())
-        && Strings.isNullOrEmpty(iDigBioRecord.getInstitution())
-        && Strings.isNullOrEmpty(iDigBioRecord.getCollectionCode())
-        && Strings.isNullOrEmpty(iDigBioRecord.getCollection())) {
-      syncResultBuilder.invalidEntity(iDigBioRecord);
-      return false;
+  private boolean isInvalidRecord(IDigBioRecord record) {
+    return Strings.isNullOrEmpty(record.getInstitution())
+        && Strings.isNullOrEmpty(record.getInstitutionCode())
+        && Strings.isNullOrEmpty(record.getCollection())
+        && Strings.isNullOrEmpty(record.getCollectionCode());
+  }
+
+  private boolean hasCodeAndName(IDigBioRecord iDigBioRecord) {
+    if ((!Strings.isNullOrEmpty(iDigBioRecord.getInstitution())
+            || !Strings.isNullOrEmpty(iDigBioRecord.getCollection()))
+        && (!Strings.isNullOrEmpty(iDigBioRecord.getInstitutionCode())
+            || !Strings.isNullOrEmpty(iDigBioRecord.getCollectionCode()))) {
+      return true;
     }
-    return true;
+    syncResultBuilder.invalidEntity(iDigBioRecord);
+    createGHIssue(
+        issueFactory.createInvalidEntity(
+            iDigBioRecord, "Institution or collection code and name are required"));
+    return false;
   }
 
   private boolean containsContact(IDigBioRecord iDigBioRecord) {
     return !Strings.isNullOrEmpty(iDigBioRecord.getContact())
         || !Strings.isNullOrEmpty(iDigBioRecord.getContactEmail())
         || !Strings.isNullOrEmpty(iDigBioRecord.getContactRole());
-  }
-
-  private static boolean isIDigBioMoreRecent(IDigBioRecord record, Date grSciCollEntityDate) {
-    return record.getModifiedDate() != null
-        && grSciCollEntityDate != null
-        && record.getModifiedDate().isAfter(TO_LOCAL_DATE_TIME_UTC.apply(grSciCollEntityDate));
   }
 }

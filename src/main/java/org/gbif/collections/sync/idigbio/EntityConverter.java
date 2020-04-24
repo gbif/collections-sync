@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.gbif.api.model.collections.Address;
@@ -59,6 +58,11 @@ public class EntityConverter {
 
     setInstitutionCodes(institution, getIdigbioCode(record.getInstitutionCode()));
 
+    if (institution.getCode() == null) {
+      // if the code is still null we use the one from the collection
+      getStringValueOpt(record.getCollectionCode()).ifPresent(institution::setCode);
+    }
+
     getStringValueOpt(record.getUniqueNameUuid())
         .ifPresent(
             v -> {
@@ -73,7 +77,12 @@ public class EntityConverter {
     // non-IH and more updated in iDigBio
     if (!containsIrnIdentifier(institution)
         && shouldUpdateRecord(record, institution.getModified())) {
-      getStringValueOpt(record.getInstitution()).ifPresent(institution::setName);
+      Optional<String> instName = getStringValueOpt(record.getInstitution());
+      if (instName.isPresent()) {
+        institution.setName(instName.get());
+      } else if (institution.getName() == null) {
+        getStringValueOpt(record.getCollectionCode()).ifPresent(institution::setName);
+      }
 
       if (record.getLat() != null) {
         institution.setLatitude(TO_BIGDECIMAL.apply(record.getLat()));
@@ -121,8 +130,8 @@ public class EntityConverter {
     }
   }
 
-  public static Collection convertToCollection(IDigBioRecord record, UUID institutionKey) {
-    return convertToCollection(null, record, institutionKey);
+  public static Collection convertToCollection(IDigBioRecord record, Institution institution) {
+    return convertToCollection(null, record, institution);
   }
 
   public static Collection convertToCollection(Collection existing, IDigBioRecord record) {
@@ -130,7 +139,7 @@ public class EntityConverter {
   }
 
   public static Collection convertToCollection(
-      Collection existing, IDigBioRecord record, UUID institutionKey) {
+      Collection existing, IDigBioRecord record, Institution institution) {
     Collection collection = new Collection();
 
     if (existing != null) {
@@ -142,8 +151,8 @@ public class EntityConverter {
       }
     }
 
-    if (institutionKey != null) {
-      collection.setInstitutionKey(institutionKey);
+    if (institution != null && institution.getKey() != null) {
+      collection.setInstitutionKey(institution.getKey());
     }
 
     // machine tags and identifiers
@@ -178,18 +187,24 @@ public class EntityConverter {
 
       if (!containsIrnIdentifier(collection)) {
         // only for non-IH
-        Optional<String> collectionCode = getStringValueOpt(record.getCollectionCode());
+        Optional<String> collectionCode =
+            getStringValueOpt(record.getCollectionCode())
+                .map(c -> getIdigbioCode(c).iterator().next());
         if (collectionCode.isPresent()) {
           collection.setCode(collectionCode.get());
-        } else {
-          getStringValueOpt(record.getInstitutionCode()).ifPresent(collection::setCode);
+        } else if (collection.getCode() == null) {
+          collection.setCode(
+              getStringValueOpt(record.getInstitutionCode())
+                  .map(c -> getIdigbioCode(c).iterator().next())
+                  .orElse(institution.getCode()));
         }
 
         Optional<String> collectionName = getStringValueOpt(record.getCollection());
         if (collectionName.isPresent()) {
           collection.setName(collectionName.get());
-        } else {
-          getStringValueOpt(record.getInstitution()).ifPresent(collection::setName);
+        } else if (collection.getName() == null) {
+          collection.setName(
+              getStringValueOpt(record.getInstitution()).orElse(institution.getName()));
         }
 
         getStringValueOpt(record.getCollectionUrl())

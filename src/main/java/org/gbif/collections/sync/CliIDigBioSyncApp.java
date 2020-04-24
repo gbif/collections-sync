@@ -1,8 +1,8 @@
 package org.gbif.collections.sync;
 
-import org.gbif.collections.sync.idigbio.IDigBioSync;
-
 import java.nio.file.Paths;
+
+import org.gbif.collections.sync.idigbio.IDigBioSync;
 
 import com.beust.jcommander.JCommander;
 import lombok.extern.slf4j.Slf4j;

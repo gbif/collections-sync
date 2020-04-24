@@ -1,5 +1,13 @@
 package org.gbif.collections.sync.idigbio;
 
+import java.math.BigDecimal;
+import java.net.URI;
+import java.sql.Date;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.gbif.api.model.collections.Address;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
@@ -9,18 +17,9 @@ import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 
-import java.math.BigDecimal;
-import java.net.URI;
-import java.sql.Date;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.Optional;
-import java.util.UUID;
-
 import org.junit.Test;
 
 import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -96,11 +95,11 @@ public class EntityConverterTest {
   public void convertCollectionTest() {
     IDigBioRecord iDigBioRecord = createIDigBioCollection();
 
-    UUID institutionKey = UUID.randomUUID();
-    Collection collectionConverted =
-        EntityConverter.convertToCollection(iDigBioRecord, institutionKey);
+    Institution inst = new Institution();
+    inst.setKey(UUID.randomUUID());
+    Collection collectionConverted = EntityConverter.convertToCollection(iDigBioRecord, inst);
 
-    assertEquals(institutionKey, collectionConverted.getInstitutionKey());
+    assertEquals(inst.getKey(), collectionConverted.getInstitutionKey());
     assertTrue(collectionConverted.getDescription().contains(iDigBioRecord.getDescription()));
     assertTrue(
         collectionConverted
@@ -126,11 +125,12 @@ public class EntityConverterTest {
     IDigBioRecord iDigBioRecord = createIDigBioCollection();
     Collection existing = createCollection();
 
-    UUID institutionKey = UUID.randomUUID();
+    Institution inst = new Institution();
+    inst.setKey(UUID.randomUUID());
     Collection collectionConverted =
-        EntityConverter.convertToCollection(existing, iDigBioRecord, institutionKey);
+        EntityConverter.convertToCollection(existing, iDigBioRecord, inst);
 
-    assertEquals(institutionKey, collectionConverted.getInstitutionKey());
+    assertEquals(inst.getKey(), collectionConverted.getInstitutionKey());
     assertTrue(collectionConverted.getDescription().contains(iDigBioRecord.getDescription()));
     assertTrue(
         collectionConverted
@@ -176,11 +176,12 @@ public class EntityConverterTest {
     Collection existing = createCollection();
     existing.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, "1234"));
 
-    UUID institutionKey = UUID.randomUUID();
+    Institution inst = new Institution();
+    inst.setKey(UUID.randomUUID());
     Collection collectionConverted =
-        EntityConverter.convertToCollection(existing, iDigBioRecord, institutionKey);
+        EntityConverter.convertToCollection(existing, iDigBioRecord, inst);
 
-    assertEquals(institutionKey, collectionConverted.getInstitutionKey());
+    assertEquals(inst.getKey(), collectionConverted.getInstitutionKey());
     assertTrue(collectionConverted.getDescription().contains(iDigBioRecord.getDescription()));
     assertTrue(
         collectionConverted
