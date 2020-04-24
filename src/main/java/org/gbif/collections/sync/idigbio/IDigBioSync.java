@@ -530,7 +530,9 @@ public class IDigBioSync {
 
   private boolean containsContact(IDigBioRecord iDigBioRecord) {
     return !Strings.isNullOrEmpty(iDigBioRecord.getContact())
+            && !"NA".equals(iDigBioRecord.getContact())
         || !Strings.isNullOrEmpty(iDigBioRecord.getContactEmail())
+            && !"NA".equals(iDigBioRecord.getContactEmail())
         || !Strings.isNullOrEmpty(iDigBioRecord.getContactRole());
   }
 }

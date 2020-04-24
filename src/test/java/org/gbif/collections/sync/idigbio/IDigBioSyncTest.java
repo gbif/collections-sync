@@ -154,7 +154,6 @@ public class IDigBioSyncTest {
     // collection
     Collection coll = new Collection();
     coll.setCode(iDigBioRecord.getCollectionCode());
-    coll.setName("foo");
 
     MatchResult match =
         MatchResult.builder()

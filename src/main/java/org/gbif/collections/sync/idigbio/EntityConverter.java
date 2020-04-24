@@ -196,7 +196,7 @@ public class EntityConverter {
           collection.setCode(
               getStringValueOpt(record.getInstitutionCode())
                   .map(c -> getIdigbioCode(c).iterator().next())
-                  .orElse(institution.getCode()));
+                  .orElse(institution != null ? institution.getCode() : null));
         }
 
         Optional<String> collectionName = getStringValueOpt(record.getCollection());
@@ -204,7 +204,8 @@ public class EntityConverter {
           collection.setName(collectionName.get());
         } else if (collection.getName() == null) {
           collection.setName(
-              getStringValueOpt(record.getInstitution()).orElse(institution.getName()));
+              getStringValueOpt(record.getInstitution())
+                  .orElse(institution != null ? institution.getName() : null));
         }
 
         getStringValueOpt(record.getCollectionUrl())
