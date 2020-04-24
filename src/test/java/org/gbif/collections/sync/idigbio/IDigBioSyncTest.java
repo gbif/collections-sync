@@ -166,6 +166,9 @@ public class IDigBioSyncTest {
         IDIGBIO_SYNC.handleInstitutionAndCollectionMatch(match);
     assertFalse(instAndColMatch.getMatchedInstitution().isUpdate());
     assertTrue(instAndColMatch.getMatchedCollection().isUpdate());
+    assertEquals(
+        iDigBioRecord.getInstitution(),
+        instAndColMatch.getMatchedCollection().getMerged().getName());
     assertEmptyStaffMatch(instAndColMatch.getStaffMatch());
   }
 
