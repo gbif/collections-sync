@@ -3,8 +3,10 @@ package org.gbif.collections.sync.idigbio;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.gbif.api.model.collections.Address;
@@ -26,19 +28,17 @@ import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.Utils.removeUuidNamespace;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCode;
 import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
 import static org.gbif.collections.sync.parsers.DataParser.TO_LOCAL_DATE_TIME_UTC;
 import static org.gbif.collections.sync.parsers.DataParser.cleanString;
-import static org.gbif.collections.sync.parsers.DataParser.getStringList;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValue;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValueOpt;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
 public class EntityConverter {
-
-  static final String IDIGBIO_NAMESPACE = "iDigBio.org";
-  private static final String IH_SUFFIX_IDIGBIO = "<IH>";
 
   public static Institution convertToInstitution(IDigBioRecord record) {
     return convertToInstitution(null, record);
@@ -56,7 +56,19 @@ public class EntityConverter {
       }
     }
 
-    setInstitutionCodes(institution, getIdigbioCode(record.getInstitutionCode()));
+    Set<String> idigbioCodes = getIdigbioCode(record.getInstitutionCode());
+    if (containsIrnIdentifier(institution)) {
+      // if they don't match we keep the IH one and add the other to the alternatives
+      idigbioCodes.stream()
+          .filter(c -> !c.equalsIgnoreCase(institution.getCode()))
+          .forEach(c -> institution.getAlternativeCodes().put(c, "Code migrated from iDigBio"));
+    } else {
+      setCodes(
+          idigbioCodes,
+          institution.getCode(),
+          institution.getAlternativeCodes(),
+          institution::setCode);
+    }
 
     if (institution.getCode() == null) {
       // if the code is still null we use the one from the collection
@@ -95,38 +107,32 @@ public class EntityConverter {
     return institution;
   }
 
-  private static void setInstitutionCodes(Institution institution, Set<String> idigbioCodes) {
-    if (!idigbioCodes.isEmpty()
-        && idigbioCodes.stream().anyMatch(c -> !c.equalsIgnoreCase(institution.getCode()))) {
-      if (containsIrnIdentifier(institution)) {
-        // if they don't match we keep the IH one and add the other to the alternatives
+  private static void setCodes(
+      Set<String> idigbioCodes,
+      String currentCode,
+      Map<String, String> alternativeCodes,
+      Consumer<String> codeSetter) {
+    if (idigbioCodes.isEmpty()
+        || idigbioCodes.stream().allMatch(c -> c.equalsIgnoreCase(currentCode))) {
+      // if there are no new codes we don't do anything
+      return;
+    }
+    // we set the iDigBio one as main code and the others as alternative
+    Set<String> newCodes =
         idigbioCodes.stream()
-            .filter(c -> !c.equalsIgnoreCase(institution.getCode()))
-            .forEach(c -> institution.getAlternativeCodes().put(c, "Code migrated from iDigBio"));
-      } else {
-        // we set the iDigBio one as main code and the others as alternative
-        Set<String> newCodes =
-            idigbioCodes.stream()
-                .filter(c -> !c.equalsIgnoreCase(institution.getCode()))
-                .collect(Collectors.toSet());
+            .filter(c -> !c.equalsIgnoreCase(currentCode))
+            .collect(Collectors.toSet());
 
-        Iterator<String> newCodesIterator = newCodes.iterator();
-        String newCode = newCodesIterator.next();
-        if (institution.getCode() != null) {
-          institution
-              .getAlternativeCodes()
-              .put(
-                  institution.getCode(),
-                  "code replaced by the one migrated from iDigBio: " + newCode);
-        }
-        institution.setCode(newCode);
+    Iterator<String> newCodesIterator = newCodes.iterator();
+    String newCode = newCodesIterator.next();
+    if (currentCode != null) {
+      alternativeCodes.put(
+          currentCode, "code replaced by the one migrated from iDigBio: " + newCode);
+    }
+    codeSetter.accept(newCode);
 
-        while (newCodesIterator.hasNext()) {
-          institution
-              .getAlternativeCodes()
-              .put(newCodesIterator.next(), "Code migrated from iDigBio");
-        }
-      }
+    while (newCodesIterator.hasNext()) {
+      alternativeCodes.put(newCodesIterator.next(), "Code migrated from iDigBio");
     }
   }
 
@@ -153,6 +159,29 @@ public class EntityConverter {
 
     if (institution != null && institution.getKey() != null) {
       collection.setInstitutionKey(institution.getKey());
+    }
+
+    Set<String> idigbioCodes = getIdigbioCode(record.getCollectionCode());
+    if (containsIrnIdentifier(collection)) {
+      // if they don't match we keep the IH one and add the other to the alternatives
+      idigbioCodes.stream()
+          .filter(c -> !c.equalsIgnoreCase(collection.getCode()))
+          .forEach(c -> collection.getAlternativeCodes().put(c, "Code migrated from iDigBio"));
+    } else {
+      if (!idigbioCodes.isEmpty()) {
+        setCodes(
+            idigbioCodes,
+            collection.getCode(),
+            collection.getAlternativeCodes(),
+            collection::setCode);
+      } else if (collection.getCode() == null) {
+        // we try to find a code. At this point we only care about the main code
+        collection.setCode(
+            Optional.ofNullable(getIdigbioCode(record.getInstitutionCode()))
+                .filter(v -> !v.isEmpty())
+                .map(v -> v.iterator().next())
+                .orElse(institution != null ? institution.getCode() : null));
+      }
     }
 
     // machine tags and identifiers
@@ -187,18 +216,6 @@ public class EntityConverter {
 
       if (!containsIrnIdentifier(collection)) {
         // only for non-IH
-        Optional<String> collectionCode =
-            getStringValueOpt(record.getCollectionCode())
-                .map(c -> getIdigbioCode(c).iterator().next());
-        if (collectionCode.isPresent()) {
-          collection.setCode(collectionCode.get());
-        } else if (collection.getCode() == null) {
-          collection.setCode(
-              getStringValueOpt(record.getInstitutionCode())
-                  .map(c -> getIdigbioCode(c).iterator().next())
-                  .orElse(institution != null ? institution.getCode() : null));
-        }
-
         Optional<String> collectionName = getStringValueOpt(record.getCollection());
         if (collectionName.isPresent()) {
           collection.setName(collectionName.get());
@@ -278,12 +295,6 @@ public class EntityConverter {
     person.setPosition(cleanString(iDigBioRecord.getContactRole()));
 
     return person;
-  }
-
-  private static Set<String> getIdigbioCode(String idigbioCode) {
-    return getStringList(idigbioCode).stream()
-        .map(s -> s.replace(IH_SUFFIX_IDIGBIO, ""))
-        .collect(Collectors.toSet());
   }
 
   private static boolean existsAddress(IDigBioRecord.Address idigbioAddress) {

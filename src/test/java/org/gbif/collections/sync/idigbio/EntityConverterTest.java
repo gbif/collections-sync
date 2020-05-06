@@ -19,6 +19,7 @@ import org.gbif.api.vocabulary.IdentifierType;
 
 import org.junit.Test;
 
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.*;
 import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -354,7 +355,7 @@ public class EntityConverterTest {
     MachineTag machineTag = institutionConverted.getMachineTags().get(0);
     assertEquals(iDigBioRecord.getUniqueNameUuid(), machineTag.getValue());
     assertEquals("UniqueNameUUID", machineTag.getName());
-    assertEquals(EntityConverter.IDIGBIO_NAMESPACE, machineTag.getNamespace());
+    assertEquals(IDIGBIO_NAMESPACE, machineTag.getNamespace());
   }
 
   private void assertIdentifiersAndTagsCollection(
@@ -386,7 +387,7 @@ public class EntityConverterTest {
             .filter(mt -> mt.getName().equals("recordsets"))
             .findFirst();
     assertTrue(mtRecordSets.isPresent());
-    assertEquals(EntityConverter.IDIGBIO_NAMESPACE, mtRecordSets.get().getNamespace());
+    assertEquals(IDIGBIO_NAMESPACE, mtRecordSets.get().getNamespace());
     assertEquals(iDigBioRecord.getRecordSets(), mtRecordSets.get().getValue());
 
     Optional<MachineTag> mtRecordSetQuery =
@@ -394,7 +395,7 @@ public class EntityConverterTest {
             .filter(mt -> mt.getName().equals("recordsetQuery"))
             .findFirst();
     assertTrue(mtRecordSetQuery.isPresent());
-    assertEquals(EntityConverter.IDIGBIO_NAMESPACE, mtRecordSetQuery.get().getNamespace());
+    assertEquals(IDIGBIO_NAMESPACE, mtRecordSetQuery.get().getNamespace());
     assertEquals(iDigBioRecord.getRecordsetQuery(), mtRecordSetQuery.get().getValue());
 
     Optional<MachineTag> mtCollUuid =
@@ -402,7 +403,7 @@ public class EntityConverterTest {
             .filter(mt -> mt.getName().equals("CollectionUUID"))
             .findFirst();
     assertTrue(mtCollUuid.isPresent());
-    assertEquals(EntityConverter.IDIGBIO_NAMESPACE, mtCollUuid.get().getNamespace());
+    assertEquals(IDIGBIO_NAMESPACE, mtCollUuid.get().getNamespace());
     assertEquals(iDigBioRecord.getCollectionUuid(), mtCollUuid.get().getValue());
   }
 }

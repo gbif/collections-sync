@@ -1,12 +1,12 @@
 package org.gbif.collections.sync.idigbio.match;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.collections.sync.idigbio.IDigBioRecord;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -16,8 +16,6 @@ import lombok.Getter;
 public class MatchResult {
 
   IDigBioRecord iDigBioRecord;
-  // TODO: when create maps check that there is only one match per record. If not I have to create a
-  // set here
   Institution institutionMatched;
   Collection collectionMatched;
 

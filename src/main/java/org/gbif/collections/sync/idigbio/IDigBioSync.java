@@ -451,16 +451,6 @@ public class IDigBioSync {
     }
   }
 
-  private void executeOrAddFail(Runnable runnable, Function<Throwable, FailedAction> failCreator) {
-    if (!dryRun) {
-      try {
-        runnable.run();
-      } catch (Exception e) {
-        syncResultBuilder.failedAction(failCreator.apply(e));
-      }
-    }
-  }
-
   private void createGHIssue(Issue issue) {
     if (sendNotifications) {
       Optional<Issue> existingIssueOpt = githubClient.findIssueWithSameTitle(issue.getTitle());
@@ -522,9 +512,6 @@ public class IDigBioSync {
       return true;
     }
     syncResultBuilder.invalidEntity(iDigBioRecord);
-    createGHIssue(
-        issueFactory.createInvalidEntity(
-            iDigBioRecord, "Institution or collection code and name are required"));
     return false;
   }
 
