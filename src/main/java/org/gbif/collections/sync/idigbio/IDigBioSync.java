@@ -2,7 +2,6 @@ package org.gbif.collections.sync.idigbio;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -14,13 +13,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contactable;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
-import org.gbif.collections.sync.SyncConfig;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.CollectionOnlyMatch;
 import org.gbif.collections.sync.SyncResult.Conflict;
@@ -30,6 +29,7 @@ import org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
 import org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
 import org.gbif.collections.sync.SyncResult.NoEntityMatch;
 import org.gbif.collections.sync.SyncResult.StaffMatch;
+import org.gbif.collections.sync.config.IDigBioConfig;
 import org.gbif.collections.sync.http.clients.GithubClient;
 import org.gbif.collections.sync.http.clients.GrSciCollHttpClient;
 import org.gbif.collections.sync.idigbio.match.MatchResult;
@@ -55,7 +55,7 @@ public class IDigBioSync {
 
   private final boolean dryRun;
   private final boolean sendNotifications;
-  private final SyncConfig.IDigBioConfig iDigBioConfig;
+  private final IDigBioConfig iDigBioConfig;
   private final GrSciCollHttpClient grSciCollHttpClient;
   private final GithubClient githubClient;
   private final IDigBioIssueFactory issueFactory;
@@ -63,14 +63,14 @@ public class IDigBioSync {
   private Set<Person> grSciCollPersons;
 
   @Builder
-  private IDigBioSync(SyncConfig config) {
-    if (config != null) {
-      this.dryRun = config.isDryRun();
-      this.sendNotifications = config.isSendNotifications();
-      this.grSciCollHttpClient = GrSciCollHttpClient.getInstance(config);
-      this.githubClient = GithubClient.getInstance(config);
-      this.issueFactory = IDigBioIssueFactory.getInstance(config);
-      this.iDigBioConfig = config.getIDigBioConfig();
+  private IDigBioSync(IDigBioConfig iDigBioConfig) {
+    if (iDigBioConfig != null && iDigBioConfig.getSyncConfig() != null) {
+      this.dryRun = iDigBioConfig.getSyncConfig().isDryRun();
+      this.sendNotifications = iDigBioConfig.getSyncConfig().isSendNotifications();
+      this.grSciCollHttpClient = GrSciCollHttpClient.getInstance(iDigBioConfig.getSyncConfig());
+      this.githubClient = GithubClient.getInstance(iDigBioConfig.getSyncConfig().getNotification());
+      this.issueFactory = IDigBioIssueFactory.getInstance(iDigBioConfig);
+      this.iDigBioConfig = iDigBioConfig;
     } else {
       this.dryRun = true;
       this.sendNotifications = false;
@@ -122,10 +122,16 @@ public class IDigBioSync {
       }
     }
 
-    return syncResultBuilder.build();
+    SyncResult syncResult = syncResultBuilder.build();
+
+    if (syncResult.getInvalidEntities() != null && !syncResult.getInvalidEntities().isEmpty()) {
+      createGHIssue(issueFactory.createInvalidEntitiesIssue(syncResult.getInvalidEntities()));
+    }
+
+    return syncResult;
   }
 
-  private List<IDigBioRecord> readIDigBioExport(SyncConfig.IDigBioConfig config) {
+  private List<IDigBioRecord> readIDigBioExport(IDigBioConfig config) {
     ObjectMapper objectMapper =
         new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -252,10 +258,18 @@ public class IDigBioSync {
         EntityMatch.<Institution>builder()
             .matched(match.getInstitutionMatched())
             .merged(mergedInstitution);
-    if (!mergedInstitution.lenientEquals(match.getInstitutionMatched())) {
+    if (!mergedInstitution.equals(match.getInstitutionMatched())) {
+      // check if we need to update the entity
+      if (!mergedInstitution.lenientEquals(match.getInstitutionMatched())) {
+        executeOrAddFailAsync(
+            () -> grSciCollHttpClient.updateInstitution(mergedInstitution),
+            e ->
+                new FailedAction(
+                    mergedInstitution, "Failed to update institution: " + e.getMessage()));
+      }
+      // create identifiers and machine tags if needed
       executeOrAddFailAsync(
           () -> {
-            grSciCollHttpClient.updateInstitution(mergedInstitution);
             mergedInstitution.getIdentifiers().stream()
                 .filter(i -> i.getKey() == null)
                 .forEach(
@@ -271,7 +285,8 @@ public class IDigBioSync {
           },
           e ->
               new FailedAction(
-                  mergedInstitution, "Failed to update institution: " + e.getMessage()));
+                  mergedInstitution,
+                  "Failed to add identifiers and machine tags of institution: " + e.getMessage()));
       entityMatchBuilder.update(true);
     }
 
@@ -286,10 +301,18 @@ public class IDigBioSync {
         EntityMatch.<Collection>builder()
             .matched(match.getCollectionMatched())
             .merged(mergedCollection);
-    if (!mergedCollection.lenientEquals(match.getCollectionMatched())) {
+    if (!mergedCollection.equals(match.getCollectionMatched())) {
+      // check if we need to update the entity
+      if (!mergedCollection.lenientEquals(match.getCollectionMatched())) {
+        executeOrAddFailAsync(
+            () -> grSciCollHttpClient.updateCollection(mergedCollection),
+            e ->
+                new FailedAction(
+                    mergedCollection, "Failed to update collection: " + e.getMessage()));
+      }
+      // create indentifiers and machine tags if needed
       executeOrAddFailAsync(
           () -> {
-            grSciCollHttpClient.updateCollection(mergedCollection);
             mergedCollection.getIdentifiers().stream()
                 .filter(i -> i.getKey() == null)
                 .forEach(
@@ -304,7 +327,9 @@ public class IDigBioSync {
                             mergedCollection.getKey(), mt));
           },
           e ->
-              new FailedAction(mergedCollection, "Failed to update collection: " + e.getMessage()));
+              new FailedAction(
+                  mergedCollection,
+                  "Failed to add identifiers and machine tags of collection: " + e.getMessage()));
       entityMatchBuilder.update(true);
     }
 
@@ -353,9 +378,16 @@ public class IDigBioSync {
           e.getContacts().add(p);
         };
 
-    Set<Person> matches = Matcher.matchContact(match.getIDigBioRecord(), grSciCollPersons);
+    Set<Person> contacts =
+        entities.stream()
+            .filter(e -> e.getContacts() != null)
+            .flatMap(e -> e.getContacts().stream())
+            .collect(Collectors.toSet());
+
+    Optional<Person> personMatch =
+        Matcher.matchContact(match.getIDigBioRecord(), grSciCollPersons, contacts);
     StaffMatch.StaffMatchBuilder staffSyncBuilder = StaffMatch.builder();
-    if (matches.isEmpty()) {
+    if (!personMatch.isPresent()) {
       // create person and link it to the entity
       log.info("No match for staff for record: {}", match.getIDigBioRecord());
       Person newPerson = EntityConverter.convertToPerson(match.getIDigBioRecord());
@@ -380,22 +412,16 @@ public class IDigBioSync {
       grSciCollPersons.add(createdPerson);
 
       staffSyncBuilder.newPerson(newPerson);
-    } else if (matches.size() > 1) {
-      // conflict. Multiple candidates matched
-      log.info("Conflict for iDigBio staff: {}", match.getIDigBioRecord());
-      createGHIssue(issueFactory.createStaffConflict(matches, match.getIDigBioRecord()));
-      staffSyncBuilder.conflict(new Conflict(match.getIDigBioRecord(), new ArrayList<>(matches)));
     } else {
       // there is one match
       log.info("One match for iDigBio Staff {}", match.getIDigBioRecord());
-      Person matchedPerson = matches.iterator().next();
+      Person matchedPerson = personMatch.get();
       Person mergedPerson =
           EntityConverter.convertToPerson(matchedPerson, match.getIDigBioRecord());
 
       EntityMatch.EntityMatchBuilder<Person> entityMatchBuilder =
           EntityMatch.<Person>builder().matched(matchedPerson).merged(mergedPerson);
       if (!mergedPerson.lenientEquals(matchedPerson)) {
-        // update person
         Person updatedPerson =
             executeAndReturnOrAddFail(
                 () -> {
@@ -411,26 +437,14 @@ public class IDigBioSync {
         }
         grSciCollPersons.remove(matchedPerson);
         grSciCollPersons.add(updatedPerson);
-
-        // add identifiers if needed
-        executeOrAddFailAsync(
-            () ->
-                mergedPerson.getIdentifiers().stream()
-                    .filter(i -> i.getKey() == null)
-                    .forEach(
-                        i -> grSciCollHttpClient.addIdentifierToPerson(mergedPerson.getKey(), i)),
-            e ->
-                new FailedAction(
-                    mergedPerson, "Failed to add identifiers to person: " + e.getMessage()));
-
-        // add to the entity if needed
-        executeOrAddFailAsync(
-            () -> entities.forEach(e -> addPersonToEntity.accept(e, mergedPerson)),
-            e ->
-                new FailedAction(
-                    mergedPerson, "Failed to add persons to entity: " + e.getMessage()));
-        entityMatchBuilder.update(true);
       }
+
+      // add to the entity if needed
+      executeOrAddFailAsync(
+          () -> entities.forEach(e -> addPersonToEntity.accept(e, mergedPerson)),
+          e ->
+              new FailedAction(mergedPerson, "Failed to add persons to entity: " + e.getMessage()));
+      entityMatchBuilder.update(true);
 
       staffSyncBuilder.matchedPerson(entityMatchBuilder.build());
     }

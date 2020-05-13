@@ -87,10 +87,6 @@ public class IDigBioRecord {
   private UUID grbioInstMatch;
 
   @JsonInclude(Include.NON_NULL)
-  @JsonProperty("_grbioCollMatch")
-  private UUID grbioCollMatch;
-
-  @JsonInclude(Include.NON_NULL)
   @JsonProperty("_matchReason")
   private String matchReason;
 

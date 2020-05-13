@@ -1,19 +1,17 @@
 package org.gbif.collections.sync.notification;
 
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.collections.sync.SyncConfig;
-import org.gbif.collections.sync.SyncResult;
-import org.gbif.collections.sync.ih.model.IHEntity;
-import org.gbif.collections.sync.ih.model.IHInstitution;
-
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.UnaryOperator;
+
+import org.gbif.api.model.collections.Collection;
+import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.collections.sync.SyncResult;
+import org.gbif.collections.sync.config.SyncConfig;
 
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +26,7 @@ public abstract class BaseIssueFactory {
       "Some operations have failed updating the registry in the %s";
   private static final String FAIL_LABEL = "%s fail";
 
-  private static final UnaryOperator<String> PORTAL_URL_NORMALIZER =
+  protected static final UnaryOperator<String> PORTAL_URL_NORMALIZER =
       url -> {
         if (url != null && url.endsWith("/")) {
           return url.substring(0, url.length() - 1);
@@ -41,8 +39,6 @@ public abstract class BaseIssueFactory {
   private final String registryInstitutionLink;
   private final String registryCollectionLink;
   private final String registryPersonLink;
-  private final String ihInstitutionLink;
-  private final String ihStaffLink;
 
   protected BaseIssueFactory(SyncConfig config) {
     this.notificationConfig = config.getNotification();
@@ -52,12 +48,6 @@ public abstract class BaseIssueFactory {
         PORTAL_URL_NORMALIZER.apply(notificationConfig.getRegistryPortalUrl()) + "/collection/%s";
     this.registryPersonLink =
         PORTAL_URL_NORMALIZER.apply(notificationConfig.getRegistryPortalUrl()) + "/person/%s";
-    this.ihInstitutionLink =
-        PORTAL_URL_NORMALIZER.apply(config.getIhConfig().getIhPortalUrl())
-            + "/ih/herbarium-details/?irn=%s";
-    this.ihStaffLink =
-        PORTAL_URL_NORMALIZER.apply(config.getIhConfig().getIhPortalUrl())
-            + "/ih/person-details/?irn=%s";
     syncTimestampLabel =
         LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     log.info("Issue factory created with sync timestamp label: {}", syncTimestampLabel);
@@ -136,21 +126,6 @@ public abstract class BaseIssueFactory {
 
     URI uri = URI.create(String.format(linkTemplate, id));
     return "[" + uri.toString() + "](" + uri.toString() + ")";
-  }
-
-  protected <T extends IHEntity> String createIHLink(T entity) {
-    String linkTemplate;
-    String text;
-    if (entity instanceof IHInstitution) {
-      linkTemplate = ihInstitutionLink;
-      text = "institution";
-    } else {
-      linkTemplate = ihStaffLink;
-      text = "staff";
-    }
-
-    URI uri = URI.create(String.format(linkTemplate, entity.getIrn()));
-    return "[" + text + "](" + uri.toString() + ")";
   }
 
   abstract String getProcessName();

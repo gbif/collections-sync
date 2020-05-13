@@ -1,7 +1,24 @@
 package org.gbif.collections.sync.ih;
 
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import org.gbif.api.model.collections.Address;
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.*;
+import org.gbif.api.model.collections.Contactable;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.vocabulary.Country;
@@ -12,25 +29,24 @@ import org.gbif.collections.sync.ih.model.IHStaff;
 import org.gbif.collections.sync.parsers.CountryParser;
 import org.gbif.collections.sync.parsers.DataParser;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.net.URI;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.beanutils.BeanUtils;
 
+import static org.gbif.collections.sync.Utils.cloneCollection;
+import static org.gbif.collections.sync.Utils.cloneInstitution;
+import static org.gbif.collections.sync.Utils.clonePerson;
 import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.ih.model.IHInstitution.CollectionSummary;
 import static org.gbif.collections.sync.ih.model.IHInstitution.Location;
-import static org.gbif.collections.sync.parsers.DataParser.*;
+import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
+import static org.gbif.collections.sync.parsers.DataParser.getFirstString;
+import static org.gbif.collections.sync.parsers.DataParser.getListValue;
+import static org.gbif.collections.sync.parsers.DataParser.getStringValue;
+import static org.gbif.collections.sync.parsers.DataParser.parseDate;
+import static org.gbif.collections.sync.parsers.DataParser.parseStringList;
+import static org.gbif.collections.sync.parsers.DataParser.parseUri;
 
 /** Converts IH insitutions to the GrSciColl entities {@link Institution} and {@link Collection}. */
 @Slf4j
@@ -50,15 +66,7 @@ public class EntityConverter {
   }
 
   public Institution convertToInstitution(IHInstitution ihInstitution, Institution existing) {
-    Institution institution = new Institution();
-
-    if (existing != null) {
-      try {
-        BeanUtils.copyProperties(institution, existing);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-        log.warn("Couldn't copy institution properties from bean: {}", existing);
-      }
-    }
+    Institution institution = cloneInstitution(existing);
 
     institution.setName(ihInstitution.getOrganization());
     institution.setCode(ihInstitution.getCode());
@@ -140,15 +148,7 @@ public class EntityConverter {
 
   public Collection convertToCollection(
       IHInstitution ihInstitution, Collection existing, UUID institutionKey) {
-    Collection collection = new Collection();
-
-    if (existing != null) {
-      try {
-        BeanUtils.copyProperties(collection, existing);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-        log.warn("Couldn't copy collection properties from bean: {}", existing);
-      }
-    }
+    Collection collection = cloneCollection(existing);
 
     if (institutionKey != null) {
       collection.setInstitutionKey(institutionKey);
@@ -212,15 +212,7 @@ public class EntityConverter {
   }
 
   public Person convertToPerson(IHStaff ihStaff, Person existing) {
-    Person person = new Person();
-
-    if (existing != null) {
-      try {
-        BeanUtils.copyProperties(person, existing);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-        log.warn("Couldn't copy person properties from bean: {}", existing);
-      }
-    }
+    Person person = clonePerson(existing);
 
     buildFirstName(ihStaff).ifPresent(person::setFirstName);
     person.setLastName(getStringValue(ihStaff.getLastName()));

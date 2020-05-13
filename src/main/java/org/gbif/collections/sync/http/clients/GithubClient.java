@@ -1,11 +1,15 @@
 package org.gbif.collections.sync.http.clients;
 
-import org.gbif.collections.sync.SyncConfig;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.gbif.collections.sync.config.SyncConfig.NotificationConfig;
 import org.gbif.collections.sync.http.BasicAuthInterceptor;
 import org.gbif.collections.sync.notification.Issue;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,7 +18,12 @@ import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
-import retrofit2.http.*;
+import retrofit2.http.Body;
+import retrofit2.http.GET;
+import retrofit2.http.PATCH;
+import retrofit2.http.POST;
+import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 import static org.gbif.collections.sync.http.SyncCall.syncCall;
 import static org.gbif.collections.sync.notification.IHIssueFactory.IH_SYNC_LABEL;
@@ -33,7 +42,6 @@ public class GithubClient {
 
     ObjectMapper mapper =
         new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     OkHttpClient okHttpClient =
@@ -52,16 +60,15 @@ public class GithubClient {
     this.assignees = assignees;
   }
 
-  public static GithubClient getInstance(SyncConfig syncConfig) {
+  public static GithubClient getInstance(NotificationConfig notificationConfig) {
     if (instance == null) {
-      Objects.requireNonNull(syncConfig);
-      Objects.requireNonNull(syncConfig.getNotification());
+      Objects.requireNonNull(notificationConfig);
       instance =
           new GithubClient(
-              syncConfig.getNotification().getGithubWsUrl(),
-              syncConfig.getNotification().getGithubUser(),
-              syncConfig.getNotification().getGithubPassword(),
-              syncConfig.getNotification().getGhIssuesAssignees());
+              notificationConfig.getGithubWsUrl(),
+              notificationConfig.getGithubUser(),
+              notificationConfig.getGithubPassword(),
+              notificationConfig.getGhIssuesAssignees());
     }
 
     return instance;

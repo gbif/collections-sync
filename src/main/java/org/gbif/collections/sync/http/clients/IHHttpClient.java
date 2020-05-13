@@ -31,7 +31,6 @@ public class IHHttpClient {
 
     ObjectMapper mapper =
         new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     OkHttpClient.Builder okHttpClientBuilder =

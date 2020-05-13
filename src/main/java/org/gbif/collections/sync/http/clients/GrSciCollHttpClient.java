@@ -15,7 +15,7 @@ import org.gbif.api.model.common.paging.PagingResponse;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.vocabulary.Country;
-import org.gbif.collections.sync.SyncConfig;
+import org.gbif.collections.sync.config.SyncConfig;
 import org.gbif.collections.sync.http.BasicAuthInterceptor;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -53,7 +53,6 @@ public class GrSciCollHttpClient {
         new ObjectMapper()
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
             .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     SimpleModule module = new SimpleModule();

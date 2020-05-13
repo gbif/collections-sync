@@ -1,13 +1,11 @@
 package org.gbif.collections.sync.idigbio;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.gbif.api.model.collections.Address;
 import org.gbif.api.model.collections.Collection;
@@ -19,17 +17,18 @@ import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.collections.sync.parsers.DataParser;
 
-import org.apache.commons.beanutils.BeanUtils;
-
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import static org.gbif.collections.sync.Utils.cloneCollection;
+import static org.gbif.collections.sync.Utils.cloneInstitution;
+import static org.gbif.collections.sync.Utils.clonePerson;
 import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.Utils.removeUuidNamespace;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCode;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
 import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
 import static org.gbif.collections.sync.parsers.DataParser.TO_LOCAL_DATE_TIME_UTC;
 import static org.gbif.collections.sync.parsers.DataParser.cleanString;
@@ -45,35 +44,7 @@ public class EntityConverter {
   }
 
   public static Institution convertToInstitution(Institution existing, IDigBioRecord record) {
-    Institution institution = new Institution();
-
-    if (existing != null) {
-      // copy fields
-      try {
-        BeanUtils.copyProperties(institution, existing);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-        log.warn("Couldn't copy institution properties from bean: {}", existing);
-      }
-    }
-
-    Set<String> idigbioCodes = getIdigbioCode(record.getInstitutionCode());
-    if (containsIrnIdentifier(institution)) {
-      // if they don't match we keep the IH one and add the other to the alternatives
-      idigbioCodes.stream()
-          .filter(c -> !c.equalsIgnoreCase(institution.getCode()))
-          .forEach(c -> institution.getAlternativeCodes().put(c, "Code migrated from iDigBio"));
-    } else {
-      setCodes(
-          idigbioCodes,
-          institution.getCode(),
-          institution.getAlternativeCodes(),
-          institution::setCode);
-    }
-
-    if (institution.getCode() == null) {
-      // if the code is still null we use the one from the collection
-      getStringValueOpt(record.getCollectionCode()).ifPresent(institution::setCode);
-    }
+    Institution institution = cloneInstitution(existing);
 
     getStringValueOpt(record.getUniqueNameUuid())
         .ifPresent(
@@ -86,9 +57,22 @@ public class EntityConverter {
                   .add(new MachineTag(IDIGBIO_NAMESPACE, "UniqueNameUUID", v));
             });
 
+    List<String> idigbioCodes = getIdigbioCodes(record.getInstitutionCode());
     // non-IH and more updated in iDigBio
     if (!containsIrnIdentifier(institution)
         && shouldUpdateRecord(record, institution.getModified())) {
+      // codes
+      setCodes(
+          idigbioCodes,
+          institution.getCode(),
+          institution.getAlternativeCodes(),
+          institution::setCode);
+
+      if (institution.getCode() == null) {
+        // if the code is still null we use the one from the collection
+        getStringValueOpt(record.getCollectionCode()).ifPresent(institution::setCode);
+      }
+
       Optional<String> instName = getStringValueOpt(record.getInstitution());
       if (instName.isPresent()) {
         institution.setName(instName.get());
@@ -102,38 +86,13 @@ public class EntityConverter {
       if (record.getLon() != null) {
         institution.setLongitude(TO_BIGDECIMAL.apply(record.getLon()));
       }
+    } else {
+      idigbioCodes.stream()
+          .filter(c -> !c.equalsIgnoreCase(institution.getCode()))
+          .forEach(c -> institution.getAlternativeCodes().put(c, "Code migrated from iDigBio"));
     }
 
     return institution;
-  }
-
-  private static void setCodes(
-      Set<String> idigbioCodes,
-      String currentCode,
-      Map<String, String> alternativeCodes,
-      Consumer<String> codeSetter) {
-    if (idigbioCodes.isEmpty()
-        || idigbioCodes.stream().allMatch(c -> c.equalsIgnoreCase(currentCode))) {
-      // if there are no new codes we don't do anything
-      return;
-    }
-    // we set the iDigBio one as main code and the others as alternative
-    Set<String> newCodes =
-        idigbioCodes.stream()
-            .filter(c -> !c.equalsIgnoreCase(currentCode))
-            .collect(Collectors.toSet());
-
-    Iterator<String> newCodesIterator = newCodes.iterator();
-    String newCode = newCodesIterator.next();
-    if (currentCode != null) {
-      alternativeCodes.put(
-          currentCode, "code replaced by the one migrated from iDigBio: " + newCode);
-    }
-    codeSetter.accept(newCode);
-
-    while (newCodesIterator.hasNext()) {
-      alternativeCodes.put(newCodesIterator.next(), "Code migrated from iDigBio");
-    }
   }
 
   public static Collection convertToCollection(IDigBioRecord record, Institution institution) {
@@ -146,23 +105,16 @@ public class EntityConverter {
 
   public static Collection convertToCollection(
       Collection existing, IDigBioRecord record, Institution institution) {
-    Collection collection = new Collection();
-
-    if (existing != null) {
-      // copy fields
-      try {
-        BeanUtils.copyProperties(collection, existing);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-        log.warn("Couldn't copy institution properties from bean: {}", existing);
-      }
-    }
+    Collection collection = cloneCollection(existing);
 
     if (institution != null && institution.getKey() != null) {
       collection.setInstitutionKey(institution.getKey());
     }
 
-    Set<String> idigbioCodes = getIdigbioCode(record.getCollectionCode());
-    if (containsIrnIdentifier(collection)) {
+    // codes
+    List<String> idigbioCodes = getIdigbioCodes(record.getCollectionCode());
+    if (containsIrnIdentifier(collection)
+        || !shouldUpdateRecord(record, collection.getModified())) {
       // if they don't match we keep the IH one and add the other to the alternatives
       idigbioCodes.stream()
           .filter(c -> !c.equalsIgnoreCase(collection.getCode()))
@@ -177,9 +129,9 @@ public class EntityConverter {
       } else if (collection.getCode() == null) {
         // we try to find a code. At this point we only care about the main code
         collection.setCode(
-            Optional.ofNullable(getIdigbioCode(record.getInstitutionCode()))
+            Optional.ofNullable(getIdigbioCodes(record.getInstitutionCode()))
                 .filter(v -> !v.isEmpty())
-                .map(v -> v.iterator().next())
+                .map(v -> v.get(0))
                 .orElse(institution != null ? institution.getCode() : null));
       }
     }
@@ -255,6 +207,36 @@ public class EntityConverter {
     return collection;
   }
 
+  private static void setCodes(
+      List<String> idigbioCodes,
+      String currentCode,
+      Map<String, String> alternativeCodes,
+      Consumer<String> codeSetter) {
+    if (idigbioCodes.isEmpty()
+        || idigbioCodes.stream().allMatch(c -> c.equalsIgnoreCase(currentCode))) {
+      // if there are no new codes we don't do anything
+      return;
+    }
+
+    Iterator<String> iDigBioCodesIterator = idigbioCodes.iterator();
+    String iDigBioMainCode = iDigBioCodesIterator.next();
+    if (!iDigBioMainCode.equalsIgnoreCase(currentCode)) {
+      codeSetter.accept(iDigBioMainCode);
+
+      if (currentCode != null) {
+        alternativeCodes.put(
+            currentCode, "code replaced by the one migrated from iDigBio: " + iDigBioMainCode);
+      }
+    }
+
+    while (iDigBioCodesIterator.hasNext()) {
+      String code = iDigBioCodesIterator.next();
+      if (!code.equalsIgnoreCase(currentCode)) {
+        alternativeCodes.put(code, "Code migrated from iDigBio");
+      }
+    }
+  }
+
   private static Address convertAddress(IDigBioRecord.Address iDigBioAddress, Address address) {
     if (!existsAddress(iDigBioAddress)) {
       return address;
@@ -281,15 +263,7 @@ public class EntityConverter {
       return existing;
     }
 
-    Person person = new Person();
-    if (existing != null) {
-      try {
-        BeanUtils.copyProperties(person, existing);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-        log.warn("Couldn't copy person properties from bean: {}", existing);
-      }
-    }
-
+    Person person = clonePerson(existing);
     person.setFirstName(cleanString(iDigBioRecord.getContact()));
     person.setEmail(cleanString(iDigBioRecord.getContactEmail()));
     person.setPosition(cleanString(iDigBioRecord.getContactRole()));

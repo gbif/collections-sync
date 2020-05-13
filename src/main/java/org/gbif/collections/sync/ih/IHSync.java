@@ -20,7 +20,6 @@ import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contactable;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
-import org.gbif.collections.sync.SyncConfig;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.CollectionOnlyMatch;
 import org.gbif.collections.sync.SyncResult.Conflict;
@@ -30,6 +29,7 @@ import org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
 import org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
 import org.gbif.collections.sync.SyncResult.NoEntityMatch;
 import org.gbif.collections.sync.SyncResult.StaffMatch;
+import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.http.clients.GithubClient;
 import org.gbif.collections.sync.http.clients.GrSciCollHttpClient;
 import org.gbif.collections.sync.http.clients.IHHttpClient;
@@ -63,11 +63,10 @@ public class IHSync {
   private SyncResult.SyncResultBuilder syncResultBuilder = SyncResult.builder();
 
   @Builder
-  private IHSync(SyncConfig config, EntityConverter entityConverter, CountryParser countryParser) {
+  private IHSync(IHConfig ihConfig, EntityConverter entityConverter, CountryParser countryParser) {
     if (countryParser == null) {
       this.countryParser =
-          CountryParser.from(
-              IHHttpClient.getInstance(config.getIhConfig().getIhWsUrl()).getCountries());
+          CountryParser.from(IHHttpClient.getInstance(ihConfig.getIhWsUrl()).getCountries());
     } else {
       this.countryParser = countryParser;
     }
@@ -76,19 +75,19 @@ public class IHSync {
       this.entityConverter =
           EntityConverter.builder()
               .countryParser(this.countryParser)
-              .creationUser(config.getRegistryWsUser())
+              .creationUser(ihConfig.getSyncConfig().getRegistryWsUser())
               .build();
     } else {
       this.entityConverter = entityConverter;
     }
 
-    if (config != null) {
-      this.dryRun = config.isDryRun();
-      this.sendNotifications = config.isSendNotifications();
-      this.issueFactory = IHIssueFactory.getInstance(config);
-      this.grSciCollHttpClient = GrSciCollHttpClient.getInstance(config);
-      this.ihHttpClient = IHHttpClient.getInstance(config.getIhConfig().getIhWsUrl());
-      this.githubClient = GithubClient.getInstance(config);
+    if (ihConfig != null && ihConfig.getSyncConfig() != null) {
+      this.dryRun = ihConfig.getSyncConfig().isDryRun();
+      this.sendNotifications = ihConfig.getSyncConfig().isSendNotifications();
+      this.issueFactory = IHIssueFactory.getInstance(ihConfig);
+      this.grSciCollHttpClient = GrSciCollHttpClient.getInstance(ihConfig.getSyncConfig());
+      this.ihHttpClient = IHHttpClient.getInstance(ihConfig.getIhWsUrl());
+      this.githubClient = GithubClient.getInstance(ihConfig.getSyncConfig().getNotification());
     } else {
       this.dryRun = true;
       this.sendNotifications = false;
@@ -281,12 +280,28 @@ public class IHSync {
 
     EntityMatch.EntityMatchBuilder<Institution> entityMatchBuilder =
         EntityMatch.<Institution>builder().matched(existing).merged(mergedInstitution);
-    if (!mergedInstitution.lenientEquals(existing)) {
+    if (!mergedInstitution.equals(existing)) {
+      // check if we need to update the entity
+      if (!mergedInstitution.lenientEquals(existing)) {
+        executeOrAddFailAsync(
+            () -> grSciCollHttpClient.updateInstitution(mergedInstitution),
+            e ->
+                new FailedAction(
+                    mergedInstitution, "Failed to update institution: " + e.getMessage()));
+      }
+      // add identifiers if needed
       executeOrAddFailAsync(
-          () -> grSciCollHttpClient.updateInstitution(mergedInstitution),
+          () ->
+              mergedInstitution.getIdentifiers().stream()
+                  .filter(i -> i.getKey() == null)
+                  .forEach(
+                      i ->
+                          grSciCollHttpClient.addIdentifierToInstitution(
+                              mergedInstitution.getKey(), i)),
           e ->
               new FailedAction(
-                  mergedInstitution, "Failed to update institution: " + e.getMessage()));
+                  mergedInstitution, "Failed to add identifiers to institution: " + e.getMessage()));
+
       entityMatchBuilder.update(true);
     }
 
@@ -301,11 +316,28 @@ public class IHSync {
 
     EntityMatch.EntityMatchBuilder<Collection> entityMatchBuilder =
         EntityMatch.<Collection>builder().matched(existing).merged(mergedCollection);
-    if (!mergedCollection.lenientEquals(existing)) {
+    if (!mergedCollection.equals(existing)) {
+      // check if we need to update the entity
+      if (!mergedCollection.lenientEquals(existing)) {
+        executeOrAddFailAsync(
+            () -> grSciCollHttpClient.updateCollection(mergedCollection),
+            e ->
+                new FailedAction(
+                    mergedCollection, "Failed to update collection: " + e.getMessage()));
+      }
+      // add identifiers if needed
       executeOrAddFailAsync(
-          () -> grSciCollHttpClient.updateCollection(mergedCollection),
+          () ->
+              mergedCollection.getIdentifiers().stream()
+                  .filter(i -> i.getKey() == null)
+                  .forEach(
+                      i ->
+                          grSciCollHttpClient.addIdentifierToCollection(
+                              mergedCollection.getKey(), i)),
           e ->
-              new FailedAction(mergedCollection, "Failed to update collection: " + e.getMessage()));
+              new FailedAction(
+                  mergedCollection, "Failed to add identifiers to collection: " + e.getMessage()));
+
       entityMatchBuilder.update(true);
     }
 
@@ -384,12 +416,13 @@ public class IHSync {
 
         EntityMatch.EntityMatchBuilder<Person> entityMatchBuilder =
             EntityMatch.<Person>builder().matched(matchedPerson).merged(mergedPerson);
-        if (!mergedPerson.lenientEquals(matchedPerson)) {
-          // update person
-          executeOrAddFailAsync(
-              () -> grSciCollHttpClient.updatePerson(mergedPerson),
-              e -> new FailedAction(mergedPerson, "Failed to update person: " + e.getMessage()));
-
+        if (!mergedPerson.equals(matchedPerson)) {
+          // check if we need to update the person
+          if (!mergedPerson.lenientEquals(matchedPerson)) {
+            executeOrAddFailAsync(
+                () -> grSciCollHttpClient.updatePerson(mergedPerson),
+                e -> new FailedAction(mergedPerson, "Failed to update person: " + e.getMessage()));
+          }
           // add identifiers if needed
           executeOrAddFailAsync(
               () ->

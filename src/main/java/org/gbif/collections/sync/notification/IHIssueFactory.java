@@ -1,14 +1,19 @@
 package org.gbif.collections.sync.notification;
 
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Person;
-import org.gbif.collections.sync.SyncConfig;
-import org.gbif.collections.sync.SyncConfig.IHConfig;
+import org.gbif.collections.sync.config.IHConfig;
+import org.gbif.collections.sync.config.SyncConfig;
 import org.gbif.collections.sync.ih.model.IHEntity;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
-
-import java.util.*;
 
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
@@ -24,11 +29,18 @@ public class IHIssueFactory extends BaseIssueFactory {
 
   private static IHIssueFactory instance;
 
-  private IHIssueFactory(SyncConfig config) {
-    super(config);
+  private final String ihInstitutionLink;
+  private final String ihStaffLink;
+
+  private IHIssueFactory(IHConfig config) {
+    super(config.getSyncConfig());
+    this.ihInstitutionLink =
+        PORTAL_URL_NORMALIZER.apply(config.getIhPortalUrl()) + "/ih/herbarium-details/?irn=%s";
+    this.ihStaffLink =
+        PORTAL_URL_NORMALIZER.apply(config.getIhPortalUrl()) + "/ih/person-details/?irn=%s";
   }
 
-  public static IHIssueFactory getInstance(SyncConfig config) {
+  public static IHIssueFactory getInstance(IHConfig config) {
     if (instance == null) {
       instance = new IHIssueFactory(config);
     }
@@ -39,10 +51,11 @@ public class IHIssueFactory extends BaseIssueFactory {
   public static IHIssueFactory fromDefaults() {
     SyncConfig.NotificationConfig notificationConfig = new SyncConfig.NotificationConfig();
     notificationConfig.setGhIssuesAssignees(Collections.emptySet());
-    SyncConfig config = new SyncConfig();
-    config.setNotification(notificationConfig);
-    config.setIhConfig(new IHConfig());
-    return new IHIssueFactory(config);
+    SyncConfig syncConfig = new SyncConfig();
+    syncConfig.setNotification(notificationConfig);
+    IHConfig ihConfig = new IHConfig();
+    ihConfig.setSyncConfig(syncConfig);
+    return new IHIssueFactory(ihConfig);
   }
 
   public Issue createConflict(List<CollectionEntity> entities, IHInstitution ihInstitution) {
@@ -86,6 +99,21 @@ public class IHIssueFactory extends BaseIssueFactory {
         .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
         .labels(Sets.newHashSet(IH_SYNC_LABEL, syncTimestampLabel))
         .build();
+  }
+
+  protected <T extends IHEntity> String createIHLink(T entity) {
+    String linkTemplate;
+    String text;
+    if (entity instanceof IHInstitution) {
+      linkTemplate = ihInstitutionLink;
+      text = "institution";
+    } else {
+      linkTemplate = ihStaffLink;
+      text = "staff";
+    }
+
+    URI uri = URI.create(String.format(linkTemplate, entity.getIrn()));
+    return "[" + text + "](" + uri.toString() + ")";
   }
 
   @Override

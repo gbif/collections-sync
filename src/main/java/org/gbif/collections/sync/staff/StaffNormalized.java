@@ -118,10 +118,6 @@ public class StaffNormalized {
       builder.primaryInstitutionKey(record.getGrbioInstMatch());
     }
 
-    if (record.getGrbioCollMatch() != null) {
-      builder.primaryCollectionKey(record.getGrbioCollMatch());
-    }
-
     return builder.build();
   }
 }

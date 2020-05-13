@@ -1,7 +1,17 @@
 package org.gbif.collections.sync.ih;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.UUID;
+
+import org.gbif.api.model.collections.Address;
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.*;
+import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.LenientEquals;
 import org.gbif.api.util.IsoDateParsingUtils;
@@ -15,15 +25,13 @@ import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 import org.gbif.collections.sync.parsers.CountryParser;
 
-import java.util.*;
+import org.junit.Test;
 
 import lombok.Builder;
 import lombok.Data;
-import org.junit.Test;
 
 import static org.gbif.collections.sync.Utils.encodeIRN;
 import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -271,6 +279,34 @@ public class IHSyncTest {
     assertEquals(0, staffMatch.getMatchedPersons().size());
     assertNotNull(staffMatch.getConflicts().iterator().next().getEntity());
     assertEquals(2, staffMatch.getConflicts().iterator().next().getGrSciCollEntities().size());
+  }
+
+  @Test
+  public void identifierAndTagUpdateInCollectionTest() {
+    TestEntity<Collection, IHInstitution> collectionNoChange = createCollectionNoChange();
+    collectionNoChange.getEntity().setIdentifiers(Collections.emptyList());
+    MatchResult match =
+        MatchResult.builder()
+            .collections(Collections.singleton(collectionNoChange.entity))
+            .ihInstitution(collectionNoChange.ih)
+            .build();
+
+    SyncResult.CollectionOnlyMatch collectionOnlyMatch = IH_SYNC.handleCollectionMatch(match);
+    assertTrue(collectionOnlyMatch.getMatchedCollection().isUpdate());
+  }
+
+  @Test
+  public void identifierAndTagUpdateInInstitutionTest() {
+    TestEntity<Institution, IHInstitution> institutionNoChange = createInstitutionNoChange();
+    institutionNoChange.getEntity().setIdentifiers(Collections.emptyList());
+    MatchResult match =
+        MatchResult.builder()
+            .institutions(Collections.singleton(institutionNoChange.entity))
+            .ihInstitution(institutionNoChange.ih)
+            .build();
+
+    SyncResult.InstitutionOnlyMatch institutionOnlyMatch = IH_SYNC.handleInstitutionMatch(match);
+    assertTrue(institutionOnlyMatch.getMatchedInstitution().isUpdate());
   }
 
   private <T extends CollectionEntity & LenientEquals<T>, R extends IHEntity>
