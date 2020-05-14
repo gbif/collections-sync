@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
+import org.gbif.api.model.registry.Identifier;
 import org.gbif.collections.sync.Utils;
 import org.gbif.collections.sync.idigbio.IDigBioRecord;
 import org.gbif.collections.sync.idigbio.IDigBioUtils;
@@ -26,6 +27,7 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.Utils.countNonNullValues;
+import static org.gbif.collections.sync.Utils.removeUuidNamespace;
 import static org.gbif.collections.sync.staff.StaffUtils.compareLists;
 import static org.gbif.collections.sync.staff.StaffUtils.compareStrings;
 
@@ -59,22 +61,8 @@ public class Matcher {
 
     Institution institutionMatch = institutionsByKey.get(iDigBioRecord.getGrbioInstMatch());
     if (institutionMatch == null) {
-      // we try with the newly created institutions
-      List<Institution> institutionsMatched =
-          newlyCreatedIDigBioInstitutions.stream()
-              .filter(
-                  i ->
-                      i.getCode().equals(iDigBioRecord.getInstitutionCode())
-                          && i.getName().equals(iDigBioRecord.getInstitution()))
-              .collect(Collectors.toList());
-
-      if (institutionsMatched.size() > 1) {
-        log.warn("Multiple candidates for record {}: {}", iDigBioRecord, institutionsMatched);
-      } else if (institutionsMatched.size() == 1) {
-        institutionMatch = institutionsMatched.get(0);
-      }
+      institutionMatch = matchWithNewInstitutions(iDigBioRecord);
     }
-
     result.institutionMatched(institutionMatch);
 
     if (institutionMatch != null) {
@@ -84,6 +72,33 @@ public class Matcher {
     }
 
     return result.build();
+  }
+
+  private Institution matchWithNewInstitutions(IDigBioRecord iDigBioRecord) {
+    // we try with the newly created institutions
+    List<String> iDigBioCodes = IDigBioUtils.getIdigbioCodes(iDigBioRecord.getInstitutionCode());
+    String instUniqueNameUuid = removeUuidNamespace(iDigBioRecord.getUniqueNameUuid());
+    Predicate<List<Identifier>> containsIdentifier =
+        ids ->
+            Strings.isNullOrEmpty(iDigBioRecord.getUniqueNameUuid())
+                || ids.stream()
+                    .anyMatch(identifier -> identifier.getIdentifier().equals(instUniqueNameUuid));
+
+    List<Institution> institutionsMatched =
+        newlyCreatedIDigBioInstitutions.stream()
+            .filter(
+                i ->
+                    iDigBioCodes.contains(i.getCode())
+                        && i.getName().equals(iDigBioRecord.getInstitution())
+                        && containsIdentifier.test(i.getIdentifiers()))
+            .collect(Collectors.toList());
+
+    if (institutionsMatched.size() > 1) {
+      log.warn("Multiple candidates for record {}: {}", iDigBioRecord, institutionsMatched);
+    } else if (institutionsMatched.size() == 1) {
+      return institutionsMatched.get(0);
+    }
+    return null;
   }
 
   private Optional<Collection> matchCollection(UUID institutionKey, IDigBioRecord iDigBioRecord) {
