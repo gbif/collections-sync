@@ -1,6 +1,7 @@
 package org.gbif.collections.sync.idigbio.match;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,6 +35,10 @@ public class Matcher {
   final Map<UUID, Institution> institutionsByKey;
   final Map<UUID, Collection> collectionsByKey;
   final Map<UUID, Set<Collection>> collectionsByInstitution;
+  // institutions created when an IDigBio record has no match. We need to store them in order not to
+  // duplicate them. For example, the institution with code CCBER has no match and it's present
+  // multiple times because it has multiple collections.
+  final Set<Institution> newlyCreatedIDigBioInstitutions = new HashSet<>();
 
   @Builder
   private Matcher(List<Institution> institutions, List<Collection> collections) {
@@ -53,6 +58,23 @@ public class Matcher {
     MatchResult.MatchResultBuilder result = MatchResult.builder().iDigBioRecord(iDigBioRecord);
 
     Institution institutionMatch = institutionsByKey.get(iDigBioRecord.getGrbioInstMatch());
+    if (institutionMatch == null) {
+      // we try with the newly created institutions
+      List<Institution> institutionsMatched =
+          newlyCreatedIDigBioInstitutions.stream()
+              .filter(
+                  i ->
+                      i.getCode().equals(iDigBioRecord.getInstitutionCode())
+                          && i.getName().equals(iDigBioRecord.getInstitution()))
+              .collect(Collectors.toList());
+
+      if (institutionsMatched.size() > 1) {
+        log.warn("Multiple candidates for record {}: {}", iDigBioRecord, institutionsMatched);
+      } else if (institutionsMatched.size() == 1) {
+        institutionMatch = institutionsMatched.get(0);
+      }
+    }
+
     result.institutionMatched(institutionMatch);
 
     if (institutionMatch != null) {
@@ -163,6 +185,10 @@ public class Matcher {
     }
 
     return Optional.ofNullable(bestMatch);
+  }
+
+  public void addNewlyCreatedIDigBioInstitution(Institution institution) {
+    newlyCreatedIDigBioInstitutions.add(institution);
   }
 
   private static Person comparePersonFieldCompleteness(Person p1, Person p2) {

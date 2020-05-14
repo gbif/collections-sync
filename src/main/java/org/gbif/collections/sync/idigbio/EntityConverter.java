@@ -11,8 +11,10 @@ import org.gbif.api.model.collections.Address;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
+import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
+import org.gbif.api.model.registry.MachineTaggable;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.collections.sync.parsers.DataParser;
@@ -49,12 +51,11 @@ public class EntityConverter {
     getStringValueOpt(record.getUniqueNameUuid())
         .ifPresent(
             v -> {
-              institution
-                  .getIdentifiers()
-                  .add(new Identifier(IdentifierType.UUID, removeUuidNamespace(v)));
-              institution
-                  .getMachineTags()
-                  .add(new MachineTag(IDIGBIO_NAMESPACE, "UniqueNameUUID", v));
+              addIdentifierIfNotExists(
+                  institution, new Identifier(IdentifierType.UUID, removeUuidNamespace(v)));
+
+              addMachineTagIfNotExists(
+                  institution, new MachineTag(IDIGBIO_NAMESPACE, "UniqueNameUUID", v));
             });
 
     List<String> idigbioCodes = getIdigbioCodes(record.getInstitutionCode());
@@ -139,21 +140,24 @@ public class EntityConverter {
     // machine tags and identifiers
     getStringValueOpt(record.getRecordSets())
         .ifPresent(
-            v -> collection.addMachineTag(new MachineTag(IDIGBIO_NAMESPACE, "recordsets", v)));
+            v ->
+                addMachineTagIfNotExists(
+                    collection, new MachineTag(IDIGBIO_NAMESPACE, "recordsets", v)));
     getStringValueOpt(record.getRecordsetQuery())
         .ifPresent(
-            v -> collection.addMachineTag(new MachineTag(IDIGBIO_NAMESPACE, "recordsetQuery", v)));
+            v ->
+                addMachineTagIfNotExists(
+                    collection, new MachineTag(IDIGBIO_NAMESPACE, "recordsetQuery", v)));
     getStringValueOpt(record.getCollectionLsid())
-        .ifPresent(v -> collection.getIdentifiers().add(new Identifier(IdentifierType.LSID, v)));
+        .ifPresent(
+            v -> addIdentifierIfNotExists(collection, new Identifier(IdentifierType.LSID, v)));
     getStringValueOpt(record.getCollectionUuid())
         .ifPresent(
             v -> {
-              collection
-                  .getIdentifiers()
-                  .add(new Identifier(IdentifierType.UUID, removeUuidNamespace(v)));
-              collection
-                  .getMachineTags()
-                  .add(new MachineTag(IDIGBIO_NAMESPACE, "CollectionUUID", v));
+              addIdentifierIfNotExists(
+                  collection, new Identifier(IdentifierType.UUID, removeUuidNamespace(v)));
+              addMachineTagIfNotExists(
+                  collection, new MachineTag(IDIGBIO_NAMESPACE, "CollectionUUID", v));
             });
 
     if (shouldUpdateRecord(record, collection.getModified())) {
@@ -283,5 +287,23 @@ public class EntityConverter {
     return record.getModifiedDate() == null
         || grSciCollEntityDate == null
         || record.getModifiedDate().isAfter(TO_LOCAL_DATE_TIME_UTC.apply(grSciCollEntityDate));
+  }
+
+  static <T extends Identifiable> boolean addIdentifierIfNotExists(
+      T entity, Identifier identifier) {
+    if (!entity.getIdentifiers().contains(identifier)) {
+      entity.getIdentifiers().add(identifier);
+      return true;
+    }
+    return false;
+  }
+
+  static <T extends MachineTaggable> boolean addMachineTagIfNotExists(
+      T entity, MachineTag machineTag) {
+    if (!entity.getMachineTags().contains(machineTag)) {
+      entity.getMachineTags().add(machineTag);
+      return true;
+    }
+    return false;
   }
 }

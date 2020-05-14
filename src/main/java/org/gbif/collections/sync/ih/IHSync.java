@@ -64,9 +64,24 @@ public class IHSync {
 
   @Builder
   private IHSync(IHConfig ihConfig, EntityConverter entityConverter, CountryParser countryParser) {
-    if (countryParser == null) {
-      this.countryParser =
-          CountryParser.from(IHHttpClient.getInstance(ihConfig.getIhWsUrl()).getCountries());
+    if (ihConfig != null && ihConfig.getSyncConfig() != null) {
+      this.dryRun = ihConfig.getSyncConfig().isDryRun();
+      this.sendNotifications = ihConfig.getSyncConfig().isSendNotifications();
+      this.issueFactory = IHIssueFactory.create(ihConfig);
+      this.grSciCollHttpClient = GrSciCollHttpClient.create(ihConfig.getSyncConfig());
+      this.ihHttpClient = IHHttpClient.create(ihConfig.getIhWsUrl());
+      this.githubClient = GithubClient.create(ihConfig.getSyncConfig().getNotification());
+    } else {
+      this.dryRun = true;
+      this.sendNotifications = false;
+      this.issueFactory = IHIssueFactory.fromDefaults();
+      this.grSciCollHttpClient = null;
+      this.ihHttpClient = null;
+      this.githubClient = null;
+    }
+
+    if (countryParser == null && ihHttpClient != null) {
+      this.countryParser = CountryParser.from(ihHttpClient.getCountries());
     } else {
       this.countryParser = countryParser;
     }
@@ -79,22 +94,6 @@ public class IHSync {
               .build();
     } else {
       this.entityConverter = entityConverter;
-    }
-
-    if (ihConfig != null && ihConfig.getSyncConfig() != null) {
-      this.dryRun = ihConfig.getSyncConfig().isDryRun();
-      this.sendNotifications = ihConfig.getSyncConfig().isSendNotifications();
-      this.issueFactory = IHIssueFactory.getInstance(ihConfig);
-      this.grSciCollHttpClient = GrSciCollHttpClient.getInstance(ihConfig.getSyncConfig());
-      this.ihHttpClient = IHHttpClient.getInstance(ihConfig.getIhWsUrl());
-      this.githubClient = GithubClient.getInstance(ihConfig.getSyncConfig().getNotification());
-    } else {
-      this.dryRun = true;
-      this.sendNotifications = false;
-      this.issueFactory = IHIssueFactory.fromDefaults();
-      this.grSciCollHttpClient = null;
-      this.ihHttpClient = null;
-      this.githubClient = null;
     }
 
     log.info(
@@ -300,7 +299,8 @@ public class IHSync {
                               mergedInstitution.getKey(), i)),
           e ->
               new FailedAction(
-                  mergedInstitution, "Failed to add identifiers to institution: " + e.getMessage()));
+                  mergedInstitution,
+                  "Failed to add identifiers to institution: " + e.getMessage()));
 
       entityMatchBuilder.update(true);
     }

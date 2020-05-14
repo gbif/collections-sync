@@ -31,7 +31,6 @@ import static org.gbif.collections.sync.notification.IHIssueFactory.IH_SYNC_LABE
 /** Lightweight client for the Github API. */
 public class GithubClient {
 
-  private static GithubClient instance;
   private final API api;
   private final Set<String> assignees;
 
@@ -41,8 +40,7 @@ public class GithubClient {
     Objects.requireNonNull(password);
 
     ObjectMapper mapper =
-        new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     OkHttpClient okHttpClient =
         new OkHttpClient.Builder()
@@ -60,18 +58,13 @@ public class GithubClient {
     this.assignees = assignees;
   }
 
-  public static GithubClient getInstance(NotificationConfig notificationConfig) {
-    if (instance == null) {
-      Objects.requireNonNull(notificationConfig);
-      instance =
-          new GithubClient(
-              notificationConfig.getGithubWsUrl(),
-              notificationConfig.getGithubUser(),
-              notificationConfig.getGithubPassword(),
-              notificationConfig.getGhIssuesAssignees());
-    }
-
-    return instance;
+  public static GithubClient create(NotificationConfig notificationConfig) {
+    Objects.requireNonNull(notificationConfig);
+    return new GithubClient(
+        notificationConfig.getGithubWsUrl(),
+        notificationConfig.getGithubUser(),
+        notificationConfig.getGithubPassword(),
+        notificationConfig.getGhIssuesAssignees());
   }
 
   public void createIssue(Issue issue) {

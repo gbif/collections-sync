@@ -16,6 +16,7 @@ import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.MachineTaggable;
+import org.gbif.api.model.registry.Taggable;
 import org.gbif.api.vocabulary.IdentifierType;
 
 import org.apache.commons.beanutils.BeanUtils;
@@ -103,7 +104,8 @@ public class Utils {
     return cloneCollectionEntity(collection, new Collection());
   }
 
-  private static <T extends CollectionEntity & Identifiable & MachineTaggable & Contactable>
+  private static <
+          T extends CollectionEntity & Identifiable & Taggable & MachineTaggable & Contactable>
       T cloneCollectionEntity(T entity, T clone) {
     if (entity != null) {
       // copy fields
@@ -115,6 +117,9 @@ public class Utils {
         }
         if (clone.getMachineTags() != null) {
           clone.setMachineTags(new ArrayList<>(clone.getMachineTags()));
+        }
+        if (clone.getTags() != null) {
+          clone.setTags(new ArrayList<>(clone.getTags()));
         }
         if (clone.getAddress() != null) {
           clone.setAddress((Address) BeanUtils.cloneBean(clone.getAddress()));
@@ -142,6 +147,9 @@ public class Utils {
         }
         if (clone.getMachineTags() != null) {
           clone.setMachineTags(new ArrayList<>(clone.getMachineTags()));
+        }
+        if (clone.getTags() != null) {
+          clone.setTags(new ArrayList<>(clone.getTags()));
         }
         if (clone.getMailingAddress() != null) {
           clone.setMailingAddress((Address) BeanUtils.cloneBean(clone.getMailingAddress()));

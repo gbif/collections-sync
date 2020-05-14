@@ -27,8 +27,6 @@ public class IHIssueFactory extends BaseIssueFactory {
   private static final String ENTITY_CONFLICT_TITLE =
       "IH %s with IRN %s matches with multiple GrSciColl entities";
 
-  private static IHIssueFactory instance;
-
   private final String ihInstitutionLink;
   private final String ihStaffLink;
 
@@ -40,12 +38,8 @@ public class IHIssueFactory extends BaseIssueFactory {
         PORTAL_URL_NORMALIZER.apply(config.getIhPortalUrl()) + "/ih/person-details/?irn=%s";
   }
 
-  public static IHIssueFactory getInstance(IHConfig config) {
-    if (instance == null) {
-      instance = new IHIssueFactory(config);
-    }
-
-    return instance;
+  public static IHIssueFactory create(IHConfig config) {
+    return new IHIssueFactory(config);
   }
 
   public static IHIssueFactory fromDefaults() {

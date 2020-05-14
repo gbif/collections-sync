@@ -17,7 +17,7 @@ public class CountryParserTest {
   @Test
   public void ihCountryMappingTest() {
     IHHttpClient ihHttpClient =
-        IHHttpClient.getInstance("http://sweetgum.nybg.org/science/api/v1/");
+        IHHttpClient.create("http://sweetgum.nybg.org/science/api/v1/");
     List<String> countries = ihHttpClient.getCountries();
 
     Map<String, Country> mappings = CountryParser.mapCountries(countries);

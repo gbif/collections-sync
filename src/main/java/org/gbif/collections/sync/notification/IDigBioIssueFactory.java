@@ -36,7 +36,6 @@ public class IDigBioIssueFactory extends BaseIssueFactory {
         return url;
       };
 
-  private static IDigBioIssueFactory instance;
   private final String iDigBioCollectionLink;
 
   private IDigBioIssueFactory(IDigBioConfig iDigBioConfig) {
@@ -45,12 +44,8 @@ public class IDigBioIssueFactory extends BaseIssueFactory {
         PORTAL_URL_NORMALIZER.apply(iDigBioConfig.getIDigBioPortalUrl()) + "/%s";
   }
 
-  public static IDigBioIssueFactory getInstance(IDigBioConfig iDigBioConfig) {
-    if (instance == null) {
-      instance = new IDigBioIssueFactory(iDigBioConfig);
-    }
-
-    return instance;
+  public static IDigBioIssueFactory create(IDigBioConfig iDigBioConfig) {
+    return new IDigBioIssueFactory(iDigBioConfig);
   }
 
   public static IDigBioIssueFactory fromDefaults() {

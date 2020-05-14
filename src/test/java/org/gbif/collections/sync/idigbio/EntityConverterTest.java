@@ -19,9 +19,10 @@ import org.gbif.api.vocabulary.IdentifierType;
 
 import org.junit.Test;
 
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.*;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
 import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -405,5 +406,39 @@ public class EntityConverterTest {
     assertTrue(mtCollUuid.isPresent());
     assertEquals(IDIGBIO_NAMESPACE, mtCollUuid.get().getNamespace());
     assertEquals(iDigBioRecord.getCollectionUuid(), mtCollUuid.get().getValue());
+  }
+
+  @Test
+  public void addIdentifierIfNotExistsTest() {
+    Identifier i1 = new Identifier(IdentifierType.LSID, "lsid");
+    Identifier i2 = new Identifier(IdentifierType.URI, "uri");
+
+    Collection col = new Collection();
+    col.getIdentifiers().add(i1);
+    col.getIdentifiers().add(i2);
+
+    assertFalse(
+        EntityConverter.addIdentifierIfNotExists(col, new Identifier(IdentifierType.LSID, "lsid")));
+    assertTrue(
+        EntityConverter.addIdentifierIfNotExists(col, new Identifier(IdentifierType.URI, "lsid")));
+    assertTrue(
+        EntityConverter.addIdentifierIfNotExists(col, new Identifier(IdentifierType.URI, "other")));
+  }
+
+  @Test
+  public void addMachineTagIfNotExistsTest() {
+    MachineTag mt1 = new MachineTag("ns", "name", "value");
+    MachineTag mt2 = new MachineTag("ns", "name2", "value2");
+
+    Collection col = new Collection();
+    col.getMachineTags().add(mt1);
+    col.getMachineTags().add(mt2);
+
+    assertFalse(
+        EntityConverter.addMachineTagIfNotExists(col, new MachineTag("ns", "name", "value")));
+    assertTrue(
+        EntityConverter.addMachineTagIfNotExists(col, new MachineTag("ns", "other", "value")));
+    assertTrue(
+        EntityConverter.addMachineTagIfNotExists(col, new MachineTag("ns", "name", "value3")));
   }
 }

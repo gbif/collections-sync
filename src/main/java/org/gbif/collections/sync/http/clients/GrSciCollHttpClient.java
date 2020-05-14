@@ -43,10 +43,9 @@ import static org.gbif.collections.sync.http.SyncCall.syncCall;
 /** A lightweight GRSciColl client. */
 public class GrSciCollHttpClient {
 
-  private static GrSciCollHttpClient instance;
   private final API api;
 
-  public GrSciCollHttpClient(String grSciCollWsUrl, String user, String password) {
+  private GrSciCollHttpClient(String grSciCollWsUrl, String user, String password) {
     Objects.requireNonNull(grSciCollWsUrl);
 
     ObjectMapper mapper =
@@ -79,16 +78,11 @@ public class GrSciCollHttpClient {
     api = retrofit.create(API.class);
   }
 
-  public static GrSciCollHttpClient getInstance(SyncConfig syncConfig) {
-    if (instance == null) {
-      instance =
-          new GrSciCollHttpClient(
-              syncConfig.getRegistryWsUrl(),
-              syncConfig.getRegistryWsUser(),
-              syncConfig.getRegistryWsPassword());
-    }
-
-    return instance;
+  public static GrSciCollHttpClient create(SyncConfig syncConfig) {
+    return new GrSciCollHttpClient(
+        syncConfig.getRegistryWsUrl(),
+        syncConfig.getRegistryWsUser(),
+        syncConfig.getRegistryWsPassword());
   }
 
   /** Returns all institutions in GrSciColl. */
@@ -105,6 +99,10 @@ public class GrSciCollHttpClient {
     }
 
     return result;
+  }
+
+  public Institution getInstitution(UUID key) {
+    return syncCall(api.getInstitution(key));
   }
 
   public UUID createInstitution(Institution institution) {
@@ -211,6 +209,9 @@ public class GrSciCollHttpClient {
     @GET("institution")
     Call<PagingResponse<Institution>> listInstitutions(
         @Query("limit") int limit, @Query("offset") int offset);
+
+    @GET("institution/{key}")
+    Call<Institution> getInstitution(@Path("key") UUID key);
 
     @POST("institution")
     Call<UUID> createInstitution(@Body Institution institution);

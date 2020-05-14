@@ -1,14 +1,14 @@
 package org.gbif.collections.sync.http.clients;
 
-import org.gbif.collections.sync.http.SyncCall;
-import org.gbif.collections.sync.ih.model.IHInstitution;
-import org.gbif.collections.sync.ih.model.IHMetadata;
-import org.gbif.collections.sync.ih.model.IHStaff;
-
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import org.gbif.collections.sync.http.SyncCall;
+import org.gbif.collections.sync.ih.model.IHInstitution;
+import org.gbif.collections.sync.ih.model.IHMetadata;
+import org.gbif.collections.sync.ih.model.IHStaff;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,15 +23,13 @@ import retrofit2.http.Query;
 /** Lightweight IndexHerbariorum client. */
 public class IHHttpClient {
 
-  private static IHHttpClient instance;
   private final API api;
 
   private IHHttpClient(String ihWsUrl) {
     Objects.requireNonNull(ihWsUrl);
 
     ObjectMapper mapper =
-        new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     OkHttpClient.Builder okHttpClientBuilder =
         new OkHttpClient.Builder()
@@ -48,12 +46,8 @@ public class IHHttpClient {
     api = retrofit.create(API.class);
   }
 
-  public static IHHttpClient getInstance(String ihWsUrl) {
-    if (instance == null) {
-      instance = new IHHttpClient(ihWsUrl);
-    }
-
-    return instance;
+  public static IHHttpClient create(String ihWsUrl) {
+    return new IHHttpClient(ihWsUrl);
   }
 
   public List<IHInstitution> getInstitutions() {
