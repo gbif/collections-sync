@@ -291,7 +291,7 @@ public class EntityConverter {
 
   static <T extends Identifiable> boolean addIdentifierIfNotExists(
       T entity, Identifier identifier) {
-    if (!entity.getIdentifiers().contains(identifier)) {
+    if (entity.getIdentifiers().stream().noneMatch(i -> i.lenientEquals(identifier))) {
       entity.getIdentifiers().add(identifier);
       return true;
     }
@@ -300,7 +300,7 @@ public class EntityConverter {
 
   static <T extends MachineTaggable> boolean addMachineTagIfNotExists(
       T entity, MachineTag machineTag) {
-    if (!entity.getMachineTags().contains(machineTag)) {
+    if (entity.getMachineTags().stream().noneMatch(mt -> mt.lenientEquals(machineTag))) {
       entity.getMachineTags().add(machineTag);
       return true;
     }

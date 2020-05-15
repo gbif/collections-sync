@@ -156,7 +156,7 @@ public class Matcher {
               idigbioContact.getPrimaryInstitutionKey(),
               personNormalized.getPrimaryInstitutionKey());
 
-      if (!emailMatch || !nameMatch) {
+      if (!emailMatch && !nameMatch) {
         continue;
       }
 
