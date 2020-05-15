@@ -322,7 +322,8 @@ public class IDigBioSync {
                   new FailedAction(
                       mergedInstitution, "Failed to get updated institution: " + e.getMessage()),
               dryRun,
-              syncResultBuilder);
+              syncResultBuilder,
+              mergedInstitution);
       matchData.updateInsitution(updatedInstitution);
 
       entityMatchBuilder.update(true);
@@ -381,7 +382,8 @@ public class IDigBioSync {
                   new FailedAction(
                       mergedCollection, "Failed to get updated collection: " + e.getMessage()),
               dryRun,
-              syncResultBuilder);
+              syncResultBuilder,
+              mergedCollection);
       matchData.updateCollection(match.getCollectionMatched(), updatedCollection);
 
       entityMatchBuilder.update(true);
@@ -464,29 +466,6 @@ public class IDigBioSync {
         matchData.updatePerson(matchedPerson, updatedPerson);
 
         entityMatchBuilder.update(true);
-      } else {
-        // create person and link it to the entity
-        log.info("No match for staff for record: {}", match.getIDigBioRecord());
-        Person newPerson = EntityConverter.convertToPerson(match.getIDigBioRecord());
-
-        // create new person in the registry and link it to the entities
-        Person createdPerson =
-            executeAndReturnOrAddFail(
-                () -> {
-                  UUID createdKey = grSciCollHttpClient.createPerson(newPerson);
-                  newPerson.setKey(createdKey);
-                  entities.forEach(e -> addPersonToEntity.accept(e, newPerson));
-
-                  // return the newly created person in order to add it to the set with all persons
-                  return grSciCollHttpClient.getPerson(createdKey);
-                },
-                e -> new FailedAction(newPerson, "Failed to create person: " + e.getMessage()),
-                dryRun,
-                syncResultBuilder,
-                newPerson);
-        matchData.addNewPerson(createdPerson);
-
-        staffSyncBuilder.newPerson(newPerson);
       }
 
       // add to the entity if needed
@@ -497,6 +476,29 @@ public class IDigBioSync {
           syncResultBuilder);
 
       staffSyncBuilder.matchedPerson(entityMatchBuilder.build());
+    } else {
+      // create person and link it to the entity
+      log.info("No match for staff for record: {}", match.getIDigBioRecord());
+      Person newPerson = EntityConverter.convertToPerson(match.getIDigBioRecord());
+
+      // create new person in the registry and link it to the entities
+      Person createdPerson =
+          executeAndReturnOrAddFail(
+              () -> {
+                UUID createdKey = grSciCollHttpClient.createPerson(newPerson);
+                newPerson.setKey(createdKey);
+                entities.forEach(e -> addPersonToEntity.accept(e, newPerson));
+
+                // return the newly created person in order to add it to the set with all persons
+                return grSciCollHttpClient.getPerson(createdKey);
+              },
+              e -> new FailedAction(newPerson, "Failed to create person: " + e.getMessage()),
+              dryRun,
+              syncResultBuilder,
+              newPerson);
+      matchData.addNewPerson(createdPerson);
+
+      staffSyncBuilder.newPerson(newPerson);
     }
 
     return staffSyncBuilder.build();
