@@ -4,15 +4,12 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.gbif.api.model.collections.Collection;
@@ -32,10 +29,10 @@ import org.gbif.collections.sync.SyncResult.StaffMatch;
 import org.gbif.collections.sync.config.IDigBioConfig;
 import org.gbif.collections.sync.http.clients.GithubClient;
 import org.gbif.collections.sync.http.clients.GrSciCollHttpClient;
+import org.gbif.collections.sync.idigbio.match.MatchData;
 import org.gbif.collections.sync.idigbio.match.MatchResult;
 import org.gbif.collections.sync.idigbio.match.Matcher;
 import org.gbif.collections.sync.notification.IDigBioIssueFactory;
-import org.gbif.collections.sync.notification.Issue;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
@@ -48,6 +45,10 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.Utils.isPersonInContacts;
+import static org.gbif.collections.sync.http.Executor.createGHIssue;
+import static org.gbif.collections.sync.http.Executor.executeAndReturnOrAddFail;
+import static org.gbif.collections.sync.http.Executor.executeOrAddFail;
+import static org.gbif.collections.sync.http.Executor.executeOrAddFailAsync;
 import static org.gbif.collections.sync.parsers.DataParser.cleanString;
 
 @Slf4j
@@ -60,8 +61,8 @@ public class IDigBioSync {
   private final GithubClient githubClient;
   private final IDigBioIssueFactory issueFactory;
   private SyncResult.SyncResultBuilder syncResultBuilder;
-  private Set<Person> grSciCollPersons;
   private Matcher matcher;
+  private MatchData matchData = new MatchData();
 
   @Builder
   private IDigBioSync(IDigBioConfig iDigBioConfig) {
@@ -93,13 +94,14 @@ public class IDigBioSync {
     log.info("Loading data from WSs");
     CompletableFuture.allOf(institutionsFuture, collectionsFuture, personsFuture).join();
 
-    matcher =
-        Matcher.builder()
+    matchData =
+        MatchData.builder()
             .institutions(institutionsFuture.join())
             .collections(collectionsFuture.join())
+            .persons(personsFuture.join())
             .build();
-    this.grSciCollPersons = new HashSet<>(personsFuture.join());
-    this.syncResultBuilder = SyncResult.builder();
+    matcher = Matcher.builder().matchData(matchData).build();
+    syncResultBuilder = SyncResult.builder();
 
     List<IDigBioRecord> records = readIDigBioExport(iDigBioConfig);
     for (IDigBioRecord record : records) {
@@ -126,7 +128,11 @@ public class IDigBioSync {
     SyncResult syncResult = syncResultBuilder.build();
 
     if (syncResult.getInvalidEntities() != null && !syncResult.getInvalidEntities().isEmpty()) {
-      createGHIssue(issueFactory.createInvalidEntitiesIssue(syncResult.getInvalidEntities()));
+      createGHIssue(
+          issueFactory.createInvalidEntitiesIssue(syncResult.getInvalidEntities()),
+          sendNotifications,
+          githubClient,
+          syncResultBuilder);
     }
 
     return syncResult;
@@ -176,7 +182,9 @@ public class IDigBioSync {
     UUID createdKey =
         executeAndReturnOrAddFail(
             () -> grSciCollHttpClient.createCollection(newCollection),
-            e -> new FailedAction(newCollection, "Failed to create collection: " + e.getMessage()));
+            e -> new FailedAction(newCollection, "Failed to create collection: " + e.getMessage()),
+            dryRun,
+            syncResultBuilder);
     newCollection.setKey(createdKey);
 
     // same staff for both entities
@@ -203,16 +211,11 @@ public class IDigBioSync {
             },
             e ->
                 new FailedAction(
-                    newInstitution, "Failed to create institution : " + e.getMessage()));
-
-    if (createdInstitution == null) {
-      // needed for dry runs
-      createdInstitution = newInstitution;
-    }
-
-    if (matcher != null) {
-      matcher.addNewlyCreatedIDigBioInstitution(createdInstitution);
-    }
+                    newInstitution, "Failed to create institution : " + e.getMessage()),
+            dryRun,
+            syncResultBuilder,
+            newInstitution);
+    matchData.addNewlyCreatedIDigBioInstitution(createdInstitution);
 
     // create collection
     Collection newCollection =
@@ -224,7 +227,9 @@ public class IDigBioSync {
             e ->
                 new FailedAction(
                     newCollection,
-                    "Failed to create institution and collection: " + e.getMessage()));
+                    "Failed to create institution and collection: " + e.getMessage()),
+            dryRun,
+            syncResultBuilder);
     newCollection.setKey(collectionKey);
 
     // same staff for both entities
@@ -258,7 +263,11 @@ public class IDigBioSync {
 
   @VisibleForTesting
   Conflict handleConflict(MatchResult match) {
-    createGHIssue(issueFactory.createConflict(match.getAllMatches(), match.getIDigBioRecord()));
+    createGHIssue(
+        issueFactory.createConflict(match.getAllMatches(), match.getIDigBioRecord()),
+        sendNotifications,
+        githubClient,
+        syncResultBuilder);
     return new Conflict(match.getIDigBioRecord(), match.getAllMatches());
   }
 
@@ -274,14 +283,16 @@ public class IDigBioSync {
     if (!mergedInstitution.equals(match.getInstitutionMatched())) {
       // check if we need to update the entity
       if (!mergedInstitution.lenientEquals(match.getInstitutionMatched())) {
-        executeOrAddFailAsync(
+        executeOrAddFail(
             () -> grSciCollHttpClient.updateInstitution(mergedInstitution),
             e ->
                 new FailedAction(
-                    mergedInstitution, "Failed to update institution: " + e.getMessage()));
+                    mergedInstitution, "Failed to update institution: " + e.getMessage()),
+            dryRun,
+            syncResultBuilder);
       }
       // create identifiers and machine tags if needed
-      executeOrAddFailAsync(
+      executeOrAddFail(
           () -> {
             mergedInstitution.getIdentifiers().stream()
                 .filter(i -> i.getKey() == null)
@@ -299,7 +310,21 @@ public class IDigBioSync {
           e ->
               new FailedAction(
                   mergedInstitution,
-                  "Failed to add identifiers and machine tags of institution: " + e.getMessage()));
+                  "Failed to add identifiers and machine tags of institution: " + e.getMessage()),
+          dryRun,
+          syncResultBuilder);
+
+      // update institution in our match data
+      Institution updatedInstitution =
+          executeAndReturnOrAddFail(
+              () -> grSciCollHttpClient.getInstitution(mergedInstitution.getKey()),
+              e ->
+                  new FailedAction(
+                      mergedInstitution, "Failed to get updated institution: " + e.getMessage()),
+              dryRun,
+              syncResultBuilder);
+      matchData.updateInsitution(updatedInstitution);
+
       entityMatchBuilder.update(true);
     }
 
@@ -317,11 +342,13 @@ public class IDigBioSync {
     if (!mergedCollection.equals(match.getCollectionMatched())) {
       // check if we need to update the entity
       if (!mergedCollection.lenientEquals(match.getCollectionMatched())) {
-        executeOrAddFailAsync(
+        executeOrAddFail(
             () -> grSciCollHttpClient.updateCollection(mergedCollection),
             e ->
                 new FailedAction(
-                    mergedCollection, "Failed to update collection: " + e.getMessage()));
+                    mergedCollection, "Failed to update collection: " + e.getMessage()),
+            dryRun,
+            syncResultBuilder);
       }
       // create indentifiers and machine tags if needed
       executeOrAddFailAsync(
@@ -342,7 +369,21 @@ public class IDigBioSync {
           e ->
               new FailedAction(
                   mergedCollection,
-                  "Failed to add identifiers and machine tags of collection: " + e.getMessage()));
+                  "Failed to add identifiers and machine tags of collection: " + e.getMessage()),
+          dryRun,
+          syncResultBuilder);
+
+      // update collection in our match data
+      Collection updatedCollection =
+          executeAndReturnOrAddFail(
+              () -> grSciCollHttpClient.getCollection(mergedCollection.getKey()),
+              e ->
+                  new FailedAction(
+                      mergedCollection, "Failed to get updated collection: " + e.getMessage()),
+              dryRun,
+              syncResultBuilder);
+      matchData.updateCollection(match.getCollectionMatched(), updatedCollection);
+
       entityMatchBuilder.update(true);
     }
 
@@ -397,8 +438,7 @@ public class IDigBioSync {
             .flatMap(e -> e.getContacts().stream())
             .collect(Collectors.toSet());
 
-    Optional<Person> personMatch =
-        Matcher.matchContact(match.getIDigBioRecord(), grSciCollPersons, contacts);
+    Optional<Person> personMatch = matcher.matchContact(match.getIDigBioRecord(), contacts);
     StaffMatch.StaffMatchBuilder staffSyncBuilder = StaffMatch.builder();
     if (personMatch.isPresent()) {
       log.info("One match for iDigBio Staff {}", match.getIDigBioRecord());
@@ -415,15 +455,13 @@ public class IDigBioSync {
                   grSciCollHttpClient.updatePerson(mergedPerson);
                   return grSciCollHttpClient.getPerson(mergedPerson.getKey());
                 },
-                e -> new FailedAction(mergedPerson, "Failed to update person: " + e.getMessage()));
+                e -> new FailedAction(mergedPerson, "Failed to update person: " + e.getMessage()),
+                dryRun,
+                syncResultBuilder,
+                mergedPerson);
 
         // update the person in the set with all persons
-        if (updatedPerson == null) {
-          // needed for dry runs
-          updatedPerson = mergedPerson;
-        }
-        grSciCollPersons.remove(matchedPerson);
-        grSciCollPersons.add(updatedPerson);
+        matchData.updatePerson(matchedPerson, updatedPerson);
 
         entityMatchBuilder.update(true);
       } else {
@@ -442,13 +480,11 @@ public class IDigBioSync {
                   // return the newly created person in order to add it to the set with all persons
                   return grSciCollHttpClient.getPerson(createdKey);
                 },
-                e -> new FailedAction(newPerson, "Failed to create person: " + e.getMessage()));
-
-        if (createdPerson == null) {
-          // this is needed for dry runs
-          createdPerson = newPerson;
-        }
-        grSciCollPersons.add(createdPerson);
+                e -> new FailedAction(newPerson, "Failed to create person: " + e.getMessage()),
+                dryRun,
+                syncResultBuilder,
+                newPerson);
+        matchData.addNewPerson(createdPerson);
 
         staffSyncBuilder.newPerson(newPerson);
       }
@@ -456,72 +492,14 @@ public class IDigBioSync {
       // add to the entity if needed
       executeOrAddFailAsync(
           () -> entities.forEach(e -> addPersonToEntity.accept(e, mergedPerson)),
-          e ->
-              new FailedAction(mergedPerson, "Failed to add persons to entity: " + e.getMessage()));
+          e -> new FailedAction(mergedPerson, "Failed to add persons to entity: " + e.getMessage()),
+          dryRun,
+          syncResultBuilder);
 
       staffSyncBuilder.matchedPerson(entityMatchBuilder.build());
     }
 
     return staffSyncBuilder.build();
-  }
-
-  private void executeOrAddFailAsync(
-      Runnable runnable, Function<Throwable, FailedAction> failCreator) {
-    if (!dryRun) {
-      CompletableFuture.runAsync(runnable)
-          .whenCompleteAsync(
-              (r, e) -> {
-                if (e != null) {
-                  syncResultBuilder.failedAction(failCreator.apply(e));
-                }
-              });
-    }
-  }
-
-  private void createGHIssue(Issue issue) {
-    if (sendNotifications) {
-      Optional<Issue> existingIssueOpt = githubClient.findIssueWithSameTitle(issue.getTitle());
-      Runnable runnable;
-      String errorMsg;
-      if (existingIssueOpt.isPresent()) {
-        // if it exists we update the labels to add the one of this sync. We also merge the
-        // assignees in case the original ones were modified in Github
-        Issue existingIssue = existingIssueOpt.get();
-        issue.setNumber(existingIssue.getNumber());
-        issue.getLabels().addAll(existingIssue.getLabels());
-        issue.getAssignees().addAll(existingIssue.getAssignees());
-
-        runnable = () -> githubClient.updateIssue(issue);
-        errorMsg = "Failed to add sync timestamp label to issue: ";
-      } else {
-        // if it doesn't exist we create it
-        runnable = () -> githubClient.createIssue(issue);
-        errorMsg = "Failed to create issue: ";
-      }
-
-      // do the call
-      CompletableFuture.runAsync(runnable)
-          .whenCompleteAsync(
-              (r, e) -> {
-                if (e != null) {
-                  syncResultBuilder.failedAction(
-                      new FailedAction(issue, errorMsg + e.getMessage()));
-                }
-              });
-    }
-  }
-
-  private <T> T executeAndReturnOrAddFail(
-      Supplier<T> execution, Function<Throwable, FailedAction> failCreator) {
-    if (!dryRun) {
-      try {
-        return execution.get();
-      } catch (Exception e) {
-        syncResultBuilder.failedAction(failCreator.apply(e));
-      }
-    }
-
-    return null;
   }
 
   private boolean isInvalidRecord(IDigBioRecord record) {

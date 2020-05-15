@@ -30,16 +30,20 @@ public class MatcherTest {
     existing.setPosition("pos");
     existing.setPhone("123456");
 
-    assertFalse(
-        Matcher.matchContact(iDigBioRecord, Collections.singleton(existing), Collections.emptySet())
-            .isPresent());
+    MatchData matchData =
+        MatchData.builder()
+            .persons(Collections.singletonList(existing))
+            .institutions(Collections.emptyList())
+            .collections(Collections.emptyList())
+            .build();
+    Matcher matcher = Matcher.builder().matchData(matchData).build();
+
+    assertFalse(matcher.matchContact(iDigBioRecord, Collections.emptySet()).isPresent());
 
     existing.setFirstName(iDigBioRecord.getContact());
     existing.setEmail(iDigBioRecord.getContactEmail());
     existing.setPosition(iDigBioRecord.getContactRole());
-    assertTrue(
-        Matcher.matchContact(iDigBioRecord, Collections.singleton(existing), Collections.emptySet())
-            .isPresent());
+    assertTrue(matcher.matchContact(iDigBioRecord, Collections.emptySet()).isPresent());
   }
 
   @Test
@@ -59,7 +63,9 @@ public class MatcherTest {
 
     assertEquals(
         0, Matcher.countIdentifierMatches(iDigBioRecord, Collections.singleton(collection)));
-    collection.getIdentifiers().add(new Identifier(IdentifierType.GRSCICOLL_URI, "http://test.com/lsid:001"));
+    collection
+        .getIdentifiers()
+        .add(new Identifier(IdentifierType.GRSCICOLL_URI, "http://test.com/lsid:001"));
     assertEquals(
         1, Matcher.countIdentifierMatches(iDigBioRecord, Collections.singleton(collection)));
 

@@ -1,9 +1,7 @@
 package org.gbif.collections.sync.ih.model;
 
-import java.util.Arrays;
 import java.util.Comparator;
 
-import com.google.common.base.Strings;
 import lombok.Data;
 
 import static org.gbif.collections.sync.Utils.countNonNullValues;

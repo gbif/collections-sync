@@ -1,14 +1,11 @@
 package org.gbif.collections.sync.idigbio.match;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -34,32 +31,18 @@ import static org.gbif.collections.sync.staff.StaffUtils.compareStrings;
 @Slf4j
 public class Matcher {
 
-  final Map<UUID, Institution> institutionsByKey;
-  final Map<UUID, Collection> collectionsByKey;
-  final Map<UUID, Set<Collection>> collectionsByInstitution;
-  // institutions created when an IDigBio record has no match. We need to store them in order not to
-  // duplicate them. For example, the institution with code CCBER has no match and it's present
-  // multiple times because it has multiple collections.
-  final Set<Institution> newlyCreatedIDigBioInstitutions = new HashSet<>();
+  private final MatchData matchData;
 
   @Builder
-  private Matcher(List<Institution> institutions, List<Collection> collections) {
-    institutionsByKey =
-        institutions.stream().collect(Collectors.toMap(Institution::getKey, i -> i));
-    collectionsByKey = collections.stream().collect(Collectors.toMap(Collection::getKey, c -> c));
-    collectionsByInstitution =
-        collections.stream()
-            .filter(c -> c.getInstitutionKey() != null)
-            .collect(
-                Collectors.groupingBy(
-                    Collection::getInstitutionKey,
-                    Collectors.mapping(Function.identity(), Collectors.toSet())));
+  private Matcher(MatchData matchData) {
+    this.matchData = matchData;
   }
 
   public MatchResult match(IDigBioRecord iDigBioRecord) {
     MatchResult.MatchResultBuilder result = MatchResult.builder().iDigBioRecord(iDigBioRecord);
 
-    Institution institutionMatch = institutionsByKey.get(iDigBioRecord.getGrbioInstMatch());
+    Institution institutionMatch =
+        matchData.getInstitutionsByKey().get(iDigBioRecord.getGrbioInstMatch());
     if (institutionMatch == null) {
       institutionMatch = matchWithNewInstitutions(iDigBioRecord);
     }
@@ -85,7 +68,7 @@ public class Matcher {
                     .anyMatch(identifier -> identifier.getIdentifier().equals(instUniqueNameUuid));
 
     List<Institution> institutionsMatched =
-        newlyCreatedIDigBioInstitutions.stream()
+        matchData.getNewlyCreatedIDigBioInstitutions().stream()
             .filter(
                 i ->
                     iDigBioCodes.contains(i.getCode())
@@ -102,7 +85,7 @@ public class Matcher {
   }
 
   private Optional<Collection> matchCollection(UUID institutionKey, IDigBioRecord iDigBioRecord) {
-    Set<Collection> collections = collectionsByInstitution.get(institutionKey);
+    Set<Collection> collections = matchData.getCollectionsByInstitution().get(institutionKey);
     if (collections == null) {
       return Optional.empty();
     }
@@ -151,16 +134,15 @@ public class Matcher {
     return matches.isEmpty() ? Optional.empty() : Optional.of(matches.get(0));
   }
 
-  public static Optional<Person> matchContact(
-      IDigBioRecord record, Set<Person> grSciCollPersons, Set<Person> contacts) {
-    if (grSciCollPersons == null) {
+  public Optional<Person> matchContact(IDigBioRecord record, Set<Person> contacts) {
+    if (matchData.getPersons() == null) {
       return Optional.empty();
     }
 
     StaffNormalized idigbioContact = StaffNormalized.fromIDigBioContact(record);
     Person bestMatch = null;
     int maxScore = 0;
-    for (Person person : grSciCollPersons) {
+    for (Person person : matchData.getPersons()) {
       StaffNormalized personNormalized = StaffNormalized.fromGrSciCollPerson(person);
 
       boolean emailMatch = compareLists(personNormalized.getEmails(), idigbioContact.getEmails());
@@ -200,10 +182,6 @@ public class Matcher {
     }
 
     return Optional.ofNullable(bestMatch);
-  }
-
-  public void addNewlyCreatedIDigBioInstitution(Institution institution) {
-    newlyCreatedIDigBioInstitutions.add(institution);
   }
 
   private static Person comparePersonFieldCompleteness(Person p1, Person p2) {

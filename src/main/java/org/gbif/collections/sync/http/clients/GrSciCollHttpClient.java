@@ -137,6 +137,10 @@ public class GrSciCollHttpClient {
     return result;
   }
 
+  public Collection getCollection(UUID key) {
+    return syncCall(api.getCollection(key));
+  }
+
   public UUID createCollection(Collection collection) {
     return syncCall(api.createCollection(collection));
   }
@@ -230,6 +234,9 @@ public class GrSciCollHttpClient {
     @GET("collection")
     Call<PagingResponse<Collection>> listCollections(
         @Query("limit") int limit, @Query("offset") int offset);
+
+    @GET("collection/{key}")
+    Call<Collection> getCollection(@Path("key") UUID key);
 
     @POST("collection")
     Call<UUID> createCollection(@Body Collection collection);

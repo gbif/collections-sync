@@ -95,7 +95,9 @@ public class IDigBioIssueFactory extends BaseIssueFactory {
   public Issue createInvalidEntitiesIssue(List<Object> invalidRecords) {
     StringBuilder body =
         new StringBuilder(
-            "The following iDigBio entities couldn't be migrated because they are missing some fields "
+            "The following "
+                + invalidRecords.size()
+                + " iDigBio entities couldn't be migrated because they are missing some fields "
                 + "that are required in the registry, such as the code or the name:"
                 + NEW_LINE);
 
