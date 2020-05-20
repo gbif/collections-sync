@@ -101,11 +101,8 @@ public class Matcher {
       String irn = iDigBioRecord.getSameAs().split("irn=")[1];
       matches =
           collections.stream()
-              .filter(c -> c.getIdentifiers() != null)
-              .filter(
-                  c ->
-                      c.getIdentifiers().stream()
-                          .anyMatch(i -> i.getIdentifier().equals(Utils.encodeIRN(irn))))
+              .filter(c -> iDigBioCodes.contains(c.getCode()))
+              .filter(c -> countIdentifierMatches(Utils.encodeIRN(irn), c) > 0)
               .collect(Collectors.toList());
     } else {
       Predicate<Collection> hasSomeSimilarity =
@@ -113,7 +110,7 @@ public class Matcher {
             long score = stringSimilarity(iDigBioRecord.getCollection(), c.getName());
             score += stringSimilarity(iDigBioRecord.getPhysicalAddress().getCity(), c.getName());
             score += stringSimilarity(iDigBioRecord.getMailingAddress().getCity(), c.getName());
-            score += countIdentifierMatches(iDigBioRecord, collections);
+            score += countIdentifierMatches(iDigBioRecord.getCollectionLsid(), c);
             return score > 0;
           };
 
@@ -202,19 +199,14 @@ public class Matcher {
   }
 
   @VisibleForTesting
-  static long countIdentifierMatches(IDigBioRecord iDigBioRecord, Set<Collection> collections) {
-    if (Strings.isNullOrEmpty(iDigBioRecord.getCollectionLsid())) {
+  static long countIdentifierMatches(String identifier, Collection collection) {
+    if (Strings.isNullOrEmpty(identifier) || collection.getIdentifiers() == null) {
       return 0;
     }
 
-    return collections.stream()
+    return collection.getIdentifiers().stream()
         .filter(
-            c ->
-                c.getIdentifiers().stream()
-                    .anyMatch(
-                        i ->
-                            i.getIdentifier().contains(iDigBioRecord.getCollectionLsid())
-                                || iDigBioRecord.getCollectionLsid().contains(i.getIdentifier())))
+            i -> i.getIdentifier().contains(identifier) || identifier.contains(i.getIdentifier()))
         .count();
   }
 }

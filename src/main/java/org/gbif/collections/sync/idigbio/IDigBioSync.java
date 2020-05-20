@@ -48,7 +48,6 @@ import static org.gbif.collections.sync.Utils.isPersonInContacts;
 import static org.gbif.collections.sync.http.Executor.createGHIssue;
 import static org.gbif.collections.sync.http.Executor.executeAndReturnOrAddFail;
 import static org.gbif.collections.sync.http.Executor.executeOrAddFail;
-import static org.gbif.collections.sync.http.Executor.executeOrAddFailAsync;
 import static org.gbif.collections.sync.parsers.DataParser.cleanString;
 
 @Slf4j
@@ -162,7 +161,7 @@ public class IDigBioSync {
     EntityMatch<Collection> collectionEntityMatch = updateCollection(match);
 
     StaffMatch staffMatch =
-        handleStaff(match, Collections.singletonList(match.getCollectionMatched()));
+        handleStaff(match, Collections.singletonList(collectionEntityMatch.getMerged()));
 
     return CollectionOnlyMatch.builder()
         .matchedCollection(collectionEntityMatch)
@@ -179,17 +178,19 @@ public class IDigBioSync {
         EntityConverter.convertToCollection(
             match.getIDigBioRecord(), institutionEntityMatch.getMatched());
 
-    UUID createdKey =
+    Collection createdCollection =
         executeAndReturnOrAddFail(
-            () -> grSciCollHttpClient.createCollection(newCollection),
+            () -> {
+              UUID createdKey = grSciCollHttpClient.createCollection(newCollection);
+              return grSciCollHttpClient.getCollection(createdKey);
+            },
             e -> new FailedAction(newCollection, "Failed to create collection: " + e.getMessage()),
             dryRun,
             syncResultBuilder);
-    newCollection.setKey(createdKey);
 
     // same staff for both entities
     StaffMatch staffMatch =
-        handleStaff(match, Arrays.asList(institutionEntityMatch.getMatched(), newCollection));
+        handleStaff(match, Arrays.asList(institutionEntityMatch.getMerged(), createdCollection));
 
     return InstitutionOnlyMatch.builder()
         .matchedInstitution(institutionEntityMatch)
@@ -221,19 +222,21 @@ public class IDigBioSync {
     Collection newCollection =
         EntityConverter.convertToCollection(match.getIDigBioRecord(), createdInstitution);
 
-    UUID collectionKey =
+    Collection createdCollection =
         executeAndReturnOrAddFail(
-            () -> grSciCollHttpClient.createCollection(newCollection),
+            () -> {
+              UUID createdKey = grSciCollHttpClient.createCollection(newCollection);
+              return grSciCollHttpClient.getCollection(createdKey);
+            },
             e ->
                 new FailedAction(
                     newCollection,
                     "Failed to create institution and collection: " + e.getMessage()),
             dryRun,
             syncResultBuilder);
-    newCollection.setKey(collectionKey);
 
     // same staff for both entities
-    StaffMatch staffMatch = handleStaff(match, Arrays.asList(createdInstitution, newCollection));
+    StaffMatch staffMatch = handleStaff(match, Arrays.asList(createdInstitution, createdCollection));
 
     return NoEntityMatch.builder()
         .newCollection(newCollection)
@@ -324,9 +327,9 @@ public class IDigBioSync {
               dryRun,
               syncResultBuilder,
               mergedInstitution);
-      matchData.updateInsitution(updatedInstitution);
+      matchData.updateInstitution(updatedInstitution);
 
-      entityMatchBuilder.update(true);
+      entityMatchBuilder.merged(updatedInstitution).update(true);
     }
 
     return entityMatchBuilder.build();
@@ -352,7 +355,7 @@ public class IDigBioSync {
             syncResultBuilder);
       }
       // create indentifiers and machine tags if needed
-      executeOrAddFailAsync(
+      executeOrAddFail(
           () -> {
             mergedCollection.getIdentifiers().stream()
                 .filter(i -> i.getKey() == null)
@@ -384,9 +387,10 @@ public class IDigBioSync {
               dryRun,
               syncResultBuilder,
               mergedCollection);
+      // TODO: tengo q hacer esto??
       matchData.updateCollection(match.getCollectionMatched(), updatedCollection);
 
-      entityMatchBuilder.update(true);
+      entityMatchBuilder.merged(updatedCollection).update(true);
     }
 
     return entityMatchBuilder.build();
@@ -404,14 +408,17 @@ public class IDigBioSync {
       // discarded in this case
       entities.forEach(
           e -> {
+            String cleanEmail = cleanString(match.getIDigBioRecord().getContactEmail());
             if (e instanceof Institution) {
-              ((Institution) e)
-                  .getEmail()
-                  .add(cleanString(match.getIDigBioRecord().getContactEmail()));
+              Institution institution = (Institution) e;
+              if (!institution.getEmail().contains(cleanEmail)) {
+                institution.getEmail().add(cleanEmail);
+              }
             } else if (e instanceof Collection) {
-              ((Collection) e)
-                  .getEmail()
-                  .add(cleanString(match.getIDigBioRecord().getContactEmail()));
+              Collection collection = (Collection) e;
+              if (!collection.getEmail().contains(cleanEmail)) {
+                collection.getEmail().add(cleanEmail);
+              }
             }
           });
       return StaffMatch.builder().build();
@@ -450,8 +457,9 @@ public class IDigBioSync {
 
       EntityMatch.EntityMatchBuilder<Person> entityMatchBuilder =
           EntityMatch.<Person>builder().matched(matchedPerson).merged(mergedPerson);
+      Person updatedPerson = mergedPerson;
       if (!mergedPerson.lenientEquals(matchedPerson)) {
-        Person updatedPerson =
+        updatedPerson =
             executeAndReturnOrAddFail(
                 () -> {
                   grSciCollHttpClient.updatePerson(mergedPerson);
@@ -469,8 +477,9 @@ public class IDigBioSync {
       }
 
       // add to the entity if needed
-      executeOrAddFailAsync(
-          () -> entities.forEach(e -> addPersonToEntity.accept(e, mergedPerson)),
+      Person finalUpdatedPerson = updatedPerson;
+      executeOrAddFail(
+          () -> entities.forEach(e -> addPersonToEntity.accept(e, finalUpdatedPerson)),
           e -> new FailedAction(mergedPerson, "Failed to add persons to entity: " + e.getMessage()),
           dryRun,
           syncResultBuilder);

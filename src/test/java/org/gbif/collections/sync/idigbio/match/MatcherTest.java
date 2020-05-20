@@ -55,24 +55,17 @@ public class MatcherTest {
 
   @Test
   public void countIdentifierMatchesTest() {
-    IDigBioRecord iDigBioRecord = new IDigBioRecord();
-    iDigBioRecord.setCollectionLsid("lsid:001");
-
     Collection collection = new Collection();
     collection.getIdentifiers().add(new Identifier(IdentifierType.LSID, "other"));
 
-    assertEquals(
-        0, Matcher.countIdentifierMatches(iDigBioRecord, Collections.singleton(collection)));
+    assertEquals(0, Matcher.countIdentifierMatches("lsid:001", collection));
     collection
         .getIdentifiers()
         .add(new Identifier(IdentifierType.GRSCICOLL_URI, "http://test.com/lsid:001"));
-    assertEquals(
-        1, Matcher.countIdentifierMatches(iDigBioRecord, Collections.singleton(collection)));
+    assertEquals(1, Matcher.countIdentifierMatches("lsid:001", collection));
 
-    iDigBioRecord.setCollectionLsid("http://test.com/lsid:001");
     collection.setIdentifiers(new ArrayList<>());
     collection.getIdentifiers().add(new Identifier(IdentifierType.LSID, "lsid:001"));
-    assertEquals(
-        1, Matcher.countIdentifierMatches(iDigBioRecord, Collections.singleton(collection)));
+    assertEquals(1, Matcher.countIdentifierMatches("http://test.com/lsid:001", collection));
   }
 }

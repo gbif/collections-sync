@@ -1,5 +1,15 @@
 package org.gbif.collections.sync.ih.match;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Institution;
@@ -8,10 +18,6 @@ import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 import org.gbif.collections.sync.parsers.CountryParser;
 import org.gbif.collections.sync.staff.StaffNormalized;
-
-import java.util.*;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import lombok.AllArgsConstructor;
@@ -48,9 +54,7 @@ public class Matcher {
     collectionsMapByIrn = mapByIrn(collections);
     grSciCollPersonsByIrn = mapByIrn(allGrSciCollPersons);
     this.allGrSciCollPersons = allGrSciCollPersons;
-    ihStaffMapByCode =
-        ihStaff.stream()
-            .collect(Collectors.groupingBy(IHStaff::getCode, HashMap::new, Collectors.toList()));
+    ihStaffMapByCode = ihStaff.stream().collect(Collectors.groupingBy(IHStaff::getCode));
   }
 
   public MatchResult match(IHInstitution ihInstitution) {

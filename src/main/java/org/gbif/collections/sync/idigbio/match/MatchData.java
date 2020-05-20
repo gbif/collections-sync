@@ -1,12 +1,12 @@
 package org.gbif.collections.sync.idigbio.match;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.gbif.api.model.collections.Collection;
@@ -52,8 +52,7 @@ public class MatchData {
             .filter(c -> c.getInstitutionKey() != null)
             .collect(
                 Collectors.groupingBy(
-                    Collection::getInstitutionKey,
-                    Collectors.mapping(Function.identity(), Collectors.toSet())));
+                    Collection::getInstitutionKey, HashMap::new, Collectors.toSet()));
     this.persons = new HashSet<>(persons);
   }
 
@@ -63,7 +62,7 @@ public class MatchData {
     }
   }
 
-  public void updateInsitution(Institution institution) {
+  public void updateInstitution(Institution institution) {
     if (institution != null && institution.getKey() != null) {
       institutionsByKey.replace(institution.getKey(), institution);
     }
