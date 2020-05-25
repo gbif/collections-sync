@@ -442,7 +442,7 @@ public class IHSync {
         if (!mergedPerson.equals(matchedPerson)) {
           // check if we need to update the person
           if (!mergedPerson.lenientEquals(matchedPerson)) {
-            executeOrAddFailAsync(
+            executeOrAddFail(
                 () -> grSciCollHttpClient.updatePerson(mergedPerson),
                 e -> new FailedAction(mergedPerson, "Failed to update person: " + e.getMessage()),
                 dryRun,
