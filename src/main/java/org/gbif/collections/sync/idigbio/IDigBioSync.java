@@ -34,6 +34,8 @@ import org.gbif.collections.sync.idigbio.match.MatchResult;
 import org.gbif.collections.sync.idigbio.match.Matcher;
 import org.gbif.collections.sync.notification.IDigBioIssueFactory;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -186,7 +188,8 @@ public class IDigBioSync {
             },
             e -> new FailedAction(newCollection, "Failed to create collection: " + e.getMessage()),
             dryRun,
-            syncResultBuilder);
+            syncResultBuilder,
+            newCollection);
 
     // same staff for both entities
     StaffMatch staffMatch =
@@ -233,10 +236,12 @@ public class IDigBioSync {
                     newCollection,
                     "Failed to create institution and collection: " + e.getMessage()),
             dryRun,
-            syncResultBuilder);
+            syncResultBuilder,
+            newCollection);
 
     // same staff for both entities
-    StaffMatch staffMatch = handleStaff(match, Arrays.asList(createdInstitution, createdCollection));
+    StaffMatch staffMatch =
+        handleStaff(match, Arrays.asList(createdInstitution, createdCollection));
 
     return NoEntityMatch.builder()
         .newCollection(newCollection)
@@ -387,7 +392,6 @@ public class IDigBioSync {
               dryRun,
               syncResultBuilder,
               mergedCollection);
-      // TODO: tengo q hacer esto??
       matchData.updateCollection(match.getCollectionMatched(), updatedCollection);
 
       entityMatchBuilder.merged(updatedCollection).update(true);
@@ -480,7 +484,13 @@ public class IDigBioSync {
       Person finalUpdatedPerson = updatedPerson;
       executeOrAddFail(
           () -> entities.forEach(e -> addPersonToEntity.accept(e, finalUpdatedPerson)),
-          e -> new FailedAction(mergedPerson, "Failed to add persons to entity: " + e.getMessage()),
+          e ->
+              new FailedAction(
+                  finalUpdatedPerson,
+                  "Failed to add person to entities : "
+                      + joinEntitiesKeys(entities)
+                      + " : "
+                      + e.getMessage()),
           dryRun,
           syncResultBuilder);
 
@@ -501,7 +511,13 @@ public class IDigBioSync {
                 // return the newly created person in order to add it to the set with all persons
                 return grSciCollHttpClient.getPerson(createdKey);
               },
-              e -> new FailedAction(newPerson, "Failed to create person: " + e.getMessage()),
+              e ->
+                  new FailedAction(
+                      newPerson,
+                      "Failed to create person and adding it to the entities "
+                          + joinEntitiesKeys(entities)
+                          + " : "
+                          + e.getMessage()),
               dryRun,
               syncResultBuilder,
               newPerson);
@@ -511,6 +527,11 @@ public class IDigBioSync {
     }
 
     return staffSyncBuilder.build();
+  }
+
+  @NotNull
+  private <T extends CollectionEntity> String joinEntitiesKeys(List<T> entities) {
+    return entities.stream().map(v -> v.getKey().toString()).collect(Collectors.joining(","));
   }
 
   private boolean isInvalidRecord(IDigBioRecord record) {

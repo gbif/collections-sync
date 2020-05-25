@@ -292,7 +292,7 @@ public class IHSync {
     if (!mergedInstitution.equals(existing)) {
       // check if we need to update the entity
       if (!mergedInstitution.lenientEquals(existing)) {
-        executeOrAddFailAsync(
+        executeOrAddFail(
             () -> grSciCollHttpClient.updateInstitution(mergedInstitution),
             e ->
                 new FailedAction(
@@ -332,7 +332,7 @@ public class IHSync {
     if (!mergedCollection.equals(existing)) {
       // check if we need to update the entity
       if (!mergedCollection.lenientEquals(existing)) {
-        executeOrAddFailAsync(
+        executeOrAddFail(
             () -> grSciCollHttpClient.updateCollection(mergedCollection),
             e ->
                 new FailedAction(
