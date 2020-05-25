@@ -39,8 +39,7 @@ pipeline {
     stage('Snapshot to nexus') {
       when {
         allOf {
-          not { expression { params.RELEASE } }
-          branch 'master';
+          not { expression { params.RELEASE } };
         }
       }
       steps {
