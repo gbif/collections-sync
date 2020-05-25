@@ -1,27 +1,36 @@
 package org.gbif.collections.sync.ih.match;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
-import org.gbif.collections.sync.ih.parsers.CountryParser;
-
-import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
+import org.gbif.collections.sync.parsers.CountryParser;
+import org.gbif.collections.sync.staff.StaffNormalized;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 
-import static org.gbif.collections.sync.ih.Utils.containsIrnIdentifier;
-import static org.gbif.collections.sync.ih.Utils.encodeIRN;
-import static org.gbif.collections.sync.ih.Utils.isPersonInContacts;
-import static org.gbif.collections.sync.ih.Utils.mapByIrn;
+import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
+import static org.gbif.collections.sync.Utils.encodeIRN;
+import static org.gbif.collections.sync.Utils.isPersonInContacts;
+import static org.gbif.collections.sync.Utils.mapByIrn;
+import static org.gbif.collections.sync.staff.StaffUtils.compareFullNamePartially;
+import static org.gbif.collections.sync.staff.StaffUtils.compareLists;
+import static org.gbif.collections.sync.staff.StaffUtils.compareStrings;
+import static org.gbif.collections.sync.staff.StaffUtils.compareStringsPartially;
 
 /** Matches IH entities to GrSciColl ones. */
 public class Matcher {
@@ -45,9 +54,7 @@ public class Matcher {
     collectionsMapByIrn = mapByIrn(collections);
     grSciCollPersonsByIrn = mapByIrn(allGrSciCollPersons);
     this.allGrSciCollPersons = allGrSciCollPersons;
-    ihStaffMapByCode =
-        ihStaff.stream()
-            .collect(Collectors.groupingBy(IHStaff::getCode, HashMap::new, Collectors.toList()));
+    ihStaffMapByCode = ihStaff.stream().collect(Collectors.groupingBy(IHStaff::getCode));
   }
 
   public MatchResult match(IHInstitution ihInstitution) {
@@ -141,63 +148,25 @@ public class Matcher {
    */
   @VisibleForTesting
   static int getEqualityScore(StaffNormalized staff1, StaffNormalized staff2, boolean isContact) {
-    BiPredicate<List<String>, List<String>> compareLists =
-        (l1, l2) -> {
-          if (l1 != null && !l1.isEmpty() && l2 != null && !l2.isEmpty()) {
-            for (String v1 : l1) {
-              for (String v2 : l2) {
-                if (v1.equals(v2)) {
-                  return true;
-                }
-              }
-            }
-          }
-          return false;
-        };
-
-    BiPredicate<String, String> compareStrings =
-        (s1, s2) -> !Strings.isNullOrEmpty(s1) && !Strings.isNullOrEmpty(s2) && s1.equals(s2);
-
-    BiPredicate<String, String> compareStringsPartially =
-        (s1, s2) ->
-            !Strings.isNullOrEmpty(s1)
-                && !Strings.isNullOrEmpty(s2)
-                && ((s1.startsWith(s2) || s2.startsWith(s1))
-                    || (s1.endsWith(s2) || s2.endsWith(s1)));
-
-    BiPredicate<String, String> compareFullNamePartially =
-        (s1, s2) -> {
-          if (!Strings.isNullOrEmpty(s1) && !Strings.isNullOrEmpty(s2)) {
-            String[] parts1 = s1.split(" ");
-            String[] parts2 = s2.split(" ");
-
-            for (String p1 : parts1) {
-              for (String p2 : parts2) {
-                if (p1.length() >= 5 && p1.equals(p2)) {
-                  return true;
-                }
-              }
-            }
-          }
-          return false;
-        };
-
     int emailScore = 0;
-    if (compareLists.test(staff1.emails, staff2.emails)) {
+    if (compareLists(staff1.getEmails(), staff2.getEmails())) {
       emailScore = 10;
     }
 
     int nameScore = 0;
-    if (compareStrings.test(staff1.fullName, staff2.fullName)) {
+    if (compareStrings(staff1.getFullName(), staff2.getFullName())) {
       nameScore = 10;
-    } else if (compareStringsPartially.test(staff1.fullName, staff2.fullName)) {
+    } else if (compareStringsPartially(staff1.getFullName(), staff2.getFullName())) {
       nameScore = 5;
-    } else if (compareFullNamePartially.test(staff1.fullName, staff2.fullName)) {
+    } else if (compareFullNamePartially(staff1.getFullName(), staff2.getFullName())) {
       nameScore = 3;
     }
 
     // case when 2 persons have the same corporate email but different name
-    if (emailScore > 0 && staff1.fullName != null && staff2.fullName != null && nameScore == 0) {
+    if (emailScore > 0
+        && staff1.getFullName() != null
+        && staff2.getFullName() != null
+        && nameScore == 0) {
       return 0;
     }
 
@@ -207,38 +176,38 @@ public class Matcher {
       return score;
     }
 
-    if (compareLists.test(staff1.phones, staff2.phones)) {
+    if (compareLists(staff1.getPhones(), staff2.getPhones())) {
       score += 3;
     }
-    if (staff2.country != null && staff1.country == staff2.country) {
+    if (staff2.getCountry() != null && staff1.getCountry() == staff2.getCountry()) {
       score += 3;
     }
-    if (compareStrings.test(staff1.city, staff2.city)) {
+    if (compareStrings(staff1.getCity(), staff2.getCity())) {
       score += 2;
     }
-    if (compareStrings.test(staff1.position, staff2.position)) {
+    if (compareStrings(staff1.getPosition(), staff2.getPosition())) {
       score += 2;
-    } else if (compareStringsPartially.test(staff1.position, staff2.position)) {
+    } else if (compareStringsPartially(staff1.getPosition(), staff2.getPosition())) {
       score += 1;
     }
-    if (staff1.primaryInstitutionKey != null
-        && Objects.equals(staff1.primaryInstitutionKey, staff2.primaryInstitutionKey)) {
-      score += 2;
-    }
-    if (staff1.primaryCollectionKey != null
-        && Objects.equals(staff1.primaryCollectionKey, staff2.primaryCollectionKey)) {
+    if (staff1.getPrimaryInstitutionKey() != null
+        && Objects.equals(staff1.getPrimaryInstitutionKey(), staff2.getPrimaryInstitutionKey())) {
       score += 2;
     }
-    if (compareStrings.test(staff1.fax, staff2.fax)) {
+    if (staff1.getPrimaryCollectionKey() != null
+        && Objects.equals(staff1.getPrimaryCollectionKey(), staff2.getPrimaryCollectionKey())) {
+      score += 2;
+    }
+    if (compareStrings(staff1.getFax(), staff2.getFax())) {
       score += 1;
     }
-    if (compareStrings.test(staff1.street, staff2.street)) {
+    if (compareStrings(staff1.getStreet(), staff2.getStreet())) {
       score += 1;
     }
-    if (compareStrings.test(staff1.state, staff2.state)) {
+    if (compareStrings(staff1.getState(), staff2.getState())) {
       score += 1;
     }
-    if (compareStrings.test(staff1.zipCode, staff2.zipCode)) {
+    if (compareStrings(staff1.getZipCode(), staff2.getZipCode())) {
       score += 1;
     }
     if (isContact) {

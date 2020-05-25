@@ -1,0 +1,14 @@
+exportFilePath: src/main/resources/manualMatches.json
+iDigBioPortalUrl: https://d.com/
+syncConfig:
+  registryWsUrl: http://test.com/
+  saveResultsToFile: true
+  dryRun: true
+  sendNotifications: true
+  notification:
+    registryPortalUrl: https://a.com/
+    githubWsUrl: https://b.com/
+    githubUser: bar
+    githubPassword: fake
+    ghIssuesAssignees:
+      - foo

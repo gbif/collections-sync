@@ -1,20 +1,22 @@
 package org.gbif.collections.sync.http.clients;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.common.paging.PagingResponse;
 import org.gbif.api.model.registry.Identifier;
+import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.vocabulary.Country;
-import org.gbif.collections.sync.SyncConfig;
+import org.gbif.collections.sync.config.SyncConfig;
 import org.gbif.collections.sync.http.BasicAuthInterceptor;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
@@ -22,19 +24,25 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.deser.std.DateDeserializers.DateDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
-import retrofit2.http.*;
+import retrofit2.http.Body;
+import retrofit2.http.DELETE;
+import retrofit2.http.GET;
+import retrofit2.http.POST;
+import retrofit2.http.PUT;
+import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 import static org.gbif.collections.sync.http.SyncCall.syncCall;
 
 /** A lightweight GRSciColl client. */
 public class GrSciCollHttpClient {
 
-  private static GrSciCollHttpClient instance;
   private final API api;
 
   private GrSciCollHttpClient(String grSciCollWsUrl, String user, String password) {
@@ -44,10 +52,11 @@ public class GrSciCollHttpClient {
         new ObjectMapper()
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
             .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
     SimpleModule module = new SimpleModule();
     module.addDeserializer(Country.class, new CountryIsoDeserializer());
+    module.addDeserializer(Date.class, new CustomDateDeserializer());
     mapper.registerModule(module);
 
     OkHttpClient.Builder okHttpClientBuilder =
@@ -69,16 +78,11 @@ public class GrSciCollHttpClient {
     api = retrofit.create(API.class);
   }
 
-  public static GrSciCollHttpClient getInstance(SyncConfig syncConfig) {
-    if (instance == null) {
-      instance =
-          new GrSciCollHttpClient(
-              syncConfig.getRegistryWsUrl(),
-              syncConfig.getRegistryWsUser(),
-              syncConfig.getRegistryWsPassword());
-    }
-
-    return instance;
+  public static GrSciCollHttpClient create(SyncConfig syncConfig) {
+    return new GrSciCollHttpClient(
+        syncConfig.getRegistryWsUrl(),
+        syncConfig.getRegistryWsUser(),
+        syncConfig.getRegistryWsPassword());
   }
 
   /** Returns all institutions in GrSciColl. */
@@ -97,12 +101,24 @@ public class GrSciCollHttpClient {
     return result;
   }
 
+  public Institution getInstitution(UUID key) {
+    return syncCall(api.getInstitution(key));
+  }
+
   public UUID createInstitution(Institution institution) {
     return syncCall(api.createInstitution(institution));
   }
 
   public void updateInstitution(Institution institution) {
     syncCall(api.updateInstitution(institution.getKey(), institution));
+  }
+
+  public void addIdentifierToInstitution(UUID institutionKey, Identifier identifier) {
+    syncCall(api.addIdentifierToInstitution(institutionKey, identifier));
+  }
+
+  public void addMachineTagToInstitution(UUID institutionKey, MachineTag machineTag) {
+    syncCall(api.addMachineTagToInstitution(institutionKey, machineTag));
   }
 
   /** Returns all institutions in GrSciCol. */
@@ -121,12 +137,24 @@ public class GrSciCollHttpClient {
     return result;
   }
 
+  public Collection getCollection(UUID key) {
+    return syncCall(api.getCollection(key));
+  }
+
   public UUID createCollection(Collection collection) {
     return syncCall(api.createCollection(collection));
   }
 
   public void updateCollection(Collection collection) {
     syncCall(api.updateCollection(collection.getKey(), collection));
+  }
+
+  public void addIdentifierToCollection(UUID collectionKey, Identifier identifier) {
+    syncCall(api.addIdentifierToCollection(collectionKey, identifier));
+  }
+
+  public void addMachineTagToCollection(UUID collectionKey, MachineTag machineTag) {
+    syncCall(api.addMachineTagToCollection(collectionKey, machineTag));
   }
 
   /** Returns all persons in GrSciCol. */
@@ -177,10 +205,17 @@ public class GrSciCollHttpClient {
     syncCall(api.removePersonFromCollection(collectionKey, personKey));
   }
 
+  public Person getPerson(UUID key) {
+    return syncCall(api.getPerson(key));
+  }
+
   private interface API {
     @GET("institution")
     Call<PagingResponse<Institution>> listInstitutions(
         @Query("limit") int limit, @Query("offset") int offset);
+
+    @GET("institution/{key}")
+    Call<Institution> getInstitution(@Path("key") UUID key);
 
     @POST("institution")
     Call<UUID> createInstitution(@Body Institution institution);
@@ -188,9 +223,20 @@ public class GrSciCollHttpClient {
     @PUT("institution/{key}")
     Call<Void> updateInstitution(@Path("key") UUID key, @Body Institution institution);
 
+    @POST("institution/{key}/identifier")
+    Call<Void> addIdentifierToInstitution(
+        @Path("key") UUID institutionKey, @Body Identifier identifier);
+
+    @POST("institution/{key}/machineTag")
+    Call<Void> addMachineTagToInstitution(
+        @Path("key") UUID institutionKey, @Body MachineTag machineTag);
+
     @GET("collection")
     Call<PagingResponse<Collection>> listCollections(
         @Query("limit") int limit, @Query("offset") int offset);
+
+    @GET("collection/{key}")
+    Call<Collection> getCollection(@Path("key") UUID key);
 
     @POST("collection")
     Call<UUID> createCollection(@Body Collection collection);
@@ -198,9 +244,20 @@ public class GrSciCollHttpClient {
     @PUT("collection/{key}")
     Call<Void> updateCollection(@Path("key") UUID key, @Body Collection collection);
 
+    @POST("collection/{key}/identifier")
+    Call<Void> addIdentifierToCollection(
+        @Path("key") UUID collectionKey, @Body Identifier identifier);
+
+    @POST("collection/{key}/machineTag")
+    Call<Void> addMachineTagToCollection(
+        @Path("key") UUID collectionKey, @Body MachineTag machineTag);
+
     @GET("person")
     Call<PagingResponse<Person>> listPersons(
         @Query("limit") int limit, @Query("offset") int offset);
+
+    @GET("person/{key}")
+    Call<Person> getPerson(@Path("key") UUID key);
 
     @POST("person")
     Call<UUID> createPerson(@Body Person person);
@@ -245,6 +302,18 @@ public class GrSciCollHttpClient {
         throw new IOException(
             "Unable to deserialize country from provided value (not an ISO 2 character?): "
                 + jp.getText());
+      }
+    }
+  }
+
+  private static class CustomDateDeserializer extends DateDeserializer {
+
+    @Override
+    public Date deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+      try {
+        return super.deserialize(p, ctxt);
+      } catch (Exception ex) {
+        return null;
       }
     }
   }

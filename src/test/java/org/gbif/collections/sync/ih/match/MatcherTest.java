@@ -4,7 +4,8 @@ import org.gbif.api.model.collections.Address;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.collections.sync.ih.model.IHStaff;
-import org.gbif.collections.sync.ih.parsers.CountryParser;
+import org.gbif.collections.sync.parsers.CountryParser;
+import org.gbif.collections.sync.staff.StaffNormalized;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -182,9 +183,9 @@ public class MatcherTest {
     // When
     int score =
         Matcher.getEqualityScore(
-            StaffNormalized.fromIHStaff(s, null, null, COUNTRY_PARSER),
-            StaffNormalized.fromGrSciCollPerson(p1),
-            false);
+          StaffNormalized.fromIHStaff(s, null, null, COUNTRY_PARSER),
+          StaffNormalized.fromGrSciCollPerson(p1),
+          false);
 
     // Expect
     assertEquals(0, score);

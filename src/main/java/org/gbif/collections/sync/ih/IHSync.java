@@ -1,33 +1,52 @@
 package org.gbif.collections.sync.ih;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.*;
-import org.gbif.collections.sync.SyncConfig;
+import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Contactable;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.Person;
+import org.gbif.collections.sync.SyncResult;
+import org.gbif.collections.sync.SyncResult.CollectionOnlyMatch;
+import org.gbif.collections.sync.SyncResult.Conflict;
+import org.gbif.collections.sync.SyncResult.EntityMatch;
+import org.gbif.collections.sync.SyncResult.FailedAction;
+import org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
+import org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
+import org.gbif.collections.sync.SyncResult.NoEntityMatch;
+import org.gbif.collections.sync.SyncResult.StaffMatch;
+import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.http.clients.GithubClient;
 import org.gbif.collections.sync.http.clients.GrSciCollHttpClient;
 import org.gbif.collections.sync.http.clients.IHHttpClient;
-import org.gbif.collections.sync.ih.IHSyncResult.*;
 import org.gbif.collections.sync.ih.match.MatchResult;
 import org.gbif.collections.sync.ih.match.Matcher;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
-import org.gbif.collections.sync.ih.parsers.CountryParser;
-import org.gbif.collections.sync.notification.Issue;
-import org.gbif.collections.sync.notification.IssueFactory;
-
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import org.gbif.collections.sync.notification.IHIssueFactory;
+import org.gbif.collections.sync.parsers.CountryParser;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.gbif.collections.sync.ih.Utils.isPersonInContacts;
+import static org.gbif.collections.sync.Utils.isPersonInContacts;
+import static org.gbif.collections.sync.http.Executor.createGHIssue;
+import static org.gbif.collections.sync.http.Executor.executeAndReturnOrAddFail;
+import static org.gbif.collections.sync.http.Executor.executeOrAddFail;
+import static org.gbif.collections.sync.http.Executor.executeOrAddFailAsync;
 
 /** Syncs IH entities with GrSciColl ones present in GBIF registry. */
 @Slf4j
@@ -37,17 +56,32 @@ public class IHSync {
   private final boolean sendNotifications;
   private final EntityConverter entityConverter;
   private final CountryParser countryParser;
-  private final IssueFactory issueFactory;
+  private final IHIssueFactory issueFactory;
   private final GrSciCollHttpClient grSciCollHttpClient;
   private final IHHttpClient ihHttpClient;
   private final GithubClient githubClient;
-  private IHSyncResultBuilder syncResultBuilder = IHSyncResult.builder();
+  private SyncResult.SyncResultBuilder syncResultBuilder = SyncResult.builder();
 
   @Builder
-  private IHSync(SyncConfig config, EntityConverter entityConverter, CountryParser countryParser) {
-    if (countryParser == null) {
-      this.countryParser =
-          CountryParser.from(IHHttpClient.getInstance(config.getIhWsUrl()).getCountries());
+  private IHSync(IHConfig ihConfig, EntityConverter entityConverter, CountryParser countryParser) {
+    if (ihConfig != null && ihConfig.getSyncConfig() != null) {
+      this.dryRun = ihConfig.getSyncConfig().isDryRun();
+      this.sendNotifications = ihConfig.getSyncConfig().isSendNotifications();
+      this.issueFactory = IHIssueFactory.create(ihConfig);
+      this.grSciCollHttpClient = GrSciCollHttpClient.create(ihConfig.getSyncConfig());
+      this.ihHttpClient = IHHttpClient.create(ihConfig.getIhWsUrl());
+      this.githubClient = GithubClient.create(ihConfig.getSyncConfig().getNotification());
+    } else {
+      this.dryRun = true;
+      this.sendNotifications = false;
+      this.issueFactory = IHIssueFactory.fromDefaults();
+      this.grSciCollHttpClient = null;
+      this.ihHttpClient = null;
+      this.githubClient = null;
+    }
+
+    if (countryParser == null && ihHttpClient != null) {
+      this.countryParser = CountryParser.from(ihHttpClient.getCountries());
     } else {
       this.countryParser = countryParser;
     }
@@ -56,26 +90,10 @@ public class IHSync {
       this.entityConverter =
           EntityConverter.builder()
               .countryParser(this.countryParser)
-              .creationUser(config.getRegistryWsUser())
+              .creationUser(ihConfig.getSyncConfig().getRegistryWsUser())
               .build();
     } else {
       this.entityConverter = entityConverter;
-    }
-
-    if (config != null) {
-      this.dryRun = config.isDryRun();
-      this.sendNotifications = config.isSendNotifications();
-      this.issueFactory = IssueFactory.getInstance(config);
-      this.grSciCollHttpClient = GrSciCollHttpClient.getInstance(config);
-      this.ihHttpClient = IHHttpClient.getInstance(config.getIhWsUrl());
-      this.githubClient = GithubClient.getInstance(config);
-    } else {
-      this.dryRun = true;
-      this.sendNotifications = false;
-      this.issueFactory = IssueFactory.fromDefaults();
-      this.grSciCollHttpClient = null;
-      this.ihHttpClient = null;
-      this.githubClient = null;
     }
 
     log.info(
@@ -84,7 +102,7 @@ public class IHSync {
         this.sendNotifications);
   }
 
-  public IHSyncResult sync() {
+  public SyncResult sync() {
     Objects.requireNonNull(ihHttpClient);
     Objects.requireNonNull(grSciCollHttpClient);
 
@@ -121,7 +139,7 @@ public class IHSync {
 
     // do the sync
     log.info("Starting the sync");
-    this.syncResultBuilder = IHSyncResult.builder();
+    this.syncResultBuilder = SyncResult.builder();
     ihInstitutions.forEach(
         ihInstitution -> {
           if (!isValidIhInstitution(ihInstitution)) {
@@ -150,11 +168,15 @@ public class IHSync {
           }
         });
 
-    IHSyncResult result = syncResultBuilder.build();
+    SyncResult result = syncResultBuilder.build();
 
     // create a notification with all the fails
     if (!result.getFailedActions().isEmpty()) {
-      createGHIssue(issueFactory.createFailsNotification(result.getFailedActions()));
+      createGHIssue(
+          issueFactory.createFailsNotification(result.getFailedActions()),
+          sendNotifications,
+          githubClient,
+          syncResultBuilder);
     }
 
     return result;
@@ -162,7 +184,7 @@ public class IHSync {
 
   @VisibleForTesting
   CollectionOnlyMatch handleCollectionMatch(MatchResult match) {
-    EntityMatch<Collection> collectionEntityMatch = updateCollection(match);
+    SyncResult.EntityMatch<Collection> collectionEntityMatch = updateCollection(match);
 
     StaffMatch staffMatch =
         handleStaff(match, Collections.singletonList(collectionEntityMatch.getMatched()));
@@ -183,9 +205,11 @@ public class IHSync {
             match.getIhInstitution(), institutionEntityMatch.getMatched().getKey());
 
     UUID createdKey =
-        executeCreateEntityOrAddFail(
+        executeAndReturnOrAddFail(
             () -> grSciCollHttpClient.createCollection(newCollection),
-            e -> new FailedAction(newCollection, "Failed to create collection: " + e.getMessage()));
+            e -> new FailedAction(newCollection, "Failed to create collection: " + e.getMessage()),
+            dryRun,
+            syncResultBuilder);
     newCollection.setKey(createdKey);
 
     // same staff for both entities
@@ -204,11 +228,13 @@ public class IHSync {
     // create institution
     Institution newInstitution = entityConverter.convertToInstitution(match.getIhInstitution());
     UUID institutionKey =
-        executeCreateEntityOrAddFail(
+        executeAndReturnOrAddFail(
             () -> grSciCollHttpClient.createInstitution(newInstitution),
             e ->
                 new FailedAction(
-                    newInstitution, "Failed to create institution : " + e.getMessage()));
+                    newInstitution, "Failed to create institution : " + e.getMessage()),
+            dryRun,
+            syncResultBuilder);
     newInstitution.setKey(institutionKey);
 
     // create collection
@@ -216,12 +242,14 @@ public class IHSync {
         entityConverter.convertToCollection(match.getIhInstitution(), institutionKey);
 
     UUID collectionKey =
-        executeCreateEntityOrAddFail(
+        executeAndReturnOrAddFail(
             () -> grSciCollHttpClient.createCollection(newCollection),
             e ->
                 new FailedAction(
                     newCollection,
-                    "Failed to create institution and collection: " + e.getMessage()));
+                    "Failed to create institution and collection: " + e.getMessage()),
+            dryRun,
+            syncResultBuilder);
     newCollection.setKey(collectionKey);
 
     // same staff for both entities
@@ -261,12 +289,32 @@ public class IHSync {
 
     EntityMatch.EntityMatchBuilder<Institution> entityMatchBuilder =
         EntityMatch.<Institution>builder().matched(existing).merged(mergedInstitution);
-    if (!mergedInstitution.lenientEquals(existing)) {
+    if (!mergedInstitution.equals(existing)) {
+      // check if we need to update the entity
+      if (!mergedInstitution.lenientEquals(existing)) {
+        executeOrAddFail(
+            () -> grSciCollHttpClient.updateInstitution(mergedInstitution),
+            e ->
+                new FailedAction(
+                    mergedInstitution, "Failed to update institution: " + e.getMessage()),
+            dryRun,
+            syncResultBuilder);
+      }
+      // add identifiers if needed
       executeOrAddFailAsync(
-          () -> grSciCollHttpClient.updateInstitution(mergedInstitution),
+          () ->
+              mergedInstitution.getIdentifiers().stream()
+                  .filter(i -> i.getKey() == null)
+                  .forEach(
+                      i ->
+                          grSciCollHttpClient.addIdentifierToInstitution(
+                              mergedInstitution.getKey(), i)),
           e ->
               new FailedAction(
-                  mergedInstitution, "Failed to update institution: " + e.getMessage()));
+                  mergedInstitution, "Failed to add identifiers to institution: " + e.getMessage()),
+          dryRun,
+          syncResultBuilder);
+
       entityMatchBuilder.update(true);
     }
 
@@ -281,11 +329,32 @@ public class IHSync {
 
     EntityMatch.EntityMatchBuilder<Collection> entityMatchBuilder =
         EntityMatch.<Collection>builder().matched(existing).merged(mergedCollection);
-    if (!mergedCollection.lenientEquals(existing)) {
+    if (!mergedCollection.equals(existing)) {
+      // check if we need to update the entity
+      if (!mergedCollection.lenientEquals(existing)) {
+        executeOrAddFail(
+            () -> grSciCollHttpClient.updateCollection(mergedCollection),
+            e ->
+                new FailedAction(
+                    mergedCollection, "Failed to update collection: " + e.getMessage()),
+            dryRun,
+            syncResultBuilder);
+      }
+      // add identifiers if needed
       executeOrAddFailAsync(
-          () -> grSciCollHttpClient.updateCollection(mergedCollection),
+          () ->
+              mergedCollection.getIdentifiers().stream()
+                  .filter(i -> i.getKey() == null)
+                  .forEach(
+                      i ->
+                          grSciCollHttpClient.addIdentifierToCollection(
+                              mergedCollection.getKey(), i)),
           e ->
-              new FailedAction(mergedCollection, "Failed to update collection: " + e.getMessage()));
+              new FailedAction(
+                  mergedCollection, "Failed to add identifiers to collection: " + e.getMessage()),
+          dryRun,
+          syncResultBuilder);
+
       entityMatchBuilder.update(true);
     }
 
@@ -347,13 +416,19 @@ public class IHSync {
               newPerson.setKey(createdKey);
               entities.forEach(e -> addPersonToEntity.accept(e, newPerson));
             },
-            e -> new FailedAction(newPerson, "Failed to create person: " + e.getMessage()));
+            e -> new FailedAction(newPerson, "Failed to create person: " + e.getMessage()),
+            dryRun,
+            syncResultBuilder);
         staffSyncBuilder.newPerson(newPerson);
       } else if (staffMatches.size() > 1) {
         // conflict. Multiple candidates matched
         log.info("Conflict for IH Staff {}", ihStaff.getIrn());
         contactsCopy.removeAll(staffMatches);
-        createGHIssue(issueFactory.createStaffConflict(staffMatches, ihStaff));
+        createGHIssue(
+            issueFactory.createStaffConflict(staffMatches, ihStaff),
+            sendNotifications,
+            githubClient,
+            syncResultBuilder);
         staffSyncBuilder.conflict(new Conflict(ihStaff, new ArrayList<>(staffMatches)));
       } else {
         // there is one match
@@ -364,12 +439,15 @@ public class IHSync {
 
         EntityMatch.EntityMatchBuilder<Person> entityMatchBuilder =
             EntityMatch.<Person>builder().matched(matchedPerson).merged(mergedPerson);
-        if (!mergedPerson.lenientEquals(matchedPerson)) {
-          // update person
-          executeOrAddFailAsync(
-              () -> grSciCollHttpClient.updatePerson(mergedPerson),
-              e -> new FailedAction(mergedPerson, "Failed to update person: " + e.getMessage()));
-
+        if (!mergedPerson.equals(matchedPerson)) {
+          // check if we need to update the person
+          if (!mergedPerson.lenientEquals(matchedPerson)) {
+            executeOrAddFailAsync(
+                () -> grSciCollHttpClient.updatePerson(mergedPerson),
+                e -> new FailedAction(mergedPerson, "Failed to update person: " + e.getMessage()),
+                dryRun,
+                syncResultBuilder);
+          }
           // add identifiers if needed
           executeOrAddFailAsync(
               () ->
@@ -379,7 +457,9 @@ public class IHSync {
                           i -> grSciCollHttpClient.addIdentifierToPerson(mergedPerson.getKey(), i)),
               e ->
                   new FailedAction(
-                      mergedPerson, "Failed to add identifiers to person: " + e.getMessage()));
+                      mergedPerson, "Failed to add identifiers to person: " + e.getMessage()),
+              dryRun,
+              syncResultBuilder);
 
           // if the match was global we'd need to link it to the entity. The same if we're
           // syncing staff from different entities: one entity could have the contact already
@@ -388,7 +468,9 @@ public class IHSync {
               () -> entities.forEach(e -> addPersonToEntity.accept(e, mergedPerson)),
               e ->
                   new FailedAction(
-                      mergedPerson, "Failed to add persons to entity: " + e.getMessage()));
+                      mergedPerson, "Failed to add persons to entity: " + e.getMessage()),
+              dryRun,
+              syncResultBuilder);
           entityMatchBuilder.update(true);
         }
 
@@ -416,7 +498,9 @@ public class IHSync {
           log.info("Removing contact {}", personToRemove.getKey());
           executeOrAddFail(
               () -> entities.forEach(e -> removePersonFromEntity.accept(e, personToRemove)),
-              e -> new FailedAction(personToRemove, "Failed to remove person: " + e.getMessage()));
+              e -> new FailedAction(personToRemove, "Failed to remove person: " + e.getMessage()),
+              dryRun,
+              syncResultBuilder);
           staffSyncBuilder.removedPerson(personToRemove);
         });
 
@@ -425,7 +509,11 @@ public class IHSync {
 
   @VisibleForTesting
   Conflict handleConflict(MatchResult match) {
-    createGHIssue(issueFactory.createConflict(match.getAllMatches(), match.getIhInstitution()));
+    createGHIssue(
+        issueFactory.createConflict(match.getAllMatches(), match.getIhInstitution()),
+        sendNotifications,
+        githubClient,
+        syncResultBuilder);
     return new Conflict(match.getIhInstitution(), match.getAllMatches());
   }
 
@@ -434,7 +522,10 @@ public class IHSync {
         || Strings.isNullOrEmpty(ihInstitution.getCode())) {
       createGHIssue(
           issueFactory.createInvalidEntity(
-              ihInstitution, "Not valid institution - name and code are required"));
+              ihInstitution, "Not valid institution - name and code are required"),
+          sendNotifications,
+          githubClient,
+          syncResultBuilder);
       syncResultBuilder.invalidEntity(ihInstitution);
       return false;
     }
@@ -445,79 +536,13 @@ public class IHSync {
     if (Strings.isNullOrEmpty(ihStaff.getFirstName())
         && Strings.isNullOrEmpty(ihStaff.getMiddleName())) {
       createGHIssue(
-          issueFactory.createInvalidEntity(ihStaff, "Not valid person - first name is required"));
+          issueFactory.createInvalidEntity(ihStaff, "Not valid person - first name is required"),
+          sendNotifications,
+          githubClient,
+          syncResultBuilder);
       syncResultBuilder.invalidEntity(ihStaff);
       return false;
     }
     return true;
-  }
-
-  private UUID executeCreateEntityOrAddFail(
-      Supplier<UUID> execution, Function<Throwable, FailedAction> failCreator) {
-    if (!dryRun) {
-      try {
-        return execution.get();
-      } catch (Exception e) {
-        syncResultBuilder.failedAction(failCreator.apply(e));
-      }
-    }
-
-    return null;
-  }
-
-  private void executeOrAddFailAsync(
-      Runnable runnable, Function<Throwable, FailedAction> failCreator) {
-    if (!dryRun) {
-      CompletableFuture.runAsync(runnable)
-          .whenCompleteAsync(
-              (r, e) -> {
-                if (e != null) {
-                  syncResultBuilder.failedAction(failCreator.apply(e));
-                }
-              });
-    }
-  }
-
-  private void executeOrAddFail(Runnable runnable, Function<Throwable, FailedAction> failCreator) {
-    if (!dryRun) {
-      try {
-        runnable.run();
-      } catch (Exception e) {
-        syncResultBuilder.failedAction(failCreator.apply(e));
-      }
-    }
-  }
-
-  private void createGHIssue(Issue issue) {
-    if (sendNotifications) {
-      Optional<Issue> existingIssueOpt = githubClient.findIssueWithSameTitle(issue.getTitle());
-      Runnable runnable;
-      String errorMsg;
-      if (existingIssueOpt.isPresent()) {
-        // if it exists we update the labels to add the one of this sync. We also merge the
-        // assignees in case the original ones were modified in Github
-        Issue existingIssue = existingIssueOpt.get();
-        issue.setNumber(existingIssue.getNumber());
-        issue.getLabels().addAll(existingIssue.getLabels());
-        issue.getAssignees().addAll(existingIssue.getAssignees());
-
-        runnable = () -> githubClient.updateIssue(issue);
-        errorMsg = "Failed to add sync timestamp label to issue: ";
-      } else {
-        // if it doesn't exist we create it
-        runnable = () -> githubClient.createIssue(issue);
-        errorMsg = "Failed to create issue: ";
-      }
-
-      // do the call
-      CompletableFuture.runAsync(runnable)
-          .whenCompleteAsync(
-              (r, e) -> {
-                if (e != null) {
-                  syncResultBuilder.failedAction(
-                      new FailedAction(issue, errorMsg + e.getMessage()));
-                }
-              });
-    }
   }
 }

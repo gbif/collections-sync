@@ -1,28 +1,37 @@
 package org.gbif.collections.sync.ih;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.UUID;
+
+import org.gbif.api.model.collections.Address;
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.*;
+import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.LenientEquals;
 import org.gbif.api.util.IsoDateParsingUtils;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.api.vocabulary.collections.InstitutionType;
+import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.ih.match.MatchResult;
 import org.gbif.collections.sync.ih.model.IHEntity;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
-import org.gbif.collections.sync.ih.parsers.CountryParser;
+import org.gbif.collections.sync.parsers.CountryParser;
 
-import java.util.*;
+import org.junit.Test;
 
 import lombok.Builder;
 import lombok.Data;
-import org.junit.Test;
 
-import static org.gbif.collections.sync.ih.Utils.TO_BIGDECIMAL;
-import static org.gbif.collections.sync.ih.Utils.encodeIRN;
-
+import static org.gbif.collections.sync.Utils.encodeIRN;
+import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -48,7 +57,7 @@ public class IHSyncTest {
             .ihInstitution(collectionToUpdate.ih)
             .build();
 
-    IHSyncResult.CollectionOnlyMatch collectionOnlyMatch = IH_SYNC.handleCollectionMatch(match);
+    SyncResult.CollectionOnlyMatch collectionOnlyMatch = IH_SYNC.handleCollectionMatch(match);
     assertEntityMatch(collectionOnlyMatch.getMatchedCollection(), collectionToUpdate, true);
     assertEmptyStaffMatch(collectionOnlyMatch.getStaffMatch());
   }
@@ -62,7 +71,7 @@ public class IHSyncTest {
             .ihInstitution(collectionNoChange.ih)
             .build();
 
-    IHSyncResult.CollectionOnlyMatch collectionOnlyMatch = IH_SYNC.handleCollectionMatch(match);
+    SyncResult.CollectionOnlyMatch collectionOnlyMatch = IH_SYNC.handleCollectionMatch(match);
     assertEntityMatch(collectionOnlyMatch.getMatchedCollection(), collectionNoChange, false);
     assertEmptyStaffMatch(collectionOnlyMatch.getStaffMatch());
   }
@@ -76,7 +85,7 @@ public class IHSyncTest {
             .ihInstitution(institutionToUpdate.ih)
             .build();
 
-    IHSyncResult.InstitutionOnlyMatch institutionOnlyMatch = IH_SYNC.handleInstitutionMatch(match);
+    SyncResult.InstitutionOnlyMatch institutionOnlyMatch = IH_SYNC.handleInstitutionMatch(match);
     assertEntityMatch(institutionOnlyMatch.getMatchedInstitution(), institutionToUpdate, true);
     assertEmptyStaffMatch(institutionOnlyMatch.getStaffMatch());
   }
@@ -90,7 +99,7 @@ public class IHSyncTest {
             .ihInstitution(institutionNoChange.ih)
             .build();
 
-    IHSyncResult.InstitutionOnlyMatch institutionOnlyMatch = IH_SYNC.handleInstitutionMatch(match);
+    SyncResult.InstitutionOnlyMatch institutionOnlyMatch = IH_SYNC.handleInstitutionMatch(match);
     assertEntityMatch(institutionOnlyMatch.getMatchedInstitution(), institutionNoChange, false);
     assertEmptyStaffMatch(institutionOnlyMatch.getStaffMatch());
   }
@@ -123,7 +132,7 @@ public class IHSyncTest {
     expectedCollection.getIdentifiers().add(newIdentifier);
 
     MatchResult match = MatchResult.builder().ihInstitution(ih).build();
-    IHSyncResult.NoEntityMatch noEntityMatch = IH_SYNC.handleNoMatches(match);
+    SyncResult.NoEntityMatch noEntityMatch = IH_SYNC.handleNoMatches(match);
     assertTrue(noEntityMatch.getNewCollection().lenientEquals(expectedCollection));
     assertTrue(noEntityMatch.getNewInstitution().lenientEquals(expectedInstitution));
     assertEmptyStaffMatch(noEntityMatch.getStaffMatch());
@@ -140,7 +149,7 @@ public class IHSyncTest {
             .ihInstitution(collectionToUpdate.ih)
             .build();
 
-    IHSyncResult.InstitutionAndCollectionMatch instAndColMatch =
+    SyncResult.InstitutionAndCollectionMatch instAndColMatch =
         IH_SYNC.handleInstitutionAndCollectionMatch(match);
     assertEntityMatch(instAndColMatch.getMatchedCollection(), collectionToUpdate, true);
     assertEntityMatch(instAndColMatch.getMatchedInstitution(), institutionToUpdate, true);
@@ -162,8 +171,8 @@ public class IHSyncTest {
     MatchResult match =
         MatchResult.builder().ihInstitution(ihInstitution).collection(c1).collection(c2).build();
 
-    IHSyncResult.Conflict conflictMatch = IH_SYNC.handleConflict(match);
-    assertNotNull(conflictMatch.getIhEntity());
+    SyncResult.Conflict conflictMatch = IH_SYNC.handleConflict(match);
+    assertNotNull(conflictMatch.getEntity());
     assertEquals(2, conflictMatch.getGrSciCollEntities().size());
   }
 
@@ -179,7 +188,7 @@ public class IHSyncTest {
     Institution institution = new Institution();
     institution.setContacts(Collections.singletonList(personToUpdate.entity));
 
-    IHSyncResult.StaffMatch staffMatch =
+    SyncResult.StaffMatch staffMatch =
         IH_SYNC.handleStaff(match, Collections.singletonList(institution));
 
     assertEquals(0, staffMatch.getNewPersons().size());
@@ -201,7 +210,7 @@ public class IHSyncTest {
     Institution institution = new Institution();
     institution.setContacts(Collections.singletonList(personNoChange.entity));
 
-    IHSyncResult.StaffMatch staffMatch =
+    SyncResult.StaffMatch staffMatch =
         IH_SYNC.handleStaff(match, Collections.singletonList(institution));
 
     assertEquals(0, staffMatch.getNewPersons().size());
@@ -219,7 +228,7 @@ public class IHSyncTest {
     Institution institution = new Institution();
     institution.setContacts(Collections.singletonList(personToRemove.entity));
 
-    IHSyncResult.StaffMatch staffMatch =
+    SyncResult.StaffMatch staffMatch =
         IH_SYNC.handleStaff(match, Collections.singletonList(institution));
 
     assertEquals(0, staffMatch.getNewPersons().size());
@@ -237,7 +246,7 @@ public class IHSyncTest {
             .staffMatcher((s, ppl) -> Collections.emptySet())
             .build();
 
-    IHSyncResult.StaffMatch staffMatch = IH_SYNC.handleStaff(match, Collections.emptyList());
+    SyncResult.StaffMatch staffMatch = IH_SYNC.handleStaff(match, Collections.emptyList());
 
     assertEquals(1, staffMatch.getNewPersons().size());
     assertEquals(0, staffMatch.getRemovedPersons().size());
@@ -263,18 +272,46 @@ public class IHSyncTest {
             .staffMatcher((s, ppl) -> new HashSet<>(Arrays.asList(p1, p2)))
             .build();
 
-    IHSyncResult.StaffMatch staffMatch = IH_SYNC.handleStaff(match, Collections.emptyList());
+    SyncResult.StaffMatch staffMatch = IH_SYNC.handleStaff(match, Collections.emptyList());
     assertEquals(0, staffMatch.getNewPersons().size());
     assertEquals(0, staffMatch.getRemovedPersons().size());
     assertEquals(1, staffMatch.getConflicts().size());
     assertEquals(0, staffMatch.getMatchedPersons().size());
-    assertNotNull(staffMatch.getConflicts().iterator().next().getIhEntity());
+    assertNotNull(staffMatch.getConflicts().iterator().next().getEntity());
     assertEquals(2, staffMatch.getConflicts().iterator().next().getGrSciCollEntities().size());
+  }
+
+  @Test
+  public void identifierAndTagUpdateInCollectionTest() {
+    TestEntity<Collection, IHInstitution> collectionNoChange = createCollectionNoChange();
+    collectionNoChange.getEntity().setIdentifiers(Collections.emptyList());
+    MatchResult match =
+        MatchResult.builder()
+            .collections(Collections.singleton(collectionNoChange.entity))
+            .ihInstitution(collectionNoChange.ih)
+            .build();
+
+    SyncResult.CollectionOnlyMatch collectionOnlyMatch = IH_SYNC.handleCollectionMatch(match);
+    assertTrue(collectionOnlyMatch.getMatchedCollection().isUpdate());
+  }
+
+  @Test
+  public void identifierAndTagUpdateInInstitutionTest() {
+    TestEntity<Institution, IHInstitution> institutionNoChange = createInstitutionNoChange();
+    institutionNoChange.getEntity().setIdentifiers(Collections.emptyList());
+    MatchResult match =
+        MatchResult.builder()
+            .institutions(Collections.singleton(institutionNoChange.entity))
+            .ihInstitution(institutionNoChange.ih)
+            .build();
+
+    SyncResult.InstitutionOnlyMatch institutionOnlyMatch = IH_SYNC.handleInstitutionMatch(match);
+    assertTrue(institutionOnlyMatch.getMatchedInstitution().isUpdate());
   }
 
   private <T extends CollectionEntity & LenientEquals<T>, R extends IHEntity>
       void assertEntityMatch(
-          IHSyncResult.EntityMatch<T> entityMatch, TestEntity<T, R> testEntity, boolean update) {
+          SyncResult.EntityMatch<T> entityMatch, TestEntity<T, R> testEntity, boolean update) {
     assertEquals(update, entityMatch.isUpdate());
     assertTrue(entityMatch.getMatched().lenientEquals(testEntity.entity));
     if (update) {
@@ -284,7 +321,7 @@ public class IHSyncTest {
     }
   }
 
-  private void assertEmptyStaffMatch(IHSyncResult.StaffMatch staffMatch) {
+  private void assertEmptyStaffMatch(SyncResult.StaffMatch staffMatch) {
     assertEquals(0, staffMatch.getMatchedPersons().size());
     assertEquals(0, staffMatch.getNewPersons().size());
     assertEquals(0, staffMatch.getRemovedPersons().size());

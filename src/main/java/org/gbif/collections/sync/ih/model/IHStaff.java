@@ -1,10 +1,10 @@
 package org.gbif.collections.sync.ih.model;
 
-import java.util.Arrays;
 import java.util.Comparator;
 
-import com.google.common.base.Strings;
 import lombok.Data;
+
+import static org.gbif.collections.sync.Utils.countNonNullValues;
 
 /** Models an Index Herbariorum staff. */
 @Data
@@ -48,30 +48,5 @@ public class IHStaff implements IHEntity {
     long countContact = countNonNullValues(IHStaff.Contact.class, ihStaff.getContact());
 
     return countStaff + countAddress + countContact;
-  }
-
-  /** Counts how many values of the instance are not null or not empty. */
-  private static <T> long countNonNullValues(Class<T> clazz, T instance) {
-    return Arrays.stream(clazz.getDeclaredFields())
-        .filter(
-            f -> {
-              try {
-                Object value =
-                    clazz
-                        .getMethod(
-                            "get"
-                                + f.getName().substring(0, 1).toUpperCase()
-                                + f.getName().substring(1))
-                        .invoke(instance);
-                if (value instanceof String) {
-                  return !Strings.isNullOrEmpty(String.valueOf(value));
-                } else {
-                  return value != null;
-                }
-              } catch (Exception e) {
-                return false;
-              }
-            })
-        .count();
   }
 }
