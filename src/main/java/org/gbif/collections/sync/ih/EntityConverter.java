@@ -41,6 +41,7 @@ import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.ih.model.IHInstitution.CollectionSummary;
 import static org.gbif.collections.sync.ih.model.IHInstitution.Location;
 import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
+import static org.gbif.collections.sync.parsers.DataParser.cleanString;
 import static org.gbif.collections.sync.parsers.DataParser.getFirstString;
 import static org.gbif.collections.sync.parsers.DataParser.getListValue;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValue;
@@ -69,8 +70,8 @@ public class EntityConverter {
   public Institution convertToInstitution(IHInstitution ihInstitution, Institution existing) {
     Institution institution = cloneInstitution(existing);
 
-    institution.setName(normalizeString(ihInstitution.getOrganization()));
-    institution.setCode(normalizeString(ihInstitution.getCode()));
+    institution.setName(cleanString(ihInstitution.getOrganization()));
+    institution.setCode(cleanString(ihInstitution.getCode()));
     institution.setIndexHerbariorumRecord(true);
     institution.setActive(isActive(ihInstitution.getCurrentStatus()));
 
@@ -155,8 +156,8 @@ public class EntityConverter {
       collection.setInstitutionKey(institutionKey);
     }
 
-    collection.setName(normalizeString(ihInstitution.getOrganization()));
-    collection.setCode(normalizeString(ihInstitution.getCode()));
+    collection.setName(cleanString(ihInstitution.getOrganization()));
+    collection.setCode(cleanString(ihInstitution.getCode()));
     collection.setIndexHerbariorumRecord(true);
     collection.setActive(isActive(ihInstitution.getCurrentStatus()));
     collection.setTaxonomicCoverage(getStringValue(ihInstitution.getTaxonomicCoverage()));

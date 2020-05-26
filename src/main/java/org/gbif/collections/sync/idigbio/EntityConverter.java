@@ -77,7 +77,7 @@ public class EntityConverter {
 
       Optional<String> instName = getStringValueOpt(record.getInstitution());
       if (instName.isPresent()) {
-        institution.setName(normalizeString(instName.get()));
+        institution.setName(cleanString(instName.get()));
       } else if (institution.getName() == null) {
         getStringValueOpt(record.getCollectionCode()).ifPresent(institution::setName);
       }
@@ -175,12 +175,12 @@ public class EntityConverter {
         // only for non-IH
         Optional<String> collectionName = getStringValueOpt(record.getCollection());
         if (collectionName.isPresent()) {
-          collection.setName(normalizeString(collectionName.get()));
+          collection.setName(cleanString(collectionName.get()));
         } else if (collection.getName() == null) {
           collection.setName(
               getStringValueOpt(record.getInstitution())
-                  .map(DataParser::normalizeString)
-                  .orElse(institution != null ? normalizeString(institution.getName()) : null));
+                  .map(DataParser::cleanString)
+                  .orElse(institution != null ? cleanString(institution.getName()) : null));
         }
 
         getStringValueOpt(record.getCollectionUrl())
