@@ -44,6 +44,7 @@ import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
 import static org.gbif.collections.sync.parsers.DataParser.getFirstString;
 import static org.gbif.collections.sync.parsers.DataParser.getListValue;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValue;
+import static org.gbif.collections.sync.parsers.DataParser.normalizeString;
 import static org.gbif.collections.sync.parsers.DataParser.parseDate;
 import static org.gbif.collections.sync.parsers.DataParser.parseStringList;
 import static org.gbif.collections.sync.parsers.DataParser.parseUri;
@@ -68,8 +69,8 @@ public class EntityConverter {
   public Institution convertToInstitution(IHInstitution ihInstitution, Institution existing) {
     Institution institution = cloneInstitution(existing);
 
-    institution.setName(ihInstitution.getOrganization());
-    institution.setCode(ihInstitution.getCode());
+    institution.setName(normalizeString(ihInstitution.getOrganization()));
+    institution.setCode(normalizeString(ihInstitution.getCode()));
     institution.setIndexHerbariorumRecord(true);
     institution.setActive(isActive(ihInstitution.getCurrentStatus()));
 
@@ -154,8 +155,8 @@ public class EntityConverter {
       collection.setInstitutionKey(institutionKey);
     }
 
-    collection.setName(ihInstitution.getOrganization());
-    collection.setCode(ihInstitution.getCode());
+    collection.setName(normalizeString(ihInstitution.getOrganization()));
+    collection.setCode(normalizeString(ihInstitution.getCode()));
     collection.setIndexHerbariorumRecord(true);
     collection.setActive(isActive(ihInstitution.getCurrentStatus()));
     collection.setTaxonomicCoverage(getStringValue(ihInstitution.getTaxonomicCoverage()));
@@ -163,8 +164,7 @@ public class EntityConverter {
     collection.setNotes(getStringValue(ihInstitution.getNotes()));
     collection.setNumberSpecimens(ihInstitution.getSpecimenTotal());
     collection.setCollectionSummary(getCollectionSummary(ihInstitution.getCollectionsSummary()));
-    collection.setIncorporatedCollections(
-        getListValue(ihInstitution.getIncorporatedHerbaria()));
+    collection.setIncorporatedCollections(getListValue(ihInstitution.getIncorporatedHerbaria()));
     collection.setImportantCollectors(getListValue(ihInstitution.getImportantCollectors()));
 
     setAddress(collection, ihInstitution);

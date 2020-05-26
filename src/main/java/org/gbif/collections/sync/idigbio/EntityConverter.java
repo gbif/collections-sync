@@ -36,6 +36,7 @@ import static org.gbif.collections.sync.parsers.DataParser.TO_LOCAL_DATE_TIME_UT
 import static org.gbif.collections.sync.parsers.DataParser.cleanString;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValue;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValueOpt;
+import static org.gbif.collections.sync.parsers.DataParser.normalizeString;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
@@ -76,7 +77,7 @@ public class EntityConverter {
 
       Optional<String> instName = getStringValueOpt(record.getInstitution());
       if (instName.isPresent()) {
-        institution.setName(instName.get());
+        institution.setName(normalizeString(instName.get()));
       } else if (institution.getName() == null) {
         getStringValueOpt(record.getCollectionCode()).ifPresent(institution::setName);
       }
@@ -174,11 +175,12 @@ public class EntityConverter {
         // only for non-IH
         Optional<String> collectionName = getStringValueOpt(record.getCollection());
         if (collectionName.isPresent()) {
-          collection.setName(collectionName.get());
+          collection.setName(normalizeString(collectionName.get()));
         } else if (collection.getName() == null) {
           collection.setName(
               getStringValueOpt(record.getInstitution())
-                  .orElse(institution != null ? institution.getName() : null));
+                  .map(DataParser::normalizeString)
+                  .orElse(institution != null ? normalizeString(institution.getName()) : null));
         }
 
         getStringValueOpt(record.getCollectionUrl())
