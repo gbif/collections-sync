@@ -15,7 +15,6 @@ import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.collections.sync.Utils;
 import org.gbif.collections.sync.idigbio.IDigBioRecord;
-import org.gbif.collections.sync.idigbio.IDigBioUtils;
 import org.gbif.collections.sync.staff.StaffNormalized;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -25,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.Utils.countNonNullValues;
 import static org.gbif.collections.sync.Utils.removeUuidNamespace;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
 import static org.gbif.collections.sync.staff.StaffUtils.compareLists;
 import static org.gbif.collections.sync.staff.StaffUtils.compareStrings;
 
@@ -59,7 +59,7 @@ public class Matcher {
 
   private Institution matchWithNewInstitutions(IDigBioRecord iDigBioRecord) {
     // we try with the newly created institutions
-    List<String> iDigBioCodes = IDigBioUtils.getIdigbioCodes(iDigBioRecord.getInstitutionCode());
+    List<String> iDigBioCodes = getIdigbioCodes(iDigBioRecord.getInstitutionCode());
     String instUniqueNameUuid = removeUuidNamespace(iDigBioRecord.getUniqueNameUuid());
     Predicate<List<Identifier>> containsIdentifier =
         ids ->
@@ -90,21 +90,26 @@ public class Matcher {
       return Optional.empty();
     }
 
-    List<String> iDigBioCodes = IDigBioUtils.getIdigbioCodes(iDigBioRecord.getCollectionCode());
-    if (iDigBioCodes.isEmpty()) {
-      return Optional.empty();
-    }
-
+    List<String> iDigBioCodes = getIdigbioCodes(iDigBioRecord.getCollectionCode());
     List<Collection> matches = null;
     if (!Strings.isNullOrEmpty(iDigBioRecord.getSameAs())
         && iDigBioRecord.getSameAs().contains("irn=")) {
+
+      if (iDigBioCodes.isEmpty()) {
+        iDigBioCodes.addAll(getIdigbioCodes(iDigBioRecord.getInstitutionCode()));
+      }
+
       String irn = iDigBioRecord.getSameAs().split("irn=")[1];
       matches =
           collections.stream()
-              .filter(c -> iDigBioCodes.contains(c.getCode()))
               .filter(c -> countIdentifierMatches(Utils.encodeIRN(irn), c) > 0)
+              .filter(c -> iDigBioCodes.isEmpty() || iDigBioCodes.contains(c.getCode()))
               .collect(Collectors.toList());
     } else {
+      if (!iDigBioCodes.isEmpty()) {
+        return Optional.empty();
+      }
+
       Predicate<Collection> hasSomeSimilarity =
           c -> {
             long score = stringSimilarity(iDigBioRecord.getCollection(), c.getName());
