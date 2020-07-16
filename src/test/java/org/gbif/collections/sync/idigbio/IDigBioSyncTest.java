@@ -47,6 +47,7 @@ public class IDigBioSyncTest {
     Collection collection = new Collection();
     collection.setCode("code");
     collection.setName("name");
+    collection.setActive(true);
 
     IDigBioRecord record = new IDigBioRecord();
     record.setCollectionCode(collection.getCode());
@@ -94,6 +95,7 @@ public class IDigBioSyncTest {
     Institution institution = new Institution();
     institution.setCode("code");
     institution.setName("name");
+    institution.setActive(true);
 
     IDigBioRecord record = new IDigBioRecord();
     record.setInstitutionCode(institution.getCode());
@@ -125,11 +127,13 @@ public class IDigBioSyncTest {
     Institution expectedInstitution = new Institution();
     expectedInstitution.setCode(iDigBioRecord.getInstitutionCode());
     expectedInstitution.setName(iDigBioRecord.getInstitution());
+    expectedInstitution.setActive(true);
 
     // expected collection
     Collection expectedCollection = new Collection();
     expectedCollection.setCode(iDigBioRecord.getCollectionCode());
     expectedCollection.setName(iDigBioRecord.getInstitution());
+    expectedCollection.setActive(true);
 
     MatchResult match = MatchResult.builder().iDigBioRecord(iDigBioRecord).build();
     SyncResult.NoEntityMatch noEntityMatch = IDIGBIO_SYNC.handleNoMatches(match);
@@ -150,10 +154,12 @@ public class IDigBioSyncTest {
     Institution inst = new Institution();
     inst.setCode(iDigBioRecord.getInstitutionCode());
     inst.setName(iDigBioRecord.getInstitution());
+    inst.setActive(true);
 
     // collection
     Collection coll = new Collection();
     coll.setCode(iDigBioRecord.getCollectionCode());
+    coll.setActive(true);
 
     MatchResult match =
         MatchResult.builder()
@@ -204,6 +210,7 @@ public class IDigBioSyncTest {
     Collection collection = new Collection();
     collection.setCode("code");
     collection.setName("name");
+    collection.setActive(true);
 
     IDigBioRecord record = new IDigBioRecord();
     record.setCollectionCode(collection.getCode());
@@ -236,6 +243,7 @@ public class IDigBioSyncTest {
     Institution institution = new Institution();
     institution.setCode("code");
     institution.setName("name");
+    institution.setActive(true);
 
     IDigBioRecord record = new IDigBioRecord();
     record.setInstitutionCode(institution.getCode());
