@@ -63,6 +63,8 @@ public class EntityConverter {
     // non-IH and more updated in iDigBio
     if (!containsIrnIdentifier(institution)
         && shouldUpdateRecord(record, institution.getModified())) {
+      institution.setActive(true);
+
       // codes
       setCodes(
           idigbioCodes,
@@ -164,6 +166,7 @@ public class EntityConverter {
     if (shouldUpdateRecord(record, collection.getModified())) {
       // common fields that have to be updated as long as idigbio is more up to date, even for IH
       // entities
+      collection.setActive(true);
       getStringValueOpt(record.getDescription()).ifPresent(collection::setDescription);
       getStringValueOpt(record.getDescriptionForSpecialists())
           .ifPresent(v -> collection.setDescription(collection.getDescription() + "\n" + v));

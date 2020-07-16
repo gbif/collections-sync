@@ -106,15 +106,13 @@ public class Matcher {
               .filter(c -> iDigBioCodes.isEmpty() || iDigBioCodes.contains(c.getCode()))
               .collect(Collectors.toList());
     } else {
-      if (!iDigBioCodes.isEmpty()) {
+      if (iDigBioCodes.isEmpty()) {
         return Optional.empty();
       }
 
       Predicate<Collection> hasSomeSimilarity =
           c -> {
             long score = stringSimilarity(iDigBioRecord.getCollection(), c.getName());
-            score += stringSimilarity(iDigBioRecord.getPhysicalAddress().getCity(), c.getName());
-            score += stringSimilarity(iDigBioRecord.getMailingAddress().getCity(), c.getName());
             score += countIdentifierMatches(iDigBioRecord.getCollectionLsid(), c);
             return score > 0;
           };
