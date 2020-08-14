@@ -73,6 +73,7 @@ public class MatchData {
       collectionsByKey.replace(updatedCollection.getKey(), updatedCollection);
 
       if (updatedCollection.getInstitutionKey() != null
+          // TODO
           && collectionsByInstitution.containsValue(oldCollection)) {
         collectionsByInstitution.get(updatedCollection.getInstitutionKey()).remove(oldCollection);
         collectionsByInstitution.get(updatedCollection.getInstitutionKey()).add(updatedCollection);

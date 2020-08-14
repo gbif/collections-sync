@@ -14,6 +14,8 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
+import org.gbif.collections.sync.common.DataLoader;
+import org.gbif.collections.sync.common.DataLoader.GrSciCollAndIHData;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 import org.gbif.collections.sync.parsers.CountryParser;
@@ -43,18 +45,14 @@ public class Matcher {
   private final Map<String, List<IHStaff>> ihStaffMapByCode;
 
   @Builder
-  private Matcher(
-      CountryParser countryParser,
-      List<Institution> institutions,
-      List<Collection> collections,
-      Set<Person> allGrSciCollPersons,
-      List<IHStaff> ihStaff) {
+  private Matcher(CountryParser countryParser, DataLoader dataLoader) {
     this.countryParser = countryParser;
-    institutionsMapByIrn = mapByIrn(institutions);
-    collectionsMapByIrn = mapByIrn(collections);
-    grSciCollPersonsByIrn = mapByIrn(allGrSciCollPersons);
-    this.allGrSciCollPersons = allGrSciCollPersons;
-    ihStaffMapByCode = ihStaff.stream().collect(Collectors.groupingBy(IHStaff::getCode));
+    GrSciCollAndIHData data = dataLoader.fetchGrSciCollAndIHData();
+    institutionsMapByIrn = mapByIrn(data.getInstitutions());
+    collectionsMapByIrn = mapByIrn(data.getCollections());
+    grSciCollPersonsByIrn = mapByIrn(data.getPersons());
+    this.allGrSciCollPersons = new HashSet<>(data.getPersons());
+    ihStaffMapByCode = data.getIhStaff().stream().collect(Collectors.groupingBy(IHStaff::getCode));
   }
 
   public MatchResult match(IHInstitution ihInstitution) {

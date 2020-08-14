@@ -17,6 +17,7 @@ import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.model.registry.MachineTaggable;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
+import org.gbif.collections.sync.idigbio.match.strategy.NoMatchStrategy;
 import org.gbif.collections.sync.parsers.DataParser;
 
 import com.google.common.base.Strings;

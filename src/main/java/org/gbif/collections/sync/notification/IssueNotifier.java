@@ -11,14 +11,17 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.collections.sync.SyncResult;
+import org.gbif.collections.sync.SyncResult.FailedAction;
 import org.gbif.collections.sync.config.SyncConfig;
+import org.gbif.collections.sync.http.CallExecutor;
+import org.gbif.collections.sync.http.clients.GithubClient;
 
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 
 /** Factory to create {@link Issue}. */
 @Slf4j
-public abstract class BaseIssueFactory {
+public abstract class IssueNotifier {
 
   protected static final String NEW_LINE = "\n";
   protected static final String CODE_SEPARATOR = "```";
@@ -39,8 +42,11 @@ public abstract class BaseIssueFactory {
   private final String registryInstitutionLink;
   private final String registryCollectionLink;
   private final String registryPersonLink;
+  protected final CallExecutor callExecutor;
+  protected final SyncResult.SyncResultBuilder syncResultBuilder;
+  protected GithubClient githubClient;
 
-  protected BaseIssueFactory(SyncConfig config) {
+  protected IssueNotifier(SyncConfig config, SyncResult.SyncResultBuilder syncResultBuilder) {
     this.notificationConfig = config.getNotification();
     this.registryInstitutionLink =
         PORTAL_URL_NORMALIZER.apply(notificationConfig.getRegistryPortalUrl()) + "/institution/%s";
@@ -50,10 +56,16 @@ public abstract class BaseIssueFactory {
         PORTAL_URL_NORMALIZER.apply(notificationConfig.getRegistryPortalUrl()) + "/person/%s";
     syncTimestampLabel =
         LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    callExecutor = new CallExecutor(config);
+    this.syncResultBuilder = syncResultBuilder;
+    if (config.isSendNotifications()) {
+      githubClient = GithubClient.getInstance(config.getNotification());
+    }
+
     log.info("Issue factory created with sync timestamp label: {}", syncTimestampLabel);
   }
 
-  public Issue createFailsNotification(List<SyncResult.FailedAction> fails) {
+  public void createFailsNotification(List<SyncResult.FailedAction> fails) {
     // create body
     StringBuilder body = new StringBuilder();
     body.append("The next operations have failed when updating the registry during the ")
@@ -74,12 +86,19 @@ public abstract class BaseIssueFactory {
                 .append(CODE_SEPARATOR)
                 .append(NEW_LINE));
 
-    return Issue.builder()
-        .title(String.format(FAILS_TITLE, getProcessName()))
-        .body(body.toString())
-        .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
-        .labels(Sets.newHashSet(String.format(FAIL_LABEL, getProcessName()), syncTimestampLabel))
-        .build();
+    Issue issue =
+        Issue.builder()
+            .title(String.format(FAILS_TITLE, getProcessName()))
+            .body(body.toString())
+            .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
+            .labels(
+                Sets.newHashSet(String.format(FAIL_LABEL, getProcessName()), syncTimestampLabel))
+            .build();
+
+    callExecutor.sendNotification(
+        () -> githubClient.createIssue(issue),
+        e -> new FailedAction(issue, "Failed to create fails notification" + e.getMessage()),
+        syncResultBuilder);
   }
 
   protected static String formatEntity(Object entity) {

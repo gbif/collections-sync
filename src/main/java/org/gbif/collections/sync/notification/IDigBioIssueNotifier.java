@@ -10,6 +10,8 @@ import java.util.function.UnaryOperator;
 
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Person;
+import org.gbif.collections.sync.SyncResult;
+import org.gbif.collections.sync.SyncResult.FailedAction;
 import org.gbif.collections.sync.config.IDigBioConfig;
 import org.gbif.collections.sync.config.SyncConfig;
 import org.gbif.collections.sync.idigbio.IDigBioRecord;
@@ -21,7 +23,7 @@ import static org.gbif.collections.sync.Utils.removeUuidNamespace;
 
 /** Factory to create {@link Issue}. */
 @Slf4j
-public class IDigBioIssueFactory extends BaseIssueFactory {
+public class IDigBioIssueNotifier extends IssueNotifier {
 
   private static final String IDIGBIO_IMPORT_LABEL = "iDigBio import";
   private static final String INVALID_ENTITIES_TITLE = "Invalid iDigBio entities";
@@ -38,35 +40,37 @@ public class IDigBioIssueFactory extends BaseIssueFactory {
 
   private final String iDigBioCollectionLink;
 
-  private IDigBioIssueFactory(IDigBioConfig iDigBioConfig) {
-    super(iDigBioConfig.getSyncConfig());
+  private IDigBioIssueNotifier(
+      IDigBioConfig iDigBioConfig, SyncResult.SyncResultBuilder syncResultBuilder) {
+    super(iDigBioConfig.getSyncConfig(), syncResultBuilder);
     this.iDigBioCollectionLink =
         PORTAL_URL_NORMALIZER.apply(iDigBioConfig.getIDigBioPortalUrl()) + "/%s";
   }
 
-  public static IDigBioIssueFactory create(IDigBioConfig iDigBioConfig) {
-    return new IDigBioIssueFactory(iDigBioConfig);
+  public static IDigBioIssueNotifier create(
+      IDigBioConfig iDigBioConfig, SyncResult.SyncResultBuilder syncResultBuilder) {
+    return new IDigBioIssueNotifier(iDigBioConfig, syncResultBuilder);
   }
 
-  public static IDigBioIssueFactory fromDefaults() {
+  public static IDigBioIssueNotifier fromDefaults(SyncResult.SyncResultBuilder syncResultBuilder) {
     SyncConfig.NotificationConfig notificationConfig = new SyncConfig.NotificationConfig();
     notificationConfig.setGhIssuesAssignees(Collections.emptySet());
     SyncConfig syncConfig = new SyncConfig();
     syncConfig.setNotification(notificationConfig);
     IDigBioConfig iDigBioConfig = new IDigBioConfig();
     iDigBioConfig.setSyncConfig(syncConfig);
-    return new IDigBioIssueFactory(iDigBioConfig);
+    return new IDigBioIssueNotifier(iDigBioConfig, syncResultBuilder);
   }
 
-  public Issue createConflict(List<CollectionEntity> entities, IDigBioRecord iDigBioRecord) {
-    return createConflict(entities, iDigBioRecord, "iDigBio collection");
+  public void createConflict(List<CollectionEntity> entities, IDigBioRecord iDigBioRecord) {
+    createConflict(entities, iDigBioRecord, "iDigBio collection");
   }
 
-  public Issue createStaffConflict(Set<Person> persons, IDigBioRecord iDigBioRecord) {
-    return createConflict(new ArrayList<>(persons), iDigBioRecord, "iDigBio contact");
+  public void createStaffConflict(Set<Person> persons, IDigBioRecord iDigBioRecord) {
+    createConflict(new ArrayList<>(persons), iDigBioRecord, "iDigBio contact");
   }
 
-  protected <T extends CollectionEntity> Issue createConflict(
+  protected <T extends CollectionEntity> void createConflict(
       List<T> entities, IDigBioRecord iDigBioRecord, String entityType) {
     String collectionUuid = removeUuidNamespace(iDigBioRecord.getCollectionUuid());
 
@@ -84,15 +88,21 @@ public class IDigBioIssueFactory extends BaseIssueFactory {
             .append(
                 " should be associated to only one GrSciColl entity. Please resolve the conflict.");
 
-    return Issue.builder()
-        .title(String.format(ENTITY_CONFLICT_TITLE, entityType, collectionUuid))
-        .body(body.toString())
-        .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
-        .labels(Sets.newHashSet(IDIGBIO_IMPORT_LABEL, syncTimestampLabel))
-        .build();
+    Issue issue =
+        Issue.builder()
+            .title(String.format(ENTITY_CONFLICT_TITLE, entityType, collectionUuid))
+            .body(body.toString())
+            .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
+            .labels(Sets.newHashSet(IDIGBIO_IMPORT_LABEL, syncTimestampLabel))
+            .build();
+
+    callExecutor.sendNotification(
+        () -> githubClient.createIssue(issue),
+        e -> new FailedAction(issue, "Failed to create fails notification" + e.getMessage()),
+        syncResultBuilder);
   }
 
-  public Issue createInvalidEntitiesIssue(List<Object> invalidRecords) {
+  public void createInvalidEntitiesIssue(List<Object> invalidRecords) {
     StringBuilder body =
         new StringBuilder(
             "The following "
@@ -112,12 +122,18 @@ public class IDigBioIssueFactory extends BaseIssueFactory {
       body.append(NEW_LINE).append(formatEntity(invalidRecords.get(i)));
     }
 
-    return Issue.builder()
-        .title(INVALID_ENTITIES_TITLE)
-        .body(body.toString())
-        .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
-        .labels(Sets.newHashSet(IDIGBIO_IMPORT_LABEL, syncTimestampLabel))
-        .build();
+    Issue issue =
+        Issue.builder()
+            .title(INVALID_ENTITIES_TITLE)
+            .body(body.toString())
+            .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
+            .labels(Sets.newHashSet(IDIGBIO_IMPORT_LABEL, syncTimestampLabel))
+            .build();
+
+    callExecutor.sendNotification(
+        () -> githubClient.createIssue(issue),
+        e -> new FailedAction(issue, "Failed to create invalid entities notification" + e.getMessage()),
+        syncResultBuilder);
   }
 
   private String createIDigBioLink(String id, String text) {

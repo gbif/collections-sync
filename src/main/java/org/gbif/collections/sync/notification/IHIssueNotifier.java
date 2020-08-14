@@ -9,6 +9,8 @@ import java.util.Set;
 
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Person;
+import org.gbif.collections.sync.SyncResult;
+import org.gbif.collections.sync.SyncResult.FailedAction;
 import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.config.SyncConfig;
 import org.gbif.collections.sync.ih.model.IHEntity;
@@ -20,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /** Factory to create {@link Issue}. */
 @Slf4j
-public class IHIssueFactory extends BaseIssueFactory {
+public class IHIssueNotifier extends IssueNotifier {
 
   public static final String IH_SYNC_LABEL = "GrSciColl-IH sync";
   private static final String INVALID_ENTITY_TITLE = "Invalid IH entity with IRN %s";
@@ -30,37 +32,38 @@ public class IHIssueFactory extends BaseIssueFactory {
   private final String ihInstitutionLink;
   private final String ihStaffLink;
 
-  private IHIssueFactory(IHConfig config) {
-    super(config.getSyncConfig());
+  private IHIssueNotifier(IHConfig config, SyncResult.SyncResultBuilder syncResultBuilder) {
+    super(config.getSyncConfig(), syncResultBuilder);
     this.ihInstitutionLink =
         PORTAL_URL_NORMALIZER.apply(config.getIhPortalUrl()) + "/ih/herbarium-details/?irn=%s";
     this.ihStaffLink =
         PORTAL_URL_NORMALIZER.apply(config.getIhPortalUrl()) + "/ih/person-details/?irn=%s";
   }
 
-  public static IHIssueFactory create(IHConfig config) {
-    return new IHIssueFactory(config);
+  public static IHIssueNotifier create(
+      IHConfig config, SyncResult.SyncResultBuilder syncResultBuilder) {
+    return new IHIssueNotifier(config, syncResultBuilder);
   }
 
-  public static IHIssueFactory fromDefaults() {
+  public static IHIssueNotifier fromDefaults(SyncResult.SyncResultBuilder syncResultBuilder) {
     SyncConfig.NotificationConfig notificationConfig = new SyncConfig.NotificationConfig();
     notificationConfig.setGhIssuesAssignees(Collections.emptySet());
     SyncConfig syncConfig = new SyncConfig();
     syncConfig.setNotification(notificationConfig);
     IHConfig ihConfig = new IHConfig();
     ihConfig.setSyncConfig(syncConfig);
-    return new IHIssueFactory(ihConfig);
+    return new IHIssueNotifier(ihConfig, syncResultBuilder);
   }
 
-  public Issue createConflict(List<CollectionEntity> entities, IHInstitution ihInstitution) {
-    return createConflict(entities, ihInstitution, "institution");
+  public void createConflict(List<CollectionEntity> entities, IHInstitution ihInstitution) {
+    createConflict(entities, ihInstitution, "institution");
   }
 
-  public Issue createStaffConflict(Set<Person> persons, IHStaff ihStaff) {
-    return createConflict(new ArrayList<>(persons), ihStaff, "staff");
+  public void createStaffConflict(Set<Person> persons, IHStaff ihStaff) {
+    createConflict(new ArrayList<>(persons), ihStaff, "staff");
   }
 
-  private <T extends CollectionEntity> Issue createConflict(
+  private <T extends CollectionEntity> void createConflict(
       List<T> entities, IHEntity ihEntity, String ihEntityType) {
     // create body
     StringBuilder body =
@@ -76,23 +79,37 @@ public class IHIssueFactory extends BaseIssueFactory {
             .append(
                 " should be associated to only one GrSciColl entity. Please resolve the conflict.");
 
-    return Issue.builder()
-        .title(String.format(ENTITY_CONFLICT_TITLE, ihEntityType, ihEntity.getIrn()))
-        .body(body.toString())
-        .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
-        .labels(Sets.newHashSet(IH_SYNC_LABEL, syncTimestampLabel))
-        .build();
+    Issue issue =
+        Issue.builder()
+            .title(String.format(ENTITY_CONFLICT_TITLE, ihEntityType, ihEntity.getIrn()))
+            .body(body.toString())
+            .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
+            .labels(Sets.newHashSet(IH_SYNC_LABEL, syncTimestampLabel))
+            .build();
+
+    callExecutor.sendNotification(
+        () -> githubClient.createIssue(issue),
+        e -> new FailedAction(issue, "Failed to create conlfict notification" + e.getMessage()),
+        syncResultBuilder);
   }
 
-  public <T extends IHEntity> Issue createInvalidEntity(T entity, String message) {
+  public <T extends IHEntity> void createInvalidEntity(T entity, String message) {
     String body = message + NEW_LINE + createIHLink(entity) + formatEntity(entity);
 
-    return Issue.builder()
-        .title(String.format(INVALID_ENTITY_TITLE, entity.getIrn()))
-        .body(body)
-        .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
-        .labels(Sets.newHashSet(IH_SYNC_LABEL, syncTimestampLabel))
-        .build();
+    Issue issue =
+        Issue.builder()
+            .title(String.format(INVALID_ENTITY_TITLE, entity.getIrn()))
+            .body(body)
+            .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
+            .labels(Sets.newHashSet(IH_SYNC_LABEL, syncTimestampLabel))
+            .build();
+
+    callExecutor.sendNotification(
+        () -> githubClient.createIssue(issue),
+        e ->
+            new FailedAction(
+                issue, "Failed to create invalid entity notification" + e.getMessage()),
+        syncResultBuilder);
   }
 
   protected <T extends IHEntity> String createIHLink(T entity) {

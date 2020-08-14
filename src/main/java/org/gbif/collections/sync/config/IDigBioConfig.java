@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ import static org.gbif.collections.sync.config.SyncConfig.validateSyncConfig;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 @Slf4j
 public class IDigBioConfig {
 

@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import org.gbif.collections.sync.config.SyncConfig.NotificationConfig;
@@ -26,11 +28,13 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 import static org.gbif.collections.sync.http.SyncCall.syncCall;
-import static org.gbif.collections.sync.notification.IHIssueFactory.IH_SYNC_LABEL;
+import static org.gbif.collections.sync.notification.IHIssueNotifier.IH_SYNC_LABEL;
 
 /** Lightweight client for the Github API. */
 public class GithubClient {
 
+  private static final ConcurrentMap<NotificationConfig, GithubClient> clientsMap =
+      new ConcurrentHashMap<>();
   private final API api;
   private final Set<String> assignees;
 
@@ -58,13 +62,21 @@ public class GithubClient {
     this.assignees = assignees;
   }
 
-  public static GithubClient create(NotificationConfig notificationConfig) {
+  public static GithubClient getInstance(NotificationConfig notificationConfig) {
     Objects.requireNonNull(notificationConfig);
-    return new GithubClient(
-        notificationConfig.getGithubWsUrl(),
-        notificationConfig.getGithubUser(),
-        notificationConfig.getGithubPassword(),
-        notificationConfig.getGhIssuesAssignees());
+    GithubClient client = clientsMap.get(notificationConfig);
+    if (client != null) {
+      return client;
+    } else {
+      GithubClient newClient =
+          new GithubClient(
+              notificationConfig.getGithubWsUrl(),
+              notificationConfig.getGithubUser(),
+              notificationConfig.getGithubPassword(),
+              notificationConfig.getGhIssuesAssignees());
+      clientsMap.put(notificationConfig, newClient);
+      return newClient;
+    }
   }
 
   public void createIssue(Issue issue) {
@@ -116,6 +128,23 @@ public class GithubClient {
 
   public void updateIssue(Issue issue) {
     syncCall(api.updateIssue(issue.getNumber(), issue));
+  }
+
+  public void createOrUpdateIssue(Issue issue) {
+    Optional<Issue> existingIssueOpt = findIssueWithSameTitle(issue.getTitle());
+    if (existingIssueOpt.isPresent()) {
+      // if it exists we update the labels to add the one of this sync. We also merge the
+      // assignees in case the original ones were modified in Github
+      Issue existingIssue = existingIssueOpt.get();
+      issue.setNumber(existingIssue.getNumber());
+      issue.getLabels().addAll(existingIssue.getLabels());
+      issue.getAssignees().addAll(existingIssue.getAssignees());
+
+      updateIssue(issue);
+    } else {
+      // if it doesn't exist we create it
+      createIssue(issue);
+    }
   }
 
   private interface API {

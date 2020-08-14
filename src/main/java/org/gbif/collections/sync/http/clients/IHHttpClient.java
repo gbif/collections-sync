@@ -4,6 +4,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.gbif.collections.sync.http.SyncCall;
 import org.gbif.collections.sync.ih.model.IHInstitution;
@@ -23,6 +25,7 @@ import retrofit2.http.Query;
 /** Lightweight IndexHerbariorum client. */
 public class IHHttpClient {
 
+  private static final ConcurrentMap<String, IHHttpClient> clientsMap = new ConcurrentHashMap<>();
   private final API api;
 
   private IHHttpClient(String ihWsUrl) {
@@ -46,8 +49,15 @@ public class IHHttpClient {
     api = retrofit.create(API.class);
   }
 
-  public static IHHttpClient create(String ihWsUrl) {
-    return new IHHttpClient(ihWsUrl);
+  public static IHHttpClient getInstance(String ihWsUrl) {
+    IHHttpClient client = clientsMap.get(ihWsUrl);
+    if (client != null) {
+      return client;
+    } else {
+      IHHttpClient newClient = new IHHttpClient(ihWsUrl);
+      clientsMap.put(ihWsUrl, newClient);
+      return newClient;
+    }
   }
 
   public List<IHInstitution> getInstitutions() {

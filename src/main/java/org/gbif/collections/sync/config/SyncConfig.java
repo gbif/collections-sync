@@ -8,12 +8,14 @@ import java.util.Set;
 import org.gbif.collections.sync.CliSyncArgs;
 
 import com.google.common.base.Strings;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Getter
 @Setter
+@EqualsAndHashCode
 @Slf4j
 public class SyncConfig {
 
@@ -27,6 +29,7 @@ public class SyncConfig {
 
   @Getter
   @Setter
+  @EqualsAndHashCode
   public static class NotificationConfig {
     private String githubWsUrl;
     private String githubUser;

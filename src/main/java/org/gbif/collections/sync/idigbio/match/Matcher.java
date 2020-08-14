@@ -14,6 +14,8 @@ import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.collections.sync.Utils;
+import org.gbif.collections.sync.common.DataLoader;
+import org.gbif.collections.sync.common.DataLoader.GrSciCollData;
 import org.gbif.collections.sync.idigbio.IDigBioRecord;
 import org.gbif.collections.sync.staff.StaffNormalized;
 
@@ -33,9 +35,14 @@ public class Matcher {
 
   private final MatchData matchData;
 
-  @Builder
-  private Matcher(MatchData matchData) {
-    this.matchData = matchData;
+  public Matcher(DataLoader dataLoader) {
+    GrSciCollData data = dataLoader.fetchGrSciCollData();
+    matchData =
+        MatchData.builder()
+            .institutions(data.getInstitutions())
+            .collections(data.getCollections())
+            .persons(data.getPersons())
+            .build();
   }
 
   public MatchResult match(IDigBioRecord iDigBioRecord) {
@@ -182,6 +189,10 @@ public class Matcher {
     }
 
     return Optional.ofNullable(bestMatch);
+  }
+
+  public MatchData getMatchData() {
+    return matchData;
   }
 
   private static Person comparePersonFieldCompleteness(Person p1, Person p2) {

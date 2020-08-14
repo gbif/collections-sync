@@ -19,19 +19,43 @@ public class MatchResult {
   Institution institutionMatched;
   Collection collectionMatched;
 
-  public boolean onlyInstitutionMatch() {
+  public List<CollectionEntity> getAllMatches() {
+    List<CollectionEntity> all = new ArrayList<>();
+    all.add(institutionMatched);
+    all.add(collectionMatched);
+    return all;
+  }
+
+  public MatchType getMatchType() {
+    if (onlyCollectionMatch()) {
+      return MatchType.ONLY_COLLECTION;
+    }
+    if (onlyInstitutionMatch()) {
+      return MatchType.ONLY_INSTITUTION;
+    }
+    if (noMatches()) {
+      return MatchType.NO_MATCH;
+    }
+    if (institutionAndCollectionMatch()) {
+      return MatchType.INST_AND_COLL;
+    }
+
+    return MatchType.CONFLICT;
+  }
+
+  private boolean onlyInstitutionMatch() {
     return institutionMatched != null && collectionMatched == null;
   }
 
-  public boolean onlyCollectionMatch() {
+  private boolean onlyCollectionMatch() {
     return collectionMatched != null && institutionMatched == null;
   }
 
-  public boolean noMatches() {
+  private boolean noMatches() {
     return institutionMatched == null && collectionMatched == null;
   }
 
-  public boolean institutionAndCollectionMatch() {
+  private boolean institutionAndCollectionMatch() {
     if (institutionMatched == null || collectionMatched == null) {
       return false;
     }
@@ -40,10 +64,11 @@ public class MatchResult {
     return institutionMatched.getKey().equals(collectionMatched.getInstitutionKey());
   }
 
-  public List<CollectionEntity> getAllMatches() {
-    List<CollectionEntity> all = new ArrayList<>();
-    all.add(institutionMatched);
-    all.add(collectionMatched);
-    return all;
+  public enum MatchType {
+    ONLY_INSTITUTION,
+    ONLY_COLLECTION,
+    INST_AND_COLL,
+    NO_MATCH,
+    CONFLICT;
   }
 }

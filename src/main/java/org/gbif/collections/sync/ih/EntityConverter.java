@@ -24,6 +24,8 @@ import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.collections.sync.Utils;
+import org.gbif.collections.sync.config.IHConfig;
+import org.gbif.collections.sync.http.clients.IHHttpClient;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 import org.gbif.collections.sync.parsers.CountryParser;
@@ -31,7 +33,6 @@ import org.gbif.collections.sync.parsers.DataParser;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
-import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.Utils.cloneCollection;
@@ -45,7 +46,6 @@ import static org.gbif.collections.sync.parsers.DataParser.cleanString;
 import static org.gbif.collections.sync.parsers.DataParser.getFirstString;
 import static org.gbif.collections.sync.parsers.DataParser.getListValue;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValue;
-import static org.gbif.collections.sync.parsers.DataParser.normalizeString;
 import static org.gbif.collections.sync.parsers.DataParser.parseDate;
 import static org.gbif.collections.sync.parsers.DataParser.parseStringList;
 import static org.gbif.collections.sync.parsers.DataParser.parseUri;
@@ -57,10 +57,19 @@ public class EntityConverter {
   private final CountryParser countryParser;
   private final String creationUser;
 
-  @Builder
   private EntityConverter(CountryParser countryParser, String creationUser) {
     this.countryParser = countryParser;
     this.creationUser = creationUser;
+  }
+
+  public static EntityConverter create(IHConfig config) {
+    return new EntityConverter(
+        CountryParser.from(IHHttpClient.getInstance(config.getIhWsUrl()).getCountries()),
+        config.getSyncConfig().getRegistryWsUser());
+  }
+
+  public static EntityConverter create(CountryParser countryParser, String creationUser) {
+    return new EntityConverter(countryParser, creationUser);
   }
 
   public Institution convertToInstitution(IHInstitution ihInstitution) {

@@ -7,6 +7,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
@@ -43,6 +45,8 @@ import static org.gbif.collections.sync.http.SyncCall.syncCall;
 /** A lightweight GRSciColl client. */
 public class GrSciCollHttpClient {
 
+  private static final ConcurrentMap<SyncConfig, GrSciCollHttpClient> clientsMap =
+      new ConcurrentHashMap<>();
   private final API api;
 
   private GrSciCollHttpClient(String grSciCollWsUrl, String user, String password) {
@@ -78,11 +82,19 @@ public class GrSciCollHttpClient {
     api = retrofit.create(API.class);
   }
 
-  public static GrSciCollHttpClient create(SyncConfig syncConfig) {
-    return new GrSciCollHttpClient(
-        syncConfig.getRegistryWsUrl(),
-        syncConfig.getRegistryWsUser(),
-        syncConfig.getRegistryWsPassword());
+  public static GrSciCollHttpClient getInstance(SyncConfig syncConfig) {
+    GrSciCollHttpClient client = clientsMap.get(syncConfig);
+    if (client != null) {
+      return client;
+    } else {
+      GrSciCollHttpClient newClient =
+          new GrSciCollHttpClient(
+              syncConfig.getRegistryWsUrl(),
+              syncConfig.getRegistryWsUser(),
+              syncConfig.getRegistryWsPassword());
+      clientsMap.put(syncConfig, newClient);
+      return newClient;
+    }
   }
 
   /** Returns all institutions in GrSciColl. */
