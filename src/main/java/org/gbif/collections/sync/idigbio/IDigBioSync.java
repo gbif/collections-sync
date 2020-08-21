@@ -25,8 +25,6 @@ import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
-// TODO: write failed actions to file so no need to pass the builder??
-
 @Slf4j
 public class IDigBioSync {
 
@@ -46,10 +44,7 @@ public class IDigBioSync {
   public SyncResult sync() {
     // load data
     IDigBioProxyClient proxyClient =
-        IDigBioProxyClient.builder()
-            .dataLoader(dataLoader)
-            .iDigBioConfig(iDigBioConfig)
-            .build();
+        IDigBioProxyClient.builder().dataLoader(dataLoader).iDigBioConfig(iDigBioConfig).build();
     Matcher matcher = new Matcher(proxyClient);
 
     SyncResult.SyncResultBuilder syncResultBuilder = SyncResult.builder();

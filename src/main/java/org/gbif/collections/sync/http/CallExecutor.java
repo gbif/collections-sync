@@ -20,7 +20,7 @@ public class CallExecutor {
 
   private final boolean dryRun;
   private final boolean sendNotifications;
-  private final Path failedActionsPath = Paths.get("failed_actions_" + System.currentTimeMillis());
+  private Path failedActionsPath;
 
   public CallExecutor(SyncConfig syncConfig) {
     if (syncConfig != null) {
@@ -91,6 +91,10 @@ public class CallExecutor {
   }
 
   private void writeFailedAction(FailedAction failedAction) {
+    if (failedActionsPath == null) {
+      failedActionsPath = Paths.get("failed_actions_" + System.currentTimeMillis());
+    }
+
     try {
       try (BufferedWriter writer =
           Files.newBufferedWriter(failedActionsPath, StandardOpenOption.APPEND)) {
