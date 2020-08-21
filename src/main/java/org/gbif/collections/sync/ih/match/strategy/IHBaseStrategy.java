@@ -4,55 +4,55 @@ import java.util.UUID;
 
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.EntityMatch;
 import org.gbif.collections.sync.config.IHConfig;
-import org.gbif.collections.sync.handler.CollectionHandler;
-import org.gbif.collections.sync.handler.InstitutionHandler;
 import org.gbif.collections.sync.ih.EntityConverter;
+import org.gbif.collections.sync.ih.IHProxyClient;
 import org.gbif.collections.sync.ih.match.MatchResult;
 import org.gbif.collections.sync.ih.match.StaffMatchResultHandler;
 
 public abstract class IHBaseStrategy {
 
-  protected final InstitutionHandler institutionHandler;
-  protected final CollectionHandler collectionHandler;
+  // TODO: se puede parametrizar y hacer template con metodo q sea supplier del converter y usar el
+  // mismo pa idigbio y ih
+
+  protected final IHProxyClient proxyClient;
   protected final EntityConverter entityConverter;
-  protected final SyncResult.SyncResultBuilder syncResultBuilder;
   protected final StaffMatchResultHandler staffMatchResultHandler;
 
   protected IHBaseStrategy(
-      IHConfig ihConfig,
-      EntityConverter entityConverter,
-      SyncResult.SyncResultBuilder syncResultBuilder) {
-    staffMatchResultHandler =
-        new StaffMatchResultHandler(ihConfig, entityConverter, syncResultBuilder);
+      IHConfig ihConfig, EntityConverter entityConverter, IHProxyClient proxyClient) {
+    this.proxyClient = proxyClient;
+    staffMatchResultHandler = new StaffMatchResultHandler(ihConfig, proxyClient, entityConverter);
     this.entityConverter = entityConverter;
-    collectionHandler =
-        CollectionHandler.builder()
-            .syncConfig(ihConfig.getSyncConfig())
-            .syncResultBuilder(syncResultBuilder)
-            .build();
-    institutionHandler =
-        InstitutionHandler.builder()
-            .syncConfig(ihConfig.getSyncConfig())
-            .syncResultBuilder(syncResultBuilder)
-            .build();
-    this.syncResultBuilder = syncResultBuilder;
   }
 
   protected EntityMatch<Institution> updateInstitution(MatchResult matchResult) {
     Institution existingInstitution = matchResult.getInstitutions().iterator().next();
     Institution mergedInstitution =
         entityConverter.convertToInstitution(matchResult.getIhInstitution(), existingInstitution);
-    return institutionHandler.updateEntity(existingInstitution, mergedInstitution);
+
+    boolean updated = proxyClient.updateInstitution(existingInstitution, mergedInstitution);
+
+    return EntityMatch.<Institution>builder()
+        .matched(existingInstitution)
+        .merged(mergedInstitution)
+        .update(updated)
+        .build();
   }
 
   protected EntityMatch<Collection> updateCollection(MatchResult matchResult) {
     Collection existingCollection = matchResult.getCollections().iterator().next();
     Collection mergedCollection =
         entityConverter.convertToCollection(matchResult.getIhInstitution(), existingCollection);
-    return collectionHandler.updateEntity(existingCollection, mergedCollection);
+
+    boolean updated = proxyClient.updateCollection(existingCollection, mergedCollection);
+
+    return EntityMatch.<Collection>builder()
+        .matched(existingCollection)
+        .merged(mergedCollection)
+        .update(updated)
+        .build();
   }
 
   protected Collection createCollection(MatchResult matchResult, UUID institutionKey) {
@@ -60,6 +60,6 @@ public abstract class IHBaseStrategy {
     Collection newCollection =
         entityConverter.convertToCollection(matchResult.getIhInstitution(), institutionKey);
 
-    return collectionHandler.createEntity(newCollection);
+    return proxyClient.createCollection(newCollection);
   }
 }

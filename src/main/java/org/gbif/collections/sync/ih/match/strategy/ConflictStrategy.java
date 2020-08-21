@@ -1,30 +1,24 @@
 package org.gbif.collections.sync.ih.match.strategy;
 
-import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.Conflict;
-import org.gbif.collections.sync.common.MatchResultStrategy;
 import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.ih.match.MatchResult;
 import org.gbif.collections.sync.notification.IHIssueNotifier;
 
 import lombok.Builder;
 
-public class ConflictStrategy implements MatchResultStrategy<MatchResult, Conflict> {
+public class ConflictStrategy implements IHMatchResultStrategy<Conflict> {
 
   private final IHIssueNotifier issueNotifier;
-  private final SyncResult.SyncResultBuilder syncResultBuilder;
 
   @Builder
-  public ConflictStrategy(IHConfig ihConfig, SyncResult.SyncResultBuilder syncResultBuilder) {
-    this.issueNotifier = IHIssueNotifier.create(ihConfig, syncResultBuilder);
-    this.syncResultBuilder = syncResultBuilder;
+  public ConflictStrategy(IHConfig ihConfig) {
+    this.issueNotifier = IHIssueNotifier.create(ihConfig);
   }
 
   @Override
-  public Conflict handleAndReturn(MatchResult matchResult) {
+  public Conflict apply(MatchResult matchResult) {
     issueNotifier.createConflict(matchResult.getAllMatches(), matchResult.getIhInstitution());
-    Conflict conflict = new Conflict(matchResult.getIhInstitution(), matchResult.getAllMatches());
-    syncResultBuilder.conflict(conflict);
-    return conflict;
+    return new Conflict(matchResult.getIhInstitution(), matchResult.getAllMatches());
   }
 }

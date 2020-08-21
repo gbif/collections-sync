@@ -33,23 +33,6 @@ public class MatchResult {
   // it's a bifunction just to make tests easier
   BiFunction<IHStaff, Set<Person>, Set<Person>> staffMatcher;
 
-  public MatchType getMatchType() {
-    if (onlyOneCollectionMatch()) {
-      return MatchType.ONLY_COLLECTION;
-    }
-    if (onlyOneInstitutionMatch()) {
-      return MatchType.ONLY_INSTITUTION;
-    }
-    if (noMatches()) {
-      return MatchType.NO_MATCH;
-    }
-    if (institutionAndCollectionMatch()) {
-      return MatchType.INST_AND_COLL;
-    }
-
-    return MatchType.CONFLICT;
-  }
-
   public List<CollectionEntity> getAllMatches() {
     List<CollectionEntity> all = new ArrayList<>();
     all.addAll(institutions);
@@ -57,19 +40,19 @@ public class MatchResult {
     return all;
   }
 
-  private boolean onlyOneInstitutionMatch() {
+  public boolean onlyOneInstitutionMatch() {
     return institutions.size() == 1 && collections.isEmpty();
   }
 
-  private boolean onlyOneCollectionMatch() {
+  public boolean onlyOneCollectionMatch() {
     return collections.size() == 1 && institutions.isEmpty();
   }
 
-  private boolean noMatches() {
+  public boolean noMatches() {
     return institutions.isEmpty() && collections.isEmpty();
   }
 
-  private boolean institutionAndCollectionMatch() {
+  public boolean institutionAndCollectionMatch() {
     if (institutions.size() != 1 || collections.size() != 1) {
       return false;
     }
@@ -78,13 +61,5 @@ public class MatchResult {
     Institution institution = institutions.iterator().next();
     Collection collection = collections.iterator().next();
     return institution.getKey().equals(collection.getInstitutionKey());
-  }
-
-  public enum MatchType {
-    ONLY_INSTITUTION,
-    ONLY_COLLECTION,
-    INST_AND_COLL,
-    NO_MATCH,
-    CONFLICT;
   }
 }

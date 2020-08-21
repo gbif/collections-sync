@@ -9,13 +9,12 @@ import java.util.stream.Collectors;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contactable;
 import org.gbif.api.model.collections.Person;
-import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.Conflict;
 import org.gbif.collections.sync.SyncResult.EntityMatch;
 import org.gbif.collections.sync.SyncResult.StaffMatch;
 import org.gbif.collections.sync.config.IHConfig;
-import org.gbif.collections.sync.handler.PersonHandler;
 import org.gbif.collections.sync.ih.EntityConverter;
+import org.gbif.collections.sync.ih.IHProxyClient;
 import org.gbif.collections.sync.ih.model.IHStaff;
 import org.gbif.collections.sync.notification.IHIssueNotifier;
 
@@ -28,19 +27,14 @@ public class StaffMatchResultHandler {
 
   private final IHIssueNotifier issueNotifier;
   private final EntityConverter entityConverter;
-  private final PersonHandler personHandler;
+  private final IHProxyClient proxyClient;
 
   public StaffMatchResultHandler(
-      IHConfig ihConfig,
-      EntityConverter entityConverter,
-      SyncResult.SyncResultBuilder syncResultBuilder) {
-    issueNotifier = IHIssueNotifier.create(ihConfig, syncResultBuilder);
+      IHConfig ihConfig, IHProxyClient proxyClient, EntityConverter entityConverter) {
+    // TODO: move to proxy??
+    issueNotifier = IHIssueNotifier.create(ihConfig);
     this.entityConverter = entityConverter;
-    this.personHandler =
-        PersonHandler.builder()
-            .syncConfig(ihConfig.getSyncConfig())
-            .syncResultBuilder(syncResultBuilder)
-            .build();
+    this.proxyClient = proxyClient;
   }
 
   @VisibleForTesting
@@ -75,7 +69,8 @@ public class StaffMatchResultHandler {
         // create person and link it to the entity
         log.info("No match for IH Staff {}", ihStaff.getIrn());
         Person newPerson = entityConverter.convertToPerson(ihStaff);
-        personHandler.createPersonAndLinkToEntities(newPerson, entities);
+        proxyClient.createPerson(newPerson);
+        proxyClient.linkPersonToEntity(newPerson, entities);
         staffSyncBuilder.newPerson(newPerson);
       } else if (staffMatches.size() > 1) {
         // conflict. Multiple candidates matched
@@ -89,12 +84,20 @@ public class StaffMatchResultHandler {
         Person matchedPerson = staffMatches.iterator().next();
         contactsCopy.remove(matchedPerson);
         Person mergedPerson = entityConverter.convertToPerson(ihStaff, matchedPerson);
-        EntityMatch<Person> entityMatch = personHandler.updateEntity(matchedPerson, mergedPerson);
+
+        boolean updated = proxyClient.updatePerson(matchedPerson, mergedPerson);
+
+        EntityMatch<Person> entityMatch =
+            EntityMatch.<Person>builder()
+                .matched(matchedPerson)
+                .merged(mergedPerson)
+                .update(updated)
+                .build();
 
         // if the match was global we'd need to link it to the entity. The same if we're
         // syncing staff from different entities: one entity could have the contact already
         // but not the other
-        personHandler.linkPersonToEntity(mergedPerson, entities);
+        proxyClient.linkPersonToEntity(mergedPerson, entities);
 
         staffSyncBuilder.matchedPerson(entityMatch);
       }
@@ -104,7 +107,7 @@ public class StaffMatchResultHandler {
     contactsCopy.forEach(
         personToRemove -> {
           log.info("Removing contact {}", personToRemove.getKey());
-          personHandler.unlinkPersonFromEntity(personToRemove, entities);
+          proxyClient.unlinkPersonFromEntity(personToRemove, entities);
           staffSyncBuilder.removedPerson(personToRemove);
         });
 

@@ -17,7 +17,6 @@ import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.model.registry.MachineTaggable;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
-import org.gbif.collections.sync.idigbio.match.strategy.NoMatchStrategy;
 import org.gbif.collections.sync.parsers.DataParser;
 
 import com.google.common.base.Strings;
@@ -25,11 +24,11 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.gbif.collections.sync.Utils.cloneCollection;
-import static org.gbif.collections.sync.Utils.cloneInstitution;
-import static org.gbif.collections.sync.Utils.clonePerson;
-import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
-import static org.gbif.collections.sync.Utils.removeUuidNamespace;
+import static org.gbif.collections.sync.common.CloneUtils.cloneCollection;
+import static org.gbif.collections.sync.common.CloneUtils.cloneInstitution;
+import static org.gbif.collections.sync.common.CloneUtils.clonePerson;
+import static org.gbif.collections.sync.common.Utils.containsIrnIdentifier;
+import static org.gbif.collections.sync.common.Utils.removeUuidNamespace;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
 import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
@@ -37,7 +36,6 @@ import static org.gbif.collections.sync.parsers.DataParser.TO_LOCAL_DATE_TIME_UT
 import static org.gbif.collections.sync.parsers.DataParser.cleanString;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValue;
 import static org.gbif.collections.sync.parsers.DataParser.getStringValueOpt;
-import static org.gbif.collections.sync.parsers.DataParser.normalizeString;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j

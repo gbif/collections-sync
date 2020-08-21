@@ -9,8 +9,6 @@ import java.util.Set;
 
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Person;
-import org.gbif.collections.sync.SyncResult;
-import org.gbif.collections.sync.SyncResult.FailedAction;
 import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.config.SyncConfig;
 import org.gbif.collections.sync.ih.model.IHEntity;
@@ -32,27 +30,26 @@ public class IHIssueNotifier extends IssueNotifier {
   private final String ihInstitutionLink;
   private final String ihStaffLink;
 
-  private IHIssueNotifier(IHConfig config, SyncResult.SyncResultBuilder syncResultBuilder) {
-    super(config.getSyncConfig(), syncResultBuilder);
+  private IHIssueNotifier(IHConfig config) {
+    super(config.getSyncConfig());
     this.ihInstitutionLink =
         PORTAL_URL_NORMALIZER.apply(config.getIhPortalUrl()) + "/ih/herbarium-details/?irn=%s";
     this.ihStaffLink =
         PORTAL_URL_NORMALIZER.apply(config.getIhPortalUrl()) + "/ih/person-details/?irn=%s";
   }
 
-  public static IHIssueNotifier create(
-      IHConfig config, SyncResult.SyncResultBuilder syncResultBuilder) {
-    return new IHIssueNotifier(config, syncResultBuilder);
+  public static IHIssueNotifier create(IHConfig config) {
+    return new IHIssueNotifier(config);
   }
 
-  public static IHIssueNotifier fromDefaults(SyncResult.SyncResultBuilder syncResultBuilder) {
+  public static IHIssueNotifier fromDefaults() {
     SyncConfig.NotificationConfig notificationConfig = new SyncConfig.NotificationConfig();
     notificationConfig.setGhIssuesAssignees(Collections.emptySet());
     SyncConfig syncConfig = new SyncConfig();
     syncConfig.setNotification(notificationConfig);
     IHConfig ihConfig = new IHConfig();
     ihConfig.setSyncConfig(syncConfig);
-    return new IHIssueNotifier(ihConfig, syncResultBuilder);
+    return new IHIssueNotifier(ihConfig);
   }
 
   public void createConflict(List<CollectionEntity> entities, IHInstitution ihInstitution) {
@@ -89,8 +86,7 @@ public class IHIssueNotifier extends IssueNotifier {
 
     callExecutor.sendNotification(
         () -> githubClient.createIssue(issue),
-        e -> new FailedAction(issue, "Failed to create conlfict notification" + e.getMessage()),
-        syncResultBuilder);
+        exceptionHandler(issue, "Failed to create conlfict notification"));
   }
 
   public <T extends IHEntity> void createInvalidEntity(T entity, String message) {
@@ -106,10 +102,7 @@ public class IHIssueNotifier extends IssueNotifier {
 
     callExecutor.sendNotification(
         () -> githubClient.createIssue(issue),
-        e ->
-            new FailedAction(
-                issue, "Failed to create invalid entity notification" + e.getMessage()),
-        syncResultBuilder);
+        exceptionHandler(issue, "Failed to create invalid entity notification"));
   }
 
   protected <T extends IHEntity> String createIHLink(T entity) {

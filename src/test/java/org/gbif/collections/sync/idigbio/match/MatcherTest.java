@@ -36,7 +36,7 @@ public class MatcherTest {
             .institutions(Collections.emptyList())
             .collections(Collections.emptyList())
             .build();
-    Matcher matcher = Matcher.builder().matchData(matchData).build();
+    Matcher matcher = new Matcher(matchData);
 
     assertFalse(matcher.matchContact(iDigBioRecord, Collections.emptySet()).isPresent());
 

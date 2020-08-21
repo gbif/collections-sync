@@ -23,7 +23,7 @@ import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
-import org.gbif.collections.sync.Utils;
+import org.gbif.collections.sync.common.Utils;
 import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.http.clients.IHHttpClient;
 import org.gbif.collections.sync.ih.model.IHInstitution;
@@ -35,10 +35,10 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.gbif.collections.sync.Utils.cloneCollection;
-import static org.gbif.collections.sync.Utils.cloneInstitution;
-import static org.gbif.collections.sync.Utils.clonePerson;
-import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
+import static org.gbif.collections.sync.common.CloneUtils.cloneCollection;
+import static org.gbif.collections.sync.common.CloneUtils.cloneInstitution;
+import static org.gbif.collections.sync.common.CloneUtils.clonePerson;
+import static org.gbif.collections.sync.common.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.ih.model.IHInstitution.CollectionSummary;
 import static org.gbif.collections.sync.ih.model.IHInstitution.Location;
 import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
@@ -55,21 +55,18 @@ import static org.gbif.collections.sync.parsers.DataParser.parseUri;
 public class EntityConverter {
 
   private final CountryParser countryParser;
-  private final String creationUser;
 
-  private EntityConverter(CountryParser countryParser, String creationUser) {
+  private EntityConverter(CountryParser countryParser) {
     this.countryParser = countryParser;
-    this.creationUser = creationUser;
   }
 
   public static EntityConverter create(IHConfig config) {
     return new EntityConverter(
-        CountryParser.from(IHHttpClient.getInstance(config.getIhWsUrl()).getCountries()),
-        config.getSyncConfig().getRegistryWsUser());
+        CountryParser.from(IHHttpClient.getInstance(config.getIhWsUrl()).getCountries()));
   }
 
-  public static EntityConverter create(CountryParser countryParser, String creationUser) {
-    return new EntityConverter(countryParser, creationUser);
+  public static EntityConverter create(CountryParser countryParser) {
+    return new EntityConverter(countryParser);
   }
 
   public Institution convertToInstitution(IHInstitution ihInstitution) {
@@ -94,7 +91,7 @@ public class EntityConverter {
             ihInstitution.getDateFounded(),
             "Invalid date for institution " + ihInstitution.getIrn()));
 
-    addIdentifierIfNotExists(institution, Utils.encodeIRN(ihInstitution.getIrn()), creationUser);
+    addIdentifierIfNotExists(institution, Utils.encodeIRN(ihInstitution.getIrn()));
 
     return institution;
   }
@@ -182,7 +179,7 @@ public class EntityConverter {
     collection.setPhone(getIhPhones(ihInstitution));
     collection.setHomepage(getIhHomepage(ihInstitution));
 
-    addIdentifierIfNotExists(collection, Utils.encodeIRN(ihInstitution.getIrn()), creationUser);
+    addIdentifierIfNotExists(collection, Utils.encodeIRN(ihInstitution.getIrn()));
 
     return collection;
   }
@@ -273,7 +270,7 @@ public class EntityConverter {
       person.getMailingAddress().setCountry(mailingAddressCountry);
     }
 
-    addIdentifierIfNotExists(person, Utils.encodeIRN(ihStaff.getIrn()), creationUser);
+    addIdentifierIfNotExists(person, Utils.encodeIRN(ihStaff.getIrn()));
 
     return person;
   }
@@ -382,11 +379,10 @@ public class EntityConverter {
         .orElse(null);
   }
 
-  private static void addIdentifierIfNotExists(Identifiable entity, String irn, String user) {
+  private static void addIdentifierIfNotExists(Identifiable entity, String irn) {
     if (!containsIrnIdentifier(entity)) {
       // add identifier
       Identifier ihIdentifier = new Identifier(IdentifierType.IH_IRN, irn);
-      ihIdentifier.setCreatedBy(user);
       entity.getIdentifiers().add(ihIdentifier);
     }
   }

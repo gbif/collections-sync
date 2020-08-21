@@ -8,26 +8,24 @@ import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.EntityMatch;
 import org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
 import org.gbif.collections.sync.SyncResult.StaffMatch;
-import org.gbif.collections.sync.common.MatchResultStrategy;
 import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.ih.EntityConverter;
+import org.gbif.collections.sync.ih.IHProxyClient;
 import org.gbif.collections.sync.ih.match.MatchResult;
 
 import lombok.Builder;
 
 public class InstitutionAndCollectionMatchStrategy extends IHBaseStrategy
-    implements MatchResultStrategy<MatchResult, InstitutionAndCollectionMatch> {
+    implements IHMatchResultStrategy<InstitutionAndCollectionMatch> {
 
   @Builder
   public InstitutionAndCollectionMatchStrategy(
-      IHConfig ihConfig,
-      EntityConverter entityConverter,
-      SyncResult.SyncResultBuilder syncResultBuilder) {
-    super(ihConfig, entityConverter, syncResultBuilder);
+      IHConfig ihConfig, IHProxyClient proxyClient, EntityConverter entityConverter) {
+    super(ihConfig, entityConverter, proxyClient);
   }
 
   @Override
-  public InstitutionAndCollectionMatch handleAndReturn(MatchResult matchResult) {
+  public InstitutionAndCollectionMatch apply(MatchResult matchResult) {
     // update institution
     EntityMatch<Institution> institutionEntityMatch = updateInstitution(matchResult);
 
@@ -42,15 +40,10 @@ public class InstitutionAndCollectionMatchStrategy extends IHBaseStrategy
     StaffMatch staffMatch =
         staffMatchResultHandler.handleStaff(matchResult, Arrays.asList(institution, collection));
 
-    InstitutionAndCollectionMatch institutionAndCollectionMatch =
-        InstitutionAndCollectionMatch.builder()
-            .matchedInstitution(institutionEntityMatch)
-            .matchedCollection(collectionEntityMatch)
-            .staffMatch(staffMatch)
-            .build();
-
-    syncResultBuilder.instAndCollMatch(institutionAndCollectionMatch);
-
-    return institutionAndCollectionMatch;
+    return InstitutionAndCollectionMatch.builder()
+        .matchedInstitution(institutionEntityMatch)
+        .matchedCollection(collectionEntityMatch)
+        .staffMatch(staffMatch)
+        .build();
   }
 }

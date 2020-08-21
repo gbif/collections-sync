@@ -2,16 +2,12 @@ package org.gbif.collections.sync.idigbio;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.common.DataLoader;
-import org.gbif.collections.sync.common.MatchResultStrategy;
 import org.gbif.collections.sync.config.IDigBioConfig;
 import org.gbif.collections.sync.idigbio.match.MatchResult;
-import org.gbif.collections.sync.idigbio.match.MatchResult.MatchType;
 import org.gbif.collections.sync.idigbio.match.Matcher;
 import org.gbif.collections.sync.idigbio.match.strategy.CollectionMatchStrategy;
 import org.gbif.collections.sync.idigbio.match.strategy.ConflictStrategy;
@@ -29,16 +25,16 @@ import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
+// TODO: write failed actions to file so no need to pass the builder??
+
 @Slf4j
 public class IDigBioSync {
 
   private final IDigBioConfig iDigBioConfig;
   private final DataLoader dataLoader;
-  private final Map<MatchType, MatchResultStrategy> resultMatchStrategies = new HashMap<>();
 
   @Builder
   private IDigBioSync(IDigBioConfig iDigBioConfig, DataLoader dataLoader) {
-    // TODO: remove this and create another constructor for testing
     this.iDigBioConfig = iDigBioConfig;
     if (dataLoader != null) {
       this.dataLoader = dataLoader;
@@ -48,13 +44,15 @@ public class IDigBioSync {
   }
 
   public SyncResult sync() {
-    Matcher matcher = new Matcher(dataLoader);
+    // load data
+    IDigBioProxyClient proxyClient =
+        IDigBioProxyClient.builder()
+            .dataLoader(dataLoader)
+            .iDigBioConfig(iDigBioConfig)
+            .build();
+    Matcher matcher = new Matcher(proxyClient);
+
     SyncResult.SyncResultBuilder syncResultBuilder = SyncResult.builder();
-
-    IDigBioIssueNotifier issueNotifier =
-        IDigBioIssueNotifier.create(iDigBioConfig, syncResultBuilder);
-
-    createStrategies(iDigBioConfig, syncResultBuilder, matcher);
 
     List<IDigBioRecord> records = readIDigBioExport(iDigBioConfig);
     for (IDigBioRecord record : records) {
@@ -63,13 +61,34 @@ public class IDigBioSync {
       }
 
       MatchResult match = matcher.match(record);
-      resultMatchStrategies.get(match.getMatchType()).handle(match);
+      if (match.onlyCollectionMatch()) {
+        CollectionMatchStrategy.create(proxyClient)
+            .andThen(syncResultBuilder::collectionOnlyMatch)
+            .apply(match);
+      } else if (match.onlyInstitutionMatch()) {
+        InstitutionMatchStrategy.create(proxyClient)
+            .andThen(syncResultBuilder::institutionOnlyMatch)
+            .apply(match);
+      } else if (match.noMatches()) {
+        if (!hasCodeAndName(match.getIDigBioRecord())) {
+          syncResultBuilder.invalidEntity(match.getIDigBioRecord());
+        }
+        NoMatchStrategy.create(proxyClient).andThen(syncResultBuilder::noMatch).apply(match);
+      } else if (match.institutionAndCollectionMatch()) {
+        InstitutionAndCollectionMatchStrategy.create(proxyClient)
+            .andThen(syncResultBuilder::instAndCollMatch)
+            .apply(match);
+      } else {
+        ConflictStrategy.create(iDigBioConfig).andThen(syncResultBuilder::conflict).apply(match);
+      }
     }
 
     SyncResult syncResult = syncResultBuilder.build();
 
     if (syncResult.getInvalidEntities() != null && !syncResult.getInvalidEntities().isEmpty()) {
-      issueNotifier.createInvalidEntitiesIssue(syncResult.getInvalidEntities());
+      // TODO: hacerlo singleton??
+      IDigBioIssueNotifier.create(iDigBioConfig)
+          .createInvalidEntitiesIssue(syncResult.getInvalidEntities());
     }
 
     return syncResult;
@@ -101,44 +120,10 @@ public class IDigBioSync {
         && Strings.isNullOrEmpty(record.getCollectionCode());
   }
 
-  private void createStrategies(
-      IDigBioConfig iDigBioConfig,
-      SyncResult.SyncResultBuilder syncResultBuilder,
-      Matcher matcher) {
-
-    resultMatchStrategies.put(
-        MatchType.ONLY_COLLECTION,
-        CollectionMatchStrategy.builder()
-            .syncConfig(iDigBioConfig.getSyncConfig())
-            .syncResultBuilder(syncResultBuilder)
-            .matcher(matcher)
-            .build());
-    resultMatchStrategies.put(
-        MatchType.ONLY_INSTITUTION,
-        InstitutionMatchStrategy.builder()
-            .syncConfig(iDigBioConfig.getSyncConfig())
-            .syncResultBuilder(syncResultBuilder)
-            .matcher(matcher)
-            .build());
-    resultMatchStrategies.put(
-        MatchType.NO_MATCH,
-        NoMatchStrategy.builder()
-            .syncConfig(iDigBioConfig.getSyncConfig())
-            .syncResultBuilder(syncResultBuilder)
-            .matcher(matcher)
-            .build());
-    resultMatchStrategies.put(
-        MatchType.INST_AND_COLL,
-        InstitutionAndCollectionMatchStrategy.builder()
-            .syncConfig(iDigBioConfig.getSyncConfig())
-            .syncResultBuilder(syncResultBuilder)
-            .matcher(matcher)
-            .build());
-    resultMatchStrategies.put(
-        MatchType.CONFLICT,
-        ConflictStrategy.builder()
-            .iDigBioConfig(iDigBioConfig)
-            .syncResultBuilder(syncResultBuilder)
-            .build());
+  private boolean hasCodeAndName(IDigBioRecord iDigBioRecord) {
+    return (!Strings.isNullOrEmpty(iDigBioRecord.getInstitution())
+            || !Strings.isNullOrEmpty(iDigBioRecord.getCollection()))
+        && (!Strings.isNullOrEmpty(iDigBioRecord.getInstitutionCode())
+            || !Strings.isNullOrEmpty(iDigBioRecord.getCollectionCode()));
   }
 }

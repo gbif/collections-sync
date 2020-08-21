@@ -10,8 +10,6 @@ import java.util.function.UnaryOperator;
 
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Person;
-import org.gbif.collections.sync.SyncResult;
-import org.gbif.collections.sync.SyncResult.FailedAction;
 import org.gbif.collections.sync.config.IDigBioConfig;
 import org.gbif.collections.sync.config.SyncConfig;
 import org.gbif.collections.sync.idigbio.IDigBioRecord;
@@ -19,7 +17,7 @@ import org.gbif.collections.sync.idigbio.IDigBioRecord;
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.gbif.collections.sync.Utils.removeUuidNamespace;
+import static org.gbif.collections.sync.common.Utils.removeUuidNamespace;
 
 /** Factory to create {@link Issue}. */
 @Slf4j
@@ -40,26 +38,24 @@ public class IDigBioIssueNotifier extends IssueNotifier {
 
   private final String iDigBioCollectionLink;
 
-  private IDigBioIssueNotifier(
-      IDigBioConfig iDigBioConfig, SyncResult.SyncResultBuilder syncResultBuilder) {
-    super(iDigBioConfig.getSyncConfig(), syncResultBuilder);
+  private IDigBioIssueNotifier(IDigBioConfig iDigBioConfig) {
+    super(iDigBioConfig.getSyncConfig());
     this.iDigBioCollectionLink =
         PORTAL_URL_NORMALIZER.apply(iDigBioConfig.getIDigBioPortalUrl()) + "/%s";
   }
 
-  public static IDigBioIssueNotifier create(
-      IDigBioConfig iDigBioConfig, SyncResult.SyncResultBuilder syncResultBuilder) {
-    return new IDigBioIssueNotifier(iDigBioConfig, syncResultBuilder);
+  public static IDigBioIssueNotifier create(IDigBioConfig iDigBioConfig) {
+    return new IDigBioIssueNotifier(iDigBioConfig);
   }
 
-  public static IDigBioIssueNotifier fromDefaults(SyncResult.SyncResultBuilder syncResultBuilder) {
+  public static IDigBioIssueNotifier fromDefaults() {
     SyncConfig.NotificationConfig notificationConfig = new SyncConfig.NotificationConfig();
     notificationConfig.setGhIssuesAssignees(Collections.emptySet());
     SyncConfig syncConfig = new SyncConfig();
     syncConfig.setNotification(notificationConfig);
     IDigBioConfig iDigBioConfig = new IDigBioConfig();
     iDigBioConfig.setSyncConfig(syncConfig);
-    return new IDigBioIssueNotifier(iDigBioConfig, syncResultBuilder);
+    return new IDigBioIssueNotifier(iDigBioConfig);
   }
 
   public void createConflict(List<CollectionEntity> entities, IDigBioRecord iDigBioRecord) {
@@ -98,8 +94,7 @@ public class IDigBioIssueNotifier extends IssueNotifier {
 
     callExecutor.sendNotification(
         () -> githubClient.createIssue(issue),
-        e -> new FailedAction(issue, "Failed to create fails notification" + e.getMessage()),
-        syncResultBuilder);
+        exceptionHandler(issue, "Failed to create fails notification"));
   }
 
   public void createInvalidEntitiesIssue(List<Object> invalidRecords) {
@@ -132,8 +127,7 @@ public class IDigBioIssueNotifier extends IssueNotifier {
 
     callExecutor.sendNotification(
         () -> githubClient.createIssue(issue),
-        e -> new FailedAction(issue, "Failed to create invalid entities notification" + e.getMessage()),
-        syncResultBuilder);
+        exceptionHandler(issue, "Failed to create invalid entities notification"));
   }
 
   private String createIDigBioLink(String id, String text) {

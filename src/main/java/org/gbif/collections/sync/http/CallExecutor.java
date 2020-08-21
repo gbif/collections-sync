@@ -1,10 +1,15 @@
 package org.gbif.collections.sync.http;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.FailedAction;
 import org.gbif.collections.sync.config.SyncConfig;
 
@@ -15,8 +20,7 @@ public class CallExecutor {
 
   private final boolean dryRun;
   private final boolean sendNotifications;
-
-  // TODO: replace the syncResultBuilder with sth else
+  private final Path failedActionsPath = Paths.get("failed_actions_" + System.currentTimeMillis());
 
   public CallExecutor(SyncConfig syncConfig) {
     if (syncConfig != null) {
@@ -29,50 +33,43 @@ public class CallExecutor {
   }
 
   public void executeOrAddFailAsync(
-      Runnable action,
-      Function<Throwable, FailedAction> failCreator,
-      SyncResult.SyncResultBuilder syncResultBuilder) {
+      Runnable action, Function<Throwable, FailedAction> exceptionHandler) {
     if (!dryRun) {
       CompletableFuture.runAsync(action)
           .whenCompleteAsync(
               (r, e) -> {
                 if (e != null) {
-                  syncResultBuilder.failedAction(failCreator.apply(e));
+                  writeFailedAction(exceptionHandler.apply(e));
                 }
               });
     }
   }
 
   public void executeOrAddFail(
-      Runnable action,
-      Function<Throwable, FailedAction> failCreator,
-      SyncResult.SyncResultBuilder syncResultBuilder) {
+      Runnable action, Function<Throwable, FailedAction> exceptionHandler) {
     if (!dryRun) {
       try {
         action.run();
       } catch (Exception e) {
-        syncResultBuilder.failedAction(failCreator.apply(e));
+        writeFailedAction(exceptionHandler.apply(e));
       }
     }
   }
 
   public <T> T executeAndReturnOrAddFail(
-      Supplier<T> execution,
-      Function<Throwable, FailedAction> failCreator,
-      SyncResult.SyncResultBuilder syncResultBuilder) {
-    return executeAndReturnOrAddFail(execution, failCreator, syncResultBuilder, null);
+      Supplier<T> execution, Function<Throwable, FailedAction> exceptionHandler) {
+    return executeAndReturnOrAddFail(execution, exceptionHandler, null);
   }
 
   public <T> T executeAndReturnOrAddFail(
       Supplier<T> execution,
-      Function<Throwable, FailedAction> failCreator,
-      SyncResult.SyncResultBuilder syncResultBuilder,
+      Function<Throwable, FailedAction> exceptionHandler,
       T defaultReturnValue) {
     if (!dryRun) {
       try {
         return execution.get();
       } catch (Exception e) {
-        syncResultBuilder.failedAction(failCreator.apply(e));
+        writeFailedAction(exceptionHandler.apply(e));
       }
     }
 
@@ -80,18 +77,28 @@ public class CallExecutor {
   }
 
   public void sendNotification(
-      Runnable runnable,
-      Function<Throwable, FailedAction> failCreator,
-      SyncResult.SyncResultBuilder syncResultBuilder) {
+      Runnable runnable, Function<Throwable, FailedAction> exceptionHandler) {
     if (sendNotifications) {
       // do the call
       CompletableFuture.runAsync(runnable)
           .whenCompleteAsync(
               (r, e) -> {
                 if (e != null) {
-                  syncResultBuilder.failedAction(failCreator.apply(e));
+                  writeFailedAction(exceptionHandler.apply(e));
                 }
               });
+    }
+  }
+
+  private void writeFailedAction(FailedAction failedAction) {
+    try {
+      try (BufferedWriter writer =
+          Files.newBufferedWriter(failedActionsPath, StandardOpenOption.APPEND)) {
+        writer.write(failedAction.toString());
+        writer.newLine();
+      }
+    } catch (IOException e) {
+      log.error("Error persisting a failed action to a file: {}", failedAction.toString(), e);
     }
   }
 }

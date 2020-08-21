@@ -1,10 +1,10 @@
 package org.gbif.collections.sync.parsers;
 
-import org.gbif.api.vocabulary.Country;
-import org.gbif.collections.sync.http.clients.IHHttpClient;
-
 import java.util.List;
 import java.util.Map;
+
+import org.gbif.api.vocabulary.Country;
+import org.gbif.collections.sync.http.clients.IHHttpClient;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -17,7 +17,7 @@ public class CountryParserTest {
   @Test
   public void ihCountryMappingTest() {
     IHHttpClient ihHttpClient =
-        IHHttpClient.create("http://sweetgum.nybg.org/science/api/v1/");
+        IHHttpClient.getInstance("http://sweetgum.nybg.org/science/api/v1/");
     List<String> countries = ihHttpClient.getCountries();
 
     Map<String, Country> mappings = CountryParser.mapCountries(countries);

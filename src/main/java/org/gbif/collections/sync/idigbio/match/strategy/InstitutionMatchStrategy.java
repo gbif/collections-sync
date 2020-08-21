@@ -4,28 +4,25 @@ import java.util.Arrays;
 
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.EntityMatch;
 import org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
 import org.gbif.collections.sync.SyncResult.StaffMatch;
-import org.gbif.collections.sync.common.MatchResultStrategy;
-import org.gbif.collections.sync.config.SyncConfig;
+import org.gbif.collections.sync.idigbio.IDigBioProxyClient;
 import org.gbif.collections.sync.idigbio.match.MatchResult;
-import org.gbif.collections.sync.idigbio.match.Matcher;
-
-import lombok.Builder;
 
 public class InstitutionMatchStrategy extends IDigBioBaseStrategy
-    implements MatchResultStrategy<MatchResult, InstitutionOnlyMatch> {
+    implements IDigBioMatchResultStrategy<InstitutionOnlyMatch> {
 
-  @Builder
-  public InstitutionMatchStrategy(
-      SyncConfig syncConfig, SyncResult.SyncResultBuilder syncResultBuilder, Matcher matcher) {
-    super(syncConfig, syncResultBuilder, matcher);
+  private InstitutionMatchStrategy(IDigBioProxyClient proxyClient) {
+    super(proxyClient);
+  }
+
+  public static InstitutionMatchStrategy create(IDigBioProxyClient proxyClient) {
+    return new InstitutionMatchStrategy(proxyClient);
   }
 
   @Override
-  public InstitutionOnlyMatch handleAndReturn(MatchResult matchResult) {
+  public InstitutionOnlyMatch apply(MatchResult matchResult) {
     EntityMatch<Institution> entityMatch = updateInstitution(matchResult);
 
     // create new collection linked to the institution
@@ -36,15 +33,10 @@ public class InstitutionMatchStrategy extends IDigBioBaseStrategy
         staffMatchResultHandler.handleStaff(
             matchResult, Arrays.asList(entityMatch.getMerged(), createdCollection));
 
-    InstitutionOnlyMatch institutionOnlyMatch =
-        InstitutionOnlyMatch.builder()
-            .matchedInstitution(entityMatch)
-            .newCollection(createdCollection)
-            .staffMatch(staffMatch)
-            .build();
-
-    syncResultBuilder.institutionOnlyMatch(institutionOnlyMatch);
-
-    return institutionOnlyMatch;
+    return InstitutionOnlyMatch.builder()
+        .matchedInstitution(entityMatch)
+        .newCollection(createdCollection)
+        .staffMatch(staffMatch)
+        .build();
   }
 }

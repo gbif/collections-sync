@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import org.gbif.api.model.collections.Collection;
@@ -43,10 +44,9 @@ public abstract class IssueNotifier {
   private final String registryCollectionLink;
   private final String registryPersonLink;
   protected final CallExecutor callExecutor;
-  protected final SyncResult.SyncResultBuilder syncResultBuilder;
   protected GithubClient githubClient;
 
-  protected IssueNotifier(SyncConfig config, SyncResult.SyncResultBuilder syncResultBuilder) {
+  protected IssueNotifier(SyncConfig config) {
     this.notificationConfig = config.getNotification();
     this.registryInstitutionLink =
         PORTAL_URL_NORMALIZER.apply(notificationConfig.getRegistryPortalUrl()) + "/institution/%s";
@@ -56,8 +56,8 @@ public abstract class IssueNotifier {
         PORTAL_URL_NORMALIZER.apply(notificationConfig.getRegistryPortalUrl()) + "/person/%s";
     syncTimestampLabel =
         LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    // TODO: mover a proxy??
     callExecutor = new CallExecutor(config);
-    this.syncResultBuilder = syncResultBuilder;
     if (config.isSendNotifications()) {
       githubClient = GithubClient.getInstance(config.getNotification());
     }
@@ -97,8 +97,7 @@ public abstract class IssueNotifier {
 
     callExecutor.sendNotification(
         () -> githubClient.createIssue(issue),
-        e -> new FailedAction(issue, "Failed to create fails notification" + e.getMessage()),
-        syncResultBuilder);
+        exceptionHandler(issue, "Failed to create fails notification"));
   }
 
   protected static String formatEntity(Object entity) {
@@ -148,4 +147,8 @@ public abstract class IssueNotifier {
   }
 
   abstract String getProcessName();
+
+  public Function<Throwable, FailedAction> exceptionHandler(Object obj, String msg) {
+    return e -> new FailedAction(obj, msg + ": " + e.getMessage());
+  }
 }

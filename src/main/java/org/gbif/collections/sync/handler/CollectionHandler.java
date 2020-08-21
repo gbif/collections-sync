@@ -5,45 +5,40 @@ import java.util.UUID;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
-import org.gbif.collections.sync.SyncResult.SyncResultBuilder;
 import org.gbif.collections.sync.config.SyncConfig;
 
-import lombok.Builder;
+public class CollectionHandler extends BaseEntityHandler<Collection> {
 
-public class CollectionHandler extends EntityHandler<Collection> {
-
-  private CollectionHandler(SyncConfig syncConfig, SyncResultBuilder syncResultBuilder) {
-    super(syncConfig, syncResultBuilder);
+  private CollectionHandler(SyncConfig syncConfig) {
+    super(syncConfig);
   }
 
-  @Builder
-  public static CollectionHandler create(
-      SyncConfig syncConfig, SyncResultBuilder syncResultBuilder) {
-    return new CollectionHandler(syncConfig, syncResultBuilder);
+  public static CollectionHandler create(SyncConfig syncConfig) {
+    return new CollectionHandler(syncConfig);
   }
 
   @Override
-  protected Collection get(UUID key) {
+  protected Collection getCall(UUID key) {
     return grSciCollHttpClient.getCollection(key);
   }
 
   @Override
-  protected void update(Collection entity) {
+  protected void updateCall(Collection entity) {
     grSciCollHttpClient.updateCollection(entity);
   }
 
   @Override
-  protected UUID create(Collection entity) {
+  protected UUID createCall(Collection entity) {
     return grSciCollHttpClient.createCollection(entity);
   }
 
   @Override
-  protected void addIdentifierToEntity(UUID entityKey, Identifier identifier) {
+  protected void addIdentifierToEntityCall(UUID entityKey, Identifier identifier) {
     grSciCollHttpClient.addIdentifierToCollection(entityKey, identifier);
   }
 
   @Override
-  protected void addMachineTagToEntity(UUID entityKey, MachineTag machineTag) {
+  protected void addMachineTagToEntityCall(UUID entityKey, MachineTag machineTag) {
     grSciCollHttpClient.addMachineTagToCollection(entityKey, machineTag);
   }
 }

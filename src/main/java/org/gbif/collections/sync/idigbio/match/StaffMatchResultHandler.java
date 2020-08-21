@@ -10,13 +10,11 @@ import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contactable;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
-import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.EntityMatch;
 import org.gbif.collections.sync.SyncResult.StaffMatch;
-import org.gbif.collections.sync.config.SyncConfig;
-import org.gbif.collections.sync.handler.PersonHandler;
 import org.gbif.collections.sync.idigbio.EntityConverter;
 import org.gbif.collections.sync.idigbio.IDigBioRecord;
+import org.gbif.collections.sync.idigbio.IDigBioProxyClient;
 
 import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
@@ -26,14 +24,10 @@ import static org.gbif.collections.sync.parsers.DataParser.cleanString;
 @Slf4j
 public class StaffMatchResultHandler {
 
-  private final Matcher matcher;
-  private final PersonHandler personHandler;
+  private final IDigBioProxyClient proxyClient;
 
-  public StaffMatchResultHandler(
-      SyncConfig syncConfig, Matcher matcher, SyncResult.SyncResultBuilder syncResultBuilder) {
-    this.matcher = matcher;
-    this.personHandler =
-        PersonHandler.builder().syncConfig(syncConfig).syncResultBuilder(syncResultBuilder).build();
+  public StaffMatchResultHandler(IDigBioProxyClient proxyClient) {
+    this.proxyClient = proxyClient;
   }
 
   public <T extends CollectionEntity & Contactable> StaffMatch handleStaff(
@@ -53,7 +47,8 @@ public class StaffMatchResultHandler {
             .flatMap(e -> e.getContacts().stream())
             .collect(Collectors.toSet());
 
-    Optional<Person> personMatch = matcher.matchContact(match.getIDigBioRecord(), contacts);
+    Optional<Person> personMatch =
+        match.getStaffMatcher().apply(match.getIDigBioRecord(), contacts);
     StaffMatch.StaffMatchBuilder staffSyncBuilder = StaffMatch.builder();
     if (personMatch.isPresent()) {
       log.info("One match for iDigBio Staff {}", match.getIDigBioRecord());
@@ -61,14 +56,18 @@ public class StaffMatchResultHandler {
       Person mergedPerson =
           EntityConverter.convertToPerson(matchedPerson, match.getIDigBioRecord());
 
-      EntityMatch<Person> entityMatch = personHandler.updateEntity(matchedPerson, mergedPerson);
-      Person updatedPerson = personHandler.getEntity(mergedPerson);
+      boolean updated = proxyClient.updatePerson(matchedPerson, mergedPerson);
 
-      // update the person in the set with all persons
-      matcher.getMatchData().updatePerson(matchedPerson, updatedPerson);
+      EntityMatch<Person> entityMatch =
+          EntityMatch.<Person>builder()
+              .merged(matchedPerson)
+              .merged(mergedPerson)
+              .update(updated)
+              .build();
+      Person updatedPerson = proxyClient.getPersonsByKey().get(mergedPerson.getKey());
 
       // add to the entity if needed
-      personHandler.linkPersonToEntity(updatedPerson, entities);
+      proxyClient.linkPersonToEntity(updatedPerson, entities);
 
       staffSyncBuilder.matchedPerson(entityMatch);
     } else {
@@ -77,8 +76,8 @@ public class StaffMatchResultHandler {
       Person newPerson = EntityConverter.convertToPerson(match.getIDigBioRecord());
 
       // create new person in the registry and link it to the entities
-      Person createdPerson = personHandler.createPersonAndLinkToEntities(newPerson, entities);
-      matcher.getMatchData().addNewPerson(createdPerson);
+      Person createdPerson = proxyClient.createPerson(newPerson);
+      proxyClient.linkPersonToEntity(createdPerson, entities);
 
       staffSyncBuilder.newPerson(newPerson);
     }
