@@ -6,20 +6,18 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.CollectionOnlyMatch;
 import org.gbif.collections.sync.SyncResult.StaffMatch;
-import org.gbif.collections.sync.config.IHConfig;
-import org.gbif.collections.sync.ih.EntityConverter;
 import org.gbif.collections.sync.ih.IHProxyClient;
 import org.gbif.collections.sync.ih.match.MatchResult;
-
-import lombok.Builder;
 
 public class CollectionMatchStrategy extends IHBaseStrategy
     implements IHMatchResultStrategy<CollectionOnlyMatch> {
 
-  @Builder
-  public CollectionMatchStrategy(
-      IHConfig ihConfig, IHProxyClient proxyClient, EntityConverter entityConverter) {
-    super(ihConfig, entityConverter, proxyClient);
+  private CollectionMatchStrategy(IHProxyClient proxyClient) {
+    super(proxyClient);
+  }
+
+  public static CollectionMatchStrategy create(IHProxyClient proxyClient) {
+    return new CollectionMatchStrategy(proxyClient);
   }
 
   @Override

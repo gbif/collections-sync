@@ -8,20 +8,18 @@ import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.EntityMatch;
 import org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
 import org.gbif.collections.sync.SyncResult.StaffMatch;
-import org.gbif.collections.sync.config.IHConfig;
-import org.gbif.collections.sync.ih.EntityConverter;
 import org.gbif.collections.sync.ih.IHProxyClient;
 import org.gbif.collections.sync.ih.match.MatchResult;
-
-import lombok.Builder;
 
 public class InstitutionAndCollectionMatchStrategy extends IHBaseStrategy
     implements IHMatchResultStrategy<InstitutionAndCollectionMatch> {
 
-  @Builder
-  public InstitutionAndCollectionMatchStrategy(
-      IHConfig ihConfig, IHProxyClient proxyClient, EntityConverter entityConverter) {
-    super(ihConfig, entityConverter, proxyClient);
+  private InstitutionAndCollectionMatchStrategy(IHProxyClient proxyClient) {
+    super(proxyClient);
+  }
+
+  public static InstitutionAndCollectionMatchStrategy create(IHProxyClient proxyClient) {
+    return new InstitutionAndCollectionMatchStrategy(proxyClient);
   }
 
   @Override

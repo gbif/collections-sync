@@ -6,20 +6,18 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.collections.sync.SyncResult.NoEntityMatch;
 import org.gbif.collections.sync.SyncResult.StaffMatch;
-import org.gbif.collections.sync.config.IHConfig;
-import org.gbif.collections.sync.ih.EntityConverter;
 import org.gbif.collections.sync.ih.IHProxyClient;
 import org.gbif.collections.sync.ih.match.MatchResult;
-
-import lombok.Builder;
 
 public class NoMatchStrategy extends IHBaseStrategy
     implements IHMatchResultStrategy<NoEntityMatch> {
 
-  @Builder
-  public NoMatchStrategy(
-      IHConfig ihConfig, IHProxyClient proxyClient, EntityConverter entityConverter) {
-    super(ihConfig, entityConverter, proxyClient);
+  private NoMatchStrategy(IHProxyClient proxyClient) {
+    super(proxyClient);
+  }
+
+  public static NoMatchStrategy create(IHProxyClient proxyClient) {
+    return new NoMatchStrategy(proxyClient);
   }
 
   @Override

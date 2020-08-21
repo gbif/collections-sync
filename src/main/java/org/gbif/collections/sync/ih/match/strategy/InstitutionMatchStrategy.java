@@ -7,20 +7,18 @@ import org.gbif.api.model.collections.Institution;
 import org.gbif.collections.sync.SyncResult.EntityMatch;
 import org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
 import org.gbif.collections.sync.SyncResult.StaffMatch;
-import org.gbif.collections.sync.config.IHConfig;
-import org.gbif.collections.sync.ih.EntityConverter;
 import org.gbif.collections.sync.ih.IHProxyClient;
 import org.gbif.collections.sync.ih.match.MatchResult;
-
-import lombok.Builder;
 
 public class InstitutionMatchStrategy extends IHBaseStrategy
     implements IHMatchResultStrategy<InstitutionOnlyMatch> {
 
-  @Builder
-  public InstitutionMatchStrategy(
-      IHConfig ihConfig, IHProxyClient proxyClient, EntityConverter entityConverter) {
-    super(ihConfig, entityConverter, proxyClient);
+  private InstitutionMatchStrategy(IHProxyClient proxyClient) {
+    super(proxyClient);
+  }
+
+  public static InstitutionMatchStrategy create(IHProxyClient proxyClient) {
+    return new InstitutionMatchStrategy(proxyClient);
   }
 
   @Override

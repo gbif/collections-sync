@@ -24,15 +24,18 @@ import static org.gbif.collections.sync.common.Utils.mapByIrn;
 public class IHProxyClient extends BaseProxyClient {
 
   private final DataLoader dataLoader;
+  private final IHConfig ihConfig;
   private Map<String, Set<Institution>> institutionsMapByIrn;
   private Map<String, Set<Collection>> collectionsMapByIrn;
   private Map<String, Set<Person>> grSciCollPersonsByIrn;
   private Set<Person> allGrSciCollPersons;
   private Map<String, List<IHStaff>> ihStaffMapByCode;
+  private List<String> countries;
 
   @Builder
   private IHProxyClient(IHConfig ihConfig, DataLoader dataLoader) {
     super(ihConfig.getSyncConfig());
+    this.ihConfig = ihConfig;
     if (dataLoader != null) {
       this.dataLoader = dataLoader;
     } else {
@@ -48,5 +51,6 @@ public class IHProxyClient extends BaseProxyClient {
     grSciCollPersonsByIrn = mapByIrn(data.getPersons());
     this.allGrSciCollPersons = new HashSet<>(data.getPersons());
     ihStaffMapByCode = data.getIhStaff().stream().collect(Collectors.groupingBy(IHStaff::getCode));
+    countries = data.getCountries();
   }
 }

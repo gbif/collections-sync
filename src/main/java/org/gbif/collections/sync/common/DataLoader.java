@@ -64,6 +64,8 @@ public class DataLoader {
         CompletableFuture.supplyAsync(ihHttpClient::getInstitutions);
     CompletableFuture<List<IHStaff>> ihStaffFuture =
         CompletableFuture.supplyAsync(ihHttpClient::getStaff);
+    CompletableFuture<List<String>> countriesFuture =
+        CompletableFuture.supplyAsync(ihHttpClient::getCountries);
     CompletableFuture<List<Institution>> institutionsFuture =
         CompletableFuture.supplyAsync(grSciCollHttpClient::getInstitutions);
     CompletableFuture<List<Collection>> collectionsFuture =
@@ -77,7 +79,8 @@ public class DataLoader {
             ihStaffFuture,
             institutionsFuture,
             collectionsFuture,
-            personsFuture)
+            personsFuture,
+            countriesFuture)
         .join();
 
     return new GrSciCollAndIHData(
@@ -85,7 +88,8 @@ public class DataLoader {
         collectionsFuture.join(),
         personsFuture.join(),
         ihInstitutionsFuture.join(),
-        ihStaffFuture.join());
+        ihStaffFuture.join(),
+        countriesFuture.join());
   }
 
   @AllArgsConstructor
@@ -96,6 +100,7 @@ public class DataLoader {
     List<Person> persons;
     List<IHInstitution> ihInstitutions;
     List<IHStaff> ihStaff;
+    List<String> countries;
   }
 
   @AllArgsConstructor

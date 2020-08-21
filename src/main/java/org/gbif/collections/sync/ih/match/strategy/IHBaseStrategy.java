@@ -5,11 +5,11 @@ import java.util.UUID;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.collections.sync.SyncResult.EntityMatch;
-import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.ih.EntityConverter;
 import org.gbif.collections.sync.ih.IHProxyClient;
 import org.gbif.collections.sync.ih.match.MatchResult;
 import org.gbif.collections.sync.ih.match.StaffMatchResultHandler;
+import org.gbif.collections.sync.parsers.CountryParser;
 
 public abstract class IHBaseStrategy {
 
@@ -20,11 +20,11 @@ public abstract class IHBaseStrategy {
   protected final EntityConverter entityConverter;
   protected final StaffMatchResultHandler staffMatchResultHandler;
 
-  protected IHBaseStrategy(
-      IHConfig ihConfig, EntityConverter entityConverter, IHProxyClient proxyClient) {
+  protected IHBaseStrategy(IHProxyClient proxyClient) {
     this.proxyClient = proxyClient;
-    staffMatchResultHandler = new StaffMatchResultHandler(ihConfig, proxyClient, entityConverter);
-    this.entityConverter = entityConverter;
+    this.entityConverter = EntityConverter.create(CountryParser.from(proxyClient.getCountries()));
+    staffMatchResultHandler =
+        new StaffMatchResultHandler(proxyClient.getIhConfig(), proxyClient, entityConverter);
   }
 
   protected EntityMatch<Institution> updateInstitution(MatchResult matchResult) {

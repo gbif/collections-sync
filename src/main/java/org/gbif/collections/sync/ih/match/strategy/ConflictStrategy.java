@@ -5,15 +5,16 @@ import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.ih.match.MatchResult;
 import org.gbif.collections.sync.notification.IHIssueNotifier;
 
-import lombok.Builder;
-
 public class ConflictStrategy implements IHMatchResultStrategy<Conflict> {
 
   private final IHIssueNotifier issueNotifier;
 
-  @Builder
-  public ConflictStrategy(IHConfig ihConfig) {
+  private ConflictStrategy(IHConfig ihConfig) {
     this.issueNotifier = IHIssueNotifier.create(ihConfig);
+  }
+
+  public static ConflictStrategy create(IHConfig ihConfig) {
+    return new ConflictStrategy(ihConfig);
   }
 
   @Override

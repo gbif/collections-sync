@@ -19,7 +19,6 @@ import org.gbif.collections.sync.staff.StaffNormalized;
 
 import com.google.common.annotations.VisibleForTesting;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 
 import static org.gbif.collections.sync.common.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.common.Utils.encodeIRN;
@@ -32,13 +31,16 @@ import static org.gbif.collections.sync.staff.StaffUtils.compareStringsPartially
 /** Matches IH entities to GrSciColl ones. */
 public class Matcher {
 
-  private final CountryParser countryParser;
   private final IHProxyClient proxyClient;
+  private final CountryParser countryParser;
 
-  @Builder
-  private Matcher(CountryParser countryParser, IHProxyClient proxyClient) {
-    this.countryParser = countryParser;
+  private Matcher(IHProxyClient proxyClient) {
+    this.countryParser = CountryParser.from(proxyClient.getCountries());
     this.proxyClient = proxyClient;
+  }
+
+  public static Matcher create(IHProxyClient proxyClient) {
+    return new Matcher(proxyClient);
   }
 
   public MatchResult match(IHInstitution ihInstitution) {
