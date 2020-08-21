@@ -81,7 +81,6 @@ public class IDigBioSync {
     SyncResult syncResult = syncResultBuilder.build();
 
     if (syncResult.getInvalidEntities() != null && !syncResult.getInvalidEntities().isEmpty()) {
-      // TODO: hacerlo singleton??
       IDigBioIssueNotifier.create(iDigBioConfig)
           .createInvalidEntitiesIssue(syncResult.getInvalidEntities());
     }

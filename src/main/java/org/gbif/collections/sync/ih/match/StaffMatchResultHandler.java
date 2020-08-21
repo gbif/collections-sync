@@ -31,7 +31,6 @@ public class StaffMatchResultHandler {
 
   public StaffMatchResultHandler(
       IHConfig ihConfig, IHProxyClient proxyClient, EntityConverter entityConverter) {
-    // TODO: move to proxy??
     issueNotifier = IHIssueNotifier.create(ihConfig);
     this.entityConverter = entityConverter;
     this.proxyClient = proxyClient;

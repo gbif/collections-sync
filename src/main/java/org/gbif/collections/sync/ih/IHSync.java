@@ -35,7 +35,6 @@ public class IHSync {
       EntityConverter entityConverter,
       CountryParser countryParser,
       DataLoader dataLoader) {
-    // TODO: remove this and create another constructor for testing
     this.ihConfig = ihConfig;
     if (countryParser != null) {
       this.countryParser = countryParser;
@@ -67,11 +66,7 @@ public class IHSync {
     GrSciCollAndIHData data = DataLoader.create(ihConfig).fetchGrSciCollAndIHData();
 
     IHProxyClient proxyClient =
-        IHProxyClient.builder()
-            .dataLoader(dataLoader)
-            .countryParser(countryParser)
-            .ihConfig(ihConfig)
-            .build();
+        IHProxyClient.builder().dataLoader(dataLoader).ihConfig(ihConfig).build();
 
     Matcher matcher =
         Matcher.builder().proxyClient(proxyClient).countryParser(countryParser).build();

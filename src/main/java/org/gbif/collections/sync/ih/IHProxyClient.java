@@ -14,7 +14,6 @@ import org.gbif.collections.sync.common.DataLoader;
 import org.gbif.collections.sync.common.DataLoader.GrSciCollAndIHData;
 import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.ih.model.IHStaff;
-import org.gbif.collections.sync.parsers.CountryParser;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -32,7 +31,7 @@ public class IHProxyClient extends BaseProxyClient {
   private Map<String, List<IHStaff>> ihStaffMapByCode;
 
   @Builder
-  private IHProxyClient(IHConfig ihConfig, CountryParser countryParser, DataLoader dataLoader) {
+  private IHProxyClient(IHConfig ihConfig, DataLoader dataLoader) {
     super(ihConfig.getSyncConfig());
     if (dataLoader != null) {
       this.dataLoader = dataLoader;

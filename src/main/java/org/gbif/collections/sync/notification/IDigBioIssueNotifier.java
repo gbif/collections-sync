@@ -92,9 +92,7 @@ public class IDigBioIssueNotifier extends IssueNotifier {
             .labels(Sets.newHashSet(IDIGBIO_IMPORT_LABEL, syncTimestampLabel))
             .build();
 
-    callExecutor.sendNotification(
-        () -> githubClient.createIssue(issue),
-        exceptionHandler(issue, "Failed to create fails notification"));
+    notificationProxyClient.sendNotification(issue);
   }
 
   public void createInvalidEntitiesIssue(List<Object> invalidRecords) {
@@ -125,9 +123,7 @@ public class IDigBioIssueNotifier extends IssueNotifier {
             .labels(Sets.newHashSet(IDIGBIO_IMPORT_LABEL, syncTimestampLabel))
             .build();
 
-    callExecutor.sendNotification(
-        () -> githubClient.createIssue(issue),
-        exceptionHandler(issue, "Failed to create invalid entities notification"));
+    notificationProxyClient.sendNotification(issue);
   }
 
   private String createIDigBioLink(String id, String text) {

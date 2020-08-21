@@ -84,9 +84,7 @@ public class IHIssueNotifier extends IssueNotifier {
             .labels(Sets.newHashSet(IH_SYNC_LABEL, syncTimestampLabel))
             .build();
 
-    callExecutor.sendNotification(
-        () -> githubClient.createIssue(issue),
-        exceptionHandler(issue, "Failed to create conlfict notification"));
+    notificationProxyClient.sendNotification(issue);
   }
 
   public <T extends IHEntity> void createInvalidEntity(T entity, String message) {
@@ -100,9 +98,7 @@ public class IHIssueNotifier extends IssueNotifier {
             .labels(Sets.newHashSet(IH_SYNC_LABEL, syncTimestampLabel))
             .build();
 
-    callExecutor.sendNotification(
-        () -> githubClient.createIssue(issue),
-        exceptionHandler(issue, "Failed to create invalid entity notification"));
+    notificationProxyClient.sendNotification(issue);
   }
 
   protected <T extends IHEntity> String createIHLink(T entity) {

@@ -16,7 +16,7 @@ import org.gbif.collections.sync.http.clients.GrSciCollHttpClient;
 
 public abstract class BaseProxyClient {
 
-  protected final GrSciCollHttpClient grSciCollHttpClient;
+  protected GrSciCollHttpClient grSciCollHttpClient;
   protected final CallExecutor callExecutor;
   protected CollectionHandler collectionHandler;
   protected InstitutionHandler institutionHandler;
@@ -25,9 +25,7 @@ public abstract class BaseProxyClient {
   public BaseProxyClient(SyncConfig syncConfig) {
     this.callExecutor = new CallExecutor(syncConfig);
     if (syncConfig != null) {
-      this.grSciCollHttpClient = GrSciCollHttpClient.getInstance(syncConfig);
-    } else {
-      this.grSciCollHttpClient = null;
+      grSciCollHttpClient = GrSciCollHttpClient.getInstance(syncConfig);
     }
     this.collectionHandler = CollectionHandler.create(syncConfig);
     this.institutionHandler = InstitutionHandler.create(syncConfig);
