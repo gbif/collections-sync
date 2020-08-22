@@ -3,7 +3,7 @@ package org.gbif.collections.sync;
 import java.nio.file.Paths;
 
 import org.gbif.collections.sync.config.IDigBioConfig;
-import org.gbif.collections.sync.idigbio.IDigBioSync;
+import org.gbif.collections.sync.idigbio.IDigBioSynchronizer;
 
 import com.beust.jcommander.JCommander;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,8 @@ public class IDigBioSyncApp {
     IDigBioConfig iDigBioConfig = IDigBioConfig.fromCliArgs(cliArgs);
 
     // sync iDigBio
-    SyncResult syncResult = IDigBioSync.builder().iDigBioConfig(iDigBioConfig).build().sync();
+    SyncResult syncResult =
+        IDigBioSynchronizer.builder().iDigBioConfig(iDigBioConfig).build().sync();
 
     // save results to a file
     if (iDigBioConfig.getSyncConfig().isSaveResultsToFile()) {

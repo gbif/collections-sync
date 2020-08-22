@@ -6,7 +6,7 @@
 //import java.util.List;
 //import java.util.Set;
 //
-//import org.gbif.collections.sync.idigbio.IDigBioRecord;
+//import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 //import org.gbif.collections.sync.idigbio.IDigBioSync;
 //
 //import com.fasterxml.jackson.databind.DeserializationFeature;

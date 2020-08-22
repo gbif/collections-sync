@@ -3,7 +3,7 @@ package org.gbif.collections.sync;
 import java.nio.file.Paths;
 
 import org.gbif.collections.sync.config.IHConfig;
-import org.gbif.collections.sync.ih.IHSync;
+import org.gbif.collections.sync.ih.IHSynchronizer;
 
 import com.beust.jcommander.JCommander;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ public class IHSyncApp {
     IHConfig config = IHConfig.fromCliArgs(cliArgs);
 
     // sync IH
-    SyncResult ihSyncResult = IHSync.builder().ihConfig(config).build().sync();
+    SyncResult ihSyncResult = IHSynchronizer.builder().ihConfig(config).build().sync();
 
     // save results to a file
     if (config.getSyncConfig().isSaveResultsToFile()) {

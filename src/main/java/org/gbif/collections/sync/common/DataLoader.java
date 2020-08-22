@@ -9,8 +9,8 @@ import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.config.SyncConfig;
-import org.gbif.collections.sync.http.clients.GrSciCollHttpClient;
-import org.gbif.collections.sync.http.clients.IHHttpClient;
+import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
+import org.gbif.collections.sync.clients.http.IHHttpClient;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 

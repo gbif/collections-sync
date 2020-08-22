@@ -11,11 +11,11 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
-import org.gbif.collections.sync.ih.IHProxyClient;
+import org.gbif.collections.sync.clients.proxy.IHProxyClient;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
-import org.gbif.collections.sync.parsers.CountryParser;
-import org.gbif.collections.sync.staff.StaffNormalized;
+import org.gbif.collections.sync.common.parsers.CountryParser;
+import org.gbif.collections.sync.common.staff.StaffNormalized;
 
 import com.google.common.annotations.VisibleForTesting;
 import lombok.AllArgsConstructor;
@@ -23,10 +23,10 @@ import lombok.AllArgsConstructor;
 import static org.gbif.collections.sync.common.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.common.Utils.encodeIRN;
 import static org.gbif.collections.sync.common.Utils.isPersonInContacts;
-import static org.gbif.collections.sync.staff.StaffUtils.compareFullNamePartially;
-import static org.gbif.collections.sync.staff.StaffUtils.compareLists;
-import static org.gbif.collections.sync.staff.StaffUtils.compareStrings;
-import static org.gbif.collections.sync.staff.StaffUtils.compareStringsPartially;
+import static org.gbif.collections.sync.common.staff.StaffUtils.compareFullNamePartially;
+import static org.gbif.collections.sync.common.staff.StaffUtils.compareLists;
+import static org.gbif.collections.sync.common.staff.StaffUtils.compareStrings;
+import static org.gbif.collections.sync.common.staff.StaffUtils.compareStringsPartially;
 
 /** Matches IH entities to GrSciColl ones. */
 public class Matcher {
@@ -43,7 +43,7 @@ public class Matcher {
     return new Matcher(proxyClient);
   }
 
-  public MatchResult match(IHInstitution ihInstitution) {
+  public IHMatchResult match(IHInstitution ihInstitution) {
     String irn = encodeIRN(ihInstitution.getIrn());
 
     // find matches
@@ -52,7 +52,7 @@ public class Matcher {
     Set<Collection> collectionsMatched =
         proxyClient.getCollectionsMapByIrn().getOrDefault(irn, Collections.emptySet());
 
-    return MatchResult.builder()
+    return IHMatchResult.builder()
         .ihInstitution(ihInstitution)
         .ihStaff(
             proxyClient

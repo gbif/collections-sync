@@ -1,6 +1,7 @@
 package org.gbif.collections.sync.idigbio.match;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -13,10 +14,10 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifier;
+import org.gbif.collections.sync.clients.proxy.IDigBioProxyClient;
 import org.gbif.collections.sync.common.Utils;
-import org.gbif.collections.sync.idigbio.IDigBioProxyClient;
-import org.gbif.collections.sync.idigbio.IDigBioRecord;
-import org.gbif.collections.sync.staff.StaffNormalized;
+import org.gbif.collections.sync.common.staff.StaffNormalized;
+import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -24,9 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.common.Utils.countNonNullValues;
 import static org.gbif.collections.sync.common.Utils.removeUuidNamespace;
+import static org.gbif.collections.sync.common.staff.StaffUtils.compareLists;
+import static org.gbif.collections.sync.common.staff.StaffUtils.compareStrings;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
-import static org.gbif.collections.sync.staff.StaffUtils.compareLists;
-import static org.gbif.collections.sync.staff.StaffUtils.compareStrings;
 
 @Slf4j
 public class Matcher {
@@ -37,8 +38,9 @@ public class Matcher {
     this.proxyClient = proxyClient;
   }
 
-  public MatchResult match(IDigBioRecord iDigBioRecord) {
-    MatchResult.MatchResultBuilder result = MatchResult.builder().iDigBioRecord(iDigBioRecord);
+  public IDigBioMatchResult match(IDigBioRecord iDigBioRecord) {
+    IDigBioMatchResult.IDigBioMatchResultBuilder result =
+        IDigBioMatchResult.builder().iDigBioRecord(iDigBioRecord);
 
     Institution institutionMatch =
         proxyClient.getInstitutionsByKey().get(iDigBioRecord.getGrbioInstMatch());
@@ -135,9 +137,9 @@ public class Matcher {
     return matches.isEmpty() ? Optional.empty() : Optional.of(matches.get(0));
   }
 
-  Optional<Person> matchContact(IDigBioRecord record, Set<Person> contacts) {
+  Set<Person> matchContact(IDigBioRecord record, Set<Person> contacts) {
     if (proxyClient.getPersons() == null) {
-      return Optional.empty();
+      return Collections.emptySet();
     }
 
     StaffNormalized idigbioContact = StaffNormalized.fromIDigBioContact(record);
@@ -182,7 +184,7 @@ public class Matcher {
       }
     }
 
-    return Optional.ofNullable(bestMatch);
+    return Collections.singleton(bestMatch);
   }
 
   private static Person comparePersonFieldCompleteness(Person p1, Person p2) {

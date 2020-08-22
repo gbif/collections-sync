@@ -23,7 +23,7 @@
 //import org.gbif.collections.sync.ih.model.IHEntity;
 //import org.gbif.collections.sync.ih.model.IHInstitution;
 //import org.gbif.collections.sync.ih.model.IHStaff;
-//import org.gbif.collections.sync.parsers.CountryParser;
+//import org.gbif.collections.sync.common.parsers.CountryParser;
 //
 //import org.junit.Test;
 //
@@ -31,7 +31,7 @@
 //import lombok.Data;
 //
 //import static org.gbif.collections.sync.common.Utils.encodeIRN;
-//import static org.gbif.collections.sync.parsers.DataParser.TO_BIGDECIMAL;
+//import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
 //import static org.junit.Assert.assertEquals;
 //import static org.junit.Assert.assertNotNull;
 //import static org.junit.Assert.assertTrue;

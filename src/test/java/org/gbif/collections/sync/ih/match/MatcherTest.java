@@ -4,8 +4,8 @@
 //import org.gbif.api.model.collections.Person;
 //import org.gbif.api.vocabulary.Country;
 //import org.gbif.collections.sync.ih.model.IHStaff;
-//import org.gbif.collections.sync.parsers.CountryParser;
-//import org.gbif.collections.sync.staff.StaffNormalized;
+//import org.gbif.collections.sync.common.parsers.CountryParser;
+//import org.gbif.collections.sync.common.staff.StaffNormalized;
 //
 //import java.util.Arrays;
 //import java.util.Collections;

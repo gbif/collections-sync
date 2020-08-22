@@ -7,7 +7,7 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.vocabulary.IdentifierType;
-import org.gbif.collections.sync.idigbio.IDigBioRecord;
+import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 import org.junit.Test;
 

@@ -2,9 +2,9 @@ package org.gbif.collections.sync.idigbio.match.strategy;
 
 import org.gbif.api.model.collections.Collection;
 import org.gbif.collections.sync.SyncResult;
-import org.gbif.collections.sync.idigbio.IDigBioRecord;
+import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 import org.gbif.collections.sync.idigbio.match.MatchData;
-import org.gbif.collections.sync.idigbio.match.MatchResult;
+import org.gbif.collections.sync.idigbio.match.IDigBioMatchResult;
 
 import org.junit.Test;
 
@@ -28,8 +28,8 @@ public class CollectionMatchStrategyTest extends BaseMatchStrategyTest {
     IDigBioRecord record = new IDigBioRecord();
     record.setCollectionCode("code2");
 
-    MatchResult match =
-        MatchResult.builder().collectionMatched(collection).iDigBioRecord(record).build();
+    IDigBioMatchResult match =
+        IDigBioMatchResult.builder().collectionMatched(collection).iDigBioRecord(record).build();
 
     SyncResult.CollectionOnlyMatch collectionOnlyMatch = strategy.handleAndReturn(match);
     assertTrue(collectionOnlyMatch.getMatchedCollection().isUpdate());
@@ -58,8 +58,8 @@ public class CollectionMatchStrategyTest extends BaseMatchStrategyTest {
     record.setCollectionCode(collection.getCode());
     record.setCollection(collection.getName());
 
-    MatchResult match =
-        MatchResult.builder().collectionMatched(collection).iDigBioRecord(record).build();
+    IDigBioMatchResult match =
+        IDigBioMatchResult.builder().collectionMatched(collection).iDigBioRecord(record).build();
 
     SyncResult.CollectionOnlyMatch collectionOnlyMatch = strategy.handleAndReturn(match);
     assertFalse(collectionOnlyMatch.getMatchedCollection().isUpdate());
