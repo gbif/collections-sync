@@ -13,9 +13,6 @@ import org.gbif.collections.sync.common.handler.InstitutionHandler;
 import org.gbif.collections.sync.common.handler.PersonHandler;
 import org.gbif.collections.sync.config.SyncConfig;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
 public abstract class BaseProxyClient implements GrSciCollProxyClient {
 
   protected GrSciCollHttpClient grSciCollHttpClient;
@@ -32,11 +29,6 @@ public abstract class BaseProxyClient implements GrSciCollProxyClient {
     this.collectionHandler = CollectionHandler.create(syncConfig);
     this.institutionHandler = InstitutionHandler.create(syncConfig);
     this.personHandler = PersonHandler.create(syncConfig);
-
-    log.info(
-        "Sync created with dryRun {} and sendNotifications {}",
-        syncConfig.isDryRun(),
-        syncConfig.isSendNotifications());
   }
 
   public Collection createCollection(Collection collection) {

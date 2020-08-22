@@ -2,15 +2,12 @@ package org.gbif.collections.sync.clients.proxy;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Contactable;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.common.DataLoader;
@@ -20,7 +17,6 @@ import org.gbif.collections.sync.config.IDigBioConfig;
 import lombok.Builder;
 import lombok.Getter;
 
-// TODO: el update q actualize siempre y el get q mire primero en memory??
 @Getter
 public class IDigBioProxyClient extends BaseProxyClient {
 
@@ -33,7 +29,7 @@ public class IDigBioProxyClient extends BaseProxyClient {
   // institutions created when an IDigBio record has no match. We need to store them in order not to
   // duplicate them. For example, the institution with code CCBER has no match and it's present
   // multiple times because it has multiple collections.
-  private Set<Institution> newlyCreatedIDigBioInstitutions = new HashSet<>();
+  private final Set<Institution> newlyCreatedIDigBioInstitutions = new HashSet<>();
   private Set<Person> persons = new HashSet<>();
 
   @Builder
@@ -89,12 +85,14 @@ public class IDigBioProxyClient extends BaseProxyClient {
     return updated;
   }
 
+  @Override
   public Person createPerson(Person person) {
     Person createdPerson = personHandler.create(person);
     addNewPersonInMemory(createdPerson);
     return createdPerson;
   }
 
+  @Override
   public boolean updatePerson(Person oldPerson, Person newPerson) {
     boolean updated = personHandler.update(oldPerson, newPerson);
     if (updated) {
@@ -103,24 +101,13 @@ public class IDigBioProxyClient extends BaseProxyClient {
     return updated;
   }
 
-  public <T extends CollectionEntity & Contactable> void linkPersonToEntity(
-      Person person, List<T> entities) {
-    personHandler.linkPersonToEntity(person, entities);
-  }
-
-  public <T extends CollectionEntity & Contactable> void unlinkPersonFromEntity(
-      Person personToRemove, List<T> entities) {
-    personHandler.unlinkPersonFromEntity(personToRemove, entities);
-  }
-
   private void updateCollectionInMemory(Collection oldCollection, Collection newCollection) {
     Collection updatedCollection = collectionHandler.get(newCollection);
     if (updatedCollection != null && updatedCollection.getKey() != null) {
       collectionsByKey.replace(updatedCollection.getKey(), updatedCollection);
 
       if (updatedCollection.getInstitutionKey() != null
-          // TODO
-          && collectionsByInstitution.containsValue(oldCollection)) {
+          && collectionsByInstitution.containsKey(oldCollection.getInstitutionKey())) {
         collectionsByInstitution.get(updatedCollection.getInstitutionKey()).remove(oldCollection);
         collectionsByInstitution.get(updatedCollection.getInstitutionKey()).add(updatedCollection);
       }

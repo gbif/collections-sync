@@ -30,6 +30,9 @@ public class CallExecutor {
       this.dryRun = true;
       this.sendNotifications = false;
     }
+
+    log.info(
+        "Call Executor created with dryRun {} and sendNotifications {}", dryRun, sendNotifications);
   }
 
   public void executeOrAddFailAsync(
