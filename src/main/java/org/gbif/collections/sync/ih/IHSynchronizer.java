@@ -1,12 +1,12 @@
 package org.gbif.collections.sync.ih;
 
 import org.gbif.collections.sync.SyncResult;
-import org.gbif.collections.sync.SyncResult.Conflict;
 import org.gbif.collections.sync.clients.proxy.IHProxyClient;
-import org.gbif.collections.sync.common.DataLoader;
 import org.gbif.collections.sync.common.BaseSynchronizer;
+import org.gbif.collections.sync.common.DataLoader;
 import org.gbif.collections.sync.common.parsers.CountryParser;
 import org.gbif.collections.sync.config.IHConfig;
+import org.gbif.collections.sync.ih.IHDataLoader.IHData;
 import org.gbif.collections.sync.ih.match.IHMatchResult;
 import org.gbif.collections.sync.ih.match.IHStaffMatchResultHandler;
 import org.gbif.collections.sync.ih.match.Matcher;
@@ -21,26 +21,25 @@ import lombok.extern.slf4j.Slf4j;
 public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
 
   private final IHIssueNotifier issueNotifier;
-  private final IHProxyClient proxyClient;
+  private final IHProxyClient ihProxyClient;
 
   private IHSynchronizer(
       IHProxyClient proxyClient,
       IHStaffMatchResultHandler staffResultHandler,
       IHEntityConverter entityConverter) {
     super(proxyClient, staffResultHandler, entityConverter);
-    this.proxyClient = proxyClient;
+    this.ihProxyClient = proxyClient;
     this.issueNotifier = IHIssueNotifier.create(proxyClient.getIhConfig());
   }
 
   @Builder
-  public static IHSynchronizer create(IHConfig ihConfig, DataLoader dataLoader) {
+  public static IHSynchronizer create(IHConfig ihConfig, DataLoader<IHData> dataLoader) {
     if (dataLoader == null) {
-      dataLoader = DataLoader.create(ihConfig.getSyncConfig());
+      dataLoader = IHDataLoader.create(ihConfig);
     }
 
     IHProxyClient proxyClient =
         IHProxyClient.builder().dataLoader(dataLoader).ihConfig(ihConfig).build();
-
     IHEntityConverter entityConverter =
         IHEntityConverter.create(CountryParser.from(proxyClient.getCountries()));
     IHStaffMatchResultHandler staffMatchResultHandler =
@@ -50,12 +49,12 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
   }
 
   public SyncResult sync() {
-    Matcher matcher = Matcher.create(proxyClient);
+    Matcher matcher = Matcher.create(ihProxyClient);
     SyncResult.SyncResultBuilder resultBuilder = SyncResult.builder();
 
     // do the sync
     log.info("Starting the sync");
-    proxyClient
+    ihProxyClient
         .getIhInstitutions()
         .forEach(
             ihInstitution -> {
@@ -90,8 +89,7 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
       syncResultBuilder.instAndCollMatch(handleInstAndCollMatch(matchResult));
     } else {
       issueNotifier.createConflict(matchResult.getAllMatches(), matchResult.getSource());
-      syncResultBuilder.conflict(
-          new Conflict(matchResult.getSource(), matchResult.getAllMatches()));
+      syncResultBuilder.conflict(handleConflict(matchResult));
     }
   }
 

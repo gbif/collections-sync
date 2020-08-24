@@ -184,7 +184,7 @@ public class Matcher {
       }
     }
 
-    return Collections.singleton(bestMatch);
+    return bestMatch == null ? Collections.emptySet() : Collections.singleton(bestMatch);
   }
 
   private static Person comparePersonFieldCompleteness(Person p1, Person p2) {

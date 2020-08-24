@@ -22,6 +22,7 @@ import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 
 import com.google.common.base.Strings;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -31,6 +32,7 @@ public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstituti
   private final IHEntityConverter entityConverter;
   private final IHProxyClient proxyClient;
 
+  @Builder
   public IHStaffMatchResultHandler(
       IHConfig ihConfig, IHProxyClient proxyClient, IHEntityConverter entityConverter) {
     issueNotifier = IHIssueNotifier.create(ihConfig);

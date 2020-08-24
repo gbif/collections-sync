@@ -10,9 +10,9 @@ import org.gbif.api.model.registry.LenientEquals;
 import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.model.registry.MachineTaggable;
 import org.gbif.collections.sync.SyncResult.FailedAction;
-import org.gbif.collections.sync.config.SyncConfig;
-import org.gbif.collections.sync.clients.proxy.CallExecutor;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
+import org.gbif.collections.sync.clients.proxy.CallExecutor;
+import org.gbif.collections.sync.config.SyncConfig;
 
 public abstract class BaseEntityHandler<
         T extends LenientEquals<T> & CollectionEntity & Identifiable & MachineTaggable>
@@ -23,8 +23,8 @@ public abstract class BaseEntityHandler<
 
   public BaseEntityHandler(SyncConfig syncConfig) {
     this.callExecutor = new CallExecutor(syncConfig);
-    if (syncConfig != null) {
-      this.grSciCollHttpClient = GrSciCollHttpClient.getInstance(syncConfig);
+    if (syncConfig != null && syncConfig.getRegistry() != null) {
+      this.grSciCollHttpClient = GrSciCollHttpClient.getInstance(syncConfig.getRegistry());
     }
   }
 
@@ -34,8 +34,7 @@ public abstract class BaseEntityHandler<
       // check if we need to update the entity
       if (!newEntity.lenientEquals(oldEntity)) {
         callExecutor.executeOrAddFail(
-            () -> updateCall(newEntity),
-            exceptionHandler(newEntity, "Failed to update entity"));
+            () -> updateCall(newEntity), exceptionHandler(newEntity, "Failed to update entity"));
       }
       // create identifiers and machine tags if needed
       callExecutor.executeOrAddFailAsync(

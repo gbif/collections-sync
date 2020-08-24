@@ -12,7 +12,7 @@ public class NotificationProxyClient {
 
   private NotificationProxyClient(SyncConfig config) {
     this.callExecutor = new CallExecutor(config);
-    if (config != null) {
+    if (config != null && config.isSendNotifications()) {
       githubClient = GithubClient.getInstance(config.getNotification());
     }
   }

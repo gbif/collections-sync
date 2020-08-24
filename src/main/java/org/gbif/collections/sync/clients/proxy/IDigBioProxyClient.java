@@ -1,7 +1,9 @@
 package org.gbif.collections.sync.clients.proxy;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -11,8 +13,9 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.common.DataLoader;
-import org.gbif.collections.sync.common.DataLoader.GrSciCollData;
 import org.gbif.collections.sync.config.IDigBioConfig;
+import org.gbif.collections.sync.idigbio.IDigBioDataLoader.IDigBioData;
+import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -21,7 +24,8 @@ import lombok.Getter;
 public class IDigBioProxyClient extends BaseProxyClient {
 
   private final IDigBioConfig iDigBioConfig;
-  private final DataLoader dataLoader;
+  private final DataLoader<IDigBioData> dataLoader;
+  private List<IDigBioRecord> iDigBioRecords = new ArrayList<>();
   private Map<UUID, Institution> institutionsByKey = new HashMap<>();
   private Map<UUID, Collection> collectionsByKey = new HashMap<>();
   private Map<UUID, Person> personsByKey = new HashMap<>();
@@ -33,19 +37,15 @@ public class IDigBioProxyClient extends BaseProxyClient {
   private Set<Person> persons = new HashSet<>();
 
   @Builder
-  public IDigBioProxyClient(IDigBioConfig iDigBioConfig, DataLoader dataLoader) {
+  public IDigBioProxyClient(IDigBioConfig iDigBioConfig, DataLoader<IDigBioData> dataLoader) {
     super(iDigBioConfig.getSyncConfig());
     this.iDigBioConfig = iDigBioConfig;
-    if (dataLoader != null) {
-      this.dataLoader = dataLoader;
-    } else {
-      this.dataLoader = DataLoader.create(iDigBioConfig.getSyncConfig());
-    }
+    this.dataLoader = dataLoader;
     loadData();
   }
 
   private void loadData() {
-    GrSciCollData data = dataLoader.fetchGrSciCollData();
+    IDigBioData data = dataLoader.loadData();
     institutionsByKey =
         data.getInstitutions().stream().collect(Collectors.toMap(Institution::getKey, i -> i));
     collectionsByKey =
@@ -57,7 +57,8 @@ public class IDigBioProxyClient extends BaseProxyClient {
             .collect(
                 Collectors.groupingBy(
                     Collection::getInstitutionKey, HashMap::new, Collectors.toSet()));
-    this.persons = new HashSet<>(persons);
+    this.persons = new HashSet<>(data.getPersons());
+    this.iDigBioRecords = data.getIDigBioRecords();
   }
 
   @Override

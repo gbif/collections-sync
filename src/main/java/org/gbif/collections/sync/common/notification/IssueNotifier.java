@@ -35,7 +35,7 @@ public abstract class IssueNotifier {
         return url;
       };
 
-  protected final SyncConfig.NotificationConfig notificationConfig;
+  protected SyncConfig.NotificationConfig notificationConfig;
   protected final NotificationProxyClient notificationProxyClient;
   protected final String syncTimestampLabel;
   private final String registryInstitutionLink;

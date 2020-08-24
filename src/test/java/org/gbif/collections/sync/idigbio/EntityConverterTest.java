@@ -20,8 +20,8 @@ import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 import org.junit.Test;
 
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
 import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
@@ -30,10 +30,12 @@ import static org.junit.Assert.assertTrue;
 /** Tests the {@link IDigBioEntityConverter}. */
 public class EntityConverterTest {
 
+  private final IDigBioEntityConverter entityConverter = IDigBioEntityConverter.create();
+
   @Test
   public void convertToInstitutionTest() {
     IDigBioRecord iDigBioRecord = createIDigBioInstitution();
-    Institution institutionConverted = IDigBioEntityConverter.convertToInstitution(iDigBioRecord);
+    Institution institutionConverted = entityConverter.convertToInstitution(iDigBioRecord);
 
     assertEquals(iDigBioRecord.getInstitutionCode(), institutionConverted.getCode());
     assertEquals(iDigBioRecord.getInstitution(), institutionConverted.getName());
@@ -49,7 +51,7 @@ public class EntityConverterTest {
     Institution existing = createInstitution();
 
     Institution institutionConverted =
-        IDigBioEntityConverter.convertToInstitution(existing, iDigBioRecord);
+        entityConverter.convertToInstitution(iDigBioRecord, existing);
 
     assertEquals(iDigBioRecord.getInstitutionCode(), institutionConverted.getCode());
     assertEquals(iDigBioRecord.getInstitution(), institutionConverted.getName());
@@ -65,7 +67,7 @@ public class EntityConverterTest {
     iDigBioRecord = createIDigBioInstitution();
     iDigBioRecord.setModifiedDate(LocalDateTime.now().minusDays(1));
 
-    institutionConverted = IDigBioEntityConverter.convertToInstitution(existing, iDigBioRecord);
+    institutionConverted = entityConverter.convertToInstitution(iDigBioRecord, existing);
     assertEquals(existing.getName(), institutionConverted.getName());
     assertEquals(existing.getLongitude(), institutionConverted.getLongitude());
     assertEquals(existing.getLatitude(), institutionConverted.getLatitude());
@@ -81,7 +83,7 @@ public class EntityConverterTest {
     existing.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, "1234"));
 
     Institution institutionConverted =
-        IDigBioEntityConverter.convertToInstitution(existing, iDigBioRecord);
+        entityConverter.convertToInstitution(iDigBioRecord, existing);
 
     assertEquals(existing.getCode(), institutionConverted.getCode());
     assertEquals(existing.getName(), institutionConverted.getName());
@@ -100,7 +102,7 @@ public class EntityConverterTest {
 
     Institution inst = new Institution();
     inst.setKey(UUID.randomUUID());
-    Collection collectionConverted = IDigBioEntityConverter.convertToCollection(iDigBioRecord, inst);
+    Collection collectionConverted = entityConverter.convertToCollection(iDigBioRecord, inst);
 
     assertEquals(inst.getKey(), collectionConverted.getInstitutionKey());
     assertTrue(collectionConverted.getDescription().contains(iDigBioRecord.getDescription()));
@@ -131,7 +133,7 @@ public class EntityConverterTest {
     Institution inst = new Institution();
     inst.setKey(UUID.randomUUID());
     Collection collectionConverted =
-        IDigBioEntityConverter.convertToCollection(existing, iDigBioRecord, inst);
+        entityConverter.convertToCollection(iDigBioRecord, existing, inst);
 
     assertEquals(inst.getKey(), collectionConverted.getInstitutionKey());
     assertTrue(collectionConverted.getDescription().contains(iDigBioRecord.getDescription()));
@@ -158,7 +160,7 @@ public class EntityConverterTest {
     existing.setModified(Date.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)));
     iDigBioRecord = createIDigBioCollection();
     iDigBioRecord.setModifiedDate(LocalDateTime.now().minusDays(1));
-    collectionConverted = IDigBioEntityConverter.convertToCollection(existing, iDigBioRecord);
+    collectionConverted = entityConverter.convertToCollection(iDigBioRecord, existing);
 
     assertEquals(existing.getDescription(), collectionConverted.getDescription());
     assertEquals(existing.getCatalogUrl(), collectionConverted.getCatalogUrl());
@@ -182,7 +184,7 @@ public class EntityConverterTest {
     Institution inst = new Institution();
     inst.setKey(UUID.randomUUID());
     Collection collectionConverted =
-        IDigBioEntityConverter.convertToCollection(existing, iDigBioRecord, inst);
+        entityConverter.convertToCollection(iDigBioRecord, existing, inst);
 
     assertEquals(inst.getKey(), collectionConverted.getInstitutionKey());
     assertTrue(collectionConverted.getDescription().contains(iDigBioRecord.getDescription()));
@@ -210,7 +212,7 @@ public class EntityConverterTest {
     iDigBioRecord.setContactEmail("aa@aa.com");
     iDigBioRecord.setContactRole("role");
 
-    Person personConverted = IDigBioEntityConverter.convertToPerson(iDigBioRecord);
+    Person personConverted = entityConverter.convertToPerson(iDigBioRecord);
 
     assertEquals(iDigBioRecord.getContact(), personConverted.getFirstName());
     assertEquals(iDigBioRecord.getContactEmail(), personConverted.getEmail());
@@ -230,7 +232,7 @@ public class EntityConverterTest {
     existing.setPosition("pos");
     existing.setPhone("123456");
 
-    Person personConverted = IDigBioEntityConverter.convertToPerson(existing, iDigBioRecord);
+    Person personConverted = entityConverter.convertToPerson(iDigBioRecord, existing);
 
     assertEquals(iDigBioRecord.getContact(), personConverted.getFirstName());
     assertEquals(iDigBioRecord.getContactEmail(), personConverted.getEmail());
@@ -253,7 +255,7 @@ public class EntityConverterTest {
     existing.setPhone("123456");
     existing.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, "1234"));
 
-    Person personConverted = IDigBioEntityConverter.convertToPerson(existing, iDigBioRecord);
+    Person personConverted = entityConverter.convertToPerson(iDigBioRecord, existing);
 
     assertEquals(existing, personConverted);
   }
@@ -419,11 +421,14 @@ public class EntityConverterTest {
     col.getIdentifiers().add(i2);
 
     assertFalse(
-        IDigBioEntityConverter.addIdentifierIfNotExists(col, new Identifier(IdentifierType.LSID, "lsid")));
+        IDigBioEntityConverter.addIdentifierIfNotExists(
+            col, new Identifier(IdentifierType.LSID, "lsid")));
     assertTrue(
-        IDigBioEntityConverter.addIdentifierIfNotExists(col, new Identifier(IdentifierType.URI, "lsid")));
+        IDigBioEntityConverter.addIdentifierIfNotExists(
+            col, new Identifier(IdentifierType.URI, "lsid")));
     assertTrue(
-        IDigBioEntityConverter.addIdentifierIfNotExists(col, new Identifier(IdentifierType.URI, "other")));
+        IDigBioEntityConverter.addIdentifierIfNotExists(
+            col, new Identifier(IdentifierType.URI, "other")));
   }
 
   @Test
@@ -436,10 +441,13 @@ public class EntityConverterTest {
     col.getMachineTags().add(mt2);
 
     assertFalse(
-        IDigBioEntityConverter.addMachineTagIfNotExists(col, new MachineTag("ns", "name", "value")));
+        IDigBioEntityConverter.addMachineTagIfNotExists(
+            col, new MachineTag("ns", "name", "value")));
     assertTrue(
-        IDigBioEntityConverter.addMachineTagIfNotExists(col, new MachineTag("ns", "other", "value")));
+        IDigBioEntityConverter.addMachineTagIfNotExists(
+            col, new MachineTag("ns", "other", "value")));
     assertTrue(
-        IDigBioEntityConverter.addMachineTagIfNotExists(col, new MachineTag("ns", "name", "value3")));
+        IDigBioEntityConverter.addMachineTagIfNotExists(
+            col, new MachineTag("ns", "name", "value3")));
   }
 }

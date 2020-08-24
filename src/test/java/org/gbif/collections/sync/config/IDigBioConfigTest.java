@@ -1,10 +1,9 @@
-package org.gbif.collections.sync;
+package org.gbif.collections.sync.config;
 
 import java.nio.file.Paths;
 import java.util.Collections;
 
-import org.gbif.collections.sync.config.IDigBioConfig;
-import org.gbif.collections.sync.config.IHConfig;
+import org.gbif.collections.sync.CliSyncArgs;
 
 import org.junit.Test;
 
@@ -24,7 +23,7 @@ public class IDigBioConfigTest {
     IDigBioConfig config = IDigBioConfig.fromFileName(path);
 
     assertNotNull(config);
-    assertNotNull(config.getSyncConfig().getRegistryWsUrl());
+    assertNotNull(config.getSyncConfig().getRegistry().getRegistryWsUrl());
     assertTrue(config.getSyncConfig().isSaveResultsToFile());
     assertTrue(config.getSyncConfig().isDryRun());
     assertTrue(config.getSyncConfig().isSendNotifications());
@@ -46,7 +45,7 @@ public class IDigBioConfigTest {
     assertNotNull(config);
     assertNotNull(config.getIDigBioPortalUrl());
     assertNotNull(config.getExportFilePath());
-    assertNotNull(config.getSyncConfig().getRegistryWsUrl());
+    assertNotNull(config.getSyncConfig().getRegistry().getRegistryWsUrl());
     assertTrue(config.getSyncConfig().isSaveResultsToFile());
     assertFalse(config.getSyncConfig().isDryRun());
     assertTrue(config.getSyncConfig().isSendNotifications());

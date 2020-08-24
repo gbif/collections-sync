@@ -6,6 +6,7 @@ import java.util.Collections;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.collections.sync.SyncResult.CollectionOnlyMatch;
+import org.gbif.collections.sync.SyncResult.Conflict;
 import org.gbif.collections.sync.SyncResult.EntityMatch;
 import org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
 import org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
@@ -15,6 +16,8 @@ import org.gbif.collections.sync.clients.proxy.GrSciCollProxyClient;
 import org.gbif.collections.sync.common.converter.EntityConverter;
 import org.gbif.collections.sync.common.match.MatchResult;
 import org.gbif.collections.sync.common.match.StaffResultHandler;
+
+import com.google.common.annotations.VisibleForTesting;
 
 public abstract class BaseSynchronizer<S, R> {
 
@@ -61,6 +64,7 @@ public abstract class BaseSynchronizer<S, R> {
     return proxyClient.createCollection(newCollection);
   }
 
+  @VisibleForTesting
   public CollectionOnlyMatch handleCollectionMatch(MatchResult<S, R> matchResult) {
     EntityMatch<Collection> entityMatch =
         updateCollection(
@@ -76,6 +80,7 @@ public abstract class BaseSynchronizer<S, R> {
         .build();
   }
 
+  @VisibleForTesting
   public InstitutionOnlyMatch handleInstitutionMatch(MatchResult<S, R> matchResult) {
     EntityMatch<Institution> institutionEntityMatch =
         updateInstitution(
@@ -97,6 +102,7 @@ public abstract class BaseSynchronizer<S, R> {
         .build();
   }
 
+  @VisibleForTesting
   public InstitutionAndCollectionMatch handleInstAndCollMatch(MatchResult<S, R> matchResult) {
     // update institution
     EntityMatch<Institution> institutionEntityMatch =
@@ -123,6 +129,7 @@ public abstract class BaseSynchronizer<S, R> {
         .build();
   }
 
+  @VisibleForTesting
   public NoEntityMatch handleNoMatch(MatchResult<S, R> matchResult) {
     // create institution
     Institution newInstitution = entityConverter.convertToInstitution(matchResult.getSource());
@@ -142,5 +149,10 @@ public abstract class BaseSynchronizer<S, R> {
         .newInstitution(createdInstitution)
         .staffMatch(staffMatch)
         .build();
+  }
+
+  @VisibleForTesting
+  public Conflict handleConflict(MatchResult<S, R> matchResult) {
+    return new Conflict(matchResult.getSource(), matchResult.getAllMatches());
   }
 }

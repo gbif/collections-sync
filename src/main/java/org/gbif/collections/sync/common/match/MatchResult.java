@@ -2,7 +2,9 @@ package org.gbif.collections.sync.common.match;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.BiFunction;
 
 import org.gbif.api.model.collections.Collection;
@@ -49,6 +51,10 @@ public interface MatchResult<S, R> {
     // check that the collection belongs to the institution
     Institution institution = getInstitutionMatches().iterator().next();
     Collection collection = getCollectionMatches().iterator().next();
-    return institution.getKey().equals(collection.getInstitutionKey());
+
+    UUID institutionKey = institution != null ? institution.getKey() : null;
+    UUID collectionInstitutionKey = collection != null ? collection.getInstitutionKey() : null;
+
+    return Objects.equals(institutionKey, collectionInstitutionKey);
   }
 }

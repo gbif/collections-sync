@@ -19,13 +19,20 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SyncConfig {
 
-  private String registryWsUrl;
-  private String registryWsUser;
-  private String registryWsPassword;
-  private NotificationConfig notification = new NotificationConfig();
+  private RegistryConfig registry;
+  private NotificationConfig notification;
   private boolean saveResultsToFile;
-  private boolean dryRun;
+  private boolean dryRun = true;
   private boolean sendNotifications;
+
+  @Getter
+  @Setter
+  @EqualsAndHashCode
+  public static class RegistryConfig {
+    private String registryWsUrl;
+    private String registryWsUser;
+    private String registryWsPassword;
+  }
 
   @Getter
   @Setter
@@ -56,13 +63,15 @@ public class SyncConfig {
 
   protected static void validateSyncConfig(SyncConfig config) {
     // do some checks for required fields
-    if (Strings.isNullOrEmpty(config.getRegistryWsUrl())) {
+    if (config.getRegistry() == null
+        || Strings.isNullOrEmpty(config.getRegistry().getRegistryWsUrl())) {
       throw new IllegalArgumentException("Registry URL is required");
     }
 
     if (!config.isDryRun()
-        && (Strings.isNullOrEmpty(config.getRegistryWsUser())
-            || Strings.isNullOrEmpty(config.getRegistryWsPassword()))) {
+        && (config.getRegistry() == null
+            || (Strings.isNullOrEmpty(config.getRegistry().getRegistryWsUser())
+                || Strings.isNullOrEmpty(config.getRegistry().getRegistryWsPassword())))) {
       throw new IllegalArgumentException(
           "Registry WS credentials are required if we are not doing a dry run");
     }

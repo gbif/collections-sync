@@ -59,6 +59,9 @@ public class Utils {
   }
 
   public static String removeUuidNamespace(String identifier) {
+    if (Strings.isNullOrEmpty(identifier)) {
+      return identifier;
+    }
     return identifier.replace("urn:uuid:", "");
   }
 

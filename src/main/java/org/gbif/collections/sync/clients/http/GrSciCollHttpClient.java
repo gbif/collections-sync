@@ -17,7 +17,7 @@ import org.gbif.api.model.common.paging.PagingResponse;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.vocabulary.Country;
-import org.gbif.collections.sync.config.SyncConfig;
+import org.gbif.collections.sync.config.SyncConfig.RegistryConfig;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
@@ -44,7 +44,7 @@ import static org.gbif.collections.sync.clients.http.SyncCall.syncCall;
 /** A lightweight GRSciColl client. */
 public class GrSciCollHttpClient {
 
-  private static final ConcurrentMap<SyncConfig, GrSciCollHttpClient> clientsMap =
+  private static final ConcurrentMap<RegistryConfig, GrSciCollHttpClient> clientsMap =
       new ConcurrentHashMap<>();
   private final API api;
 
@@ -81,17 +81,17 @@ public class GrSciCollHttpClient {
     api = retrofit.create(API.class);
   }
 
-  public static GrSciCollHttpClient getInstance(SyncConfig syncConfig) {
-    GrSciCollHttpClient client = clientsMap.get(syncConfig);
+  public static GrSciCollHttpClient getInstance(RegistryConfig registryConfig) {
+    GrSciCollHttpClient client = clientsMap.get(registryConfig);
     if (client != null) {
       return client;
     } else {
       GrSciCollHttpClient newClient =
           new GrSciCollHttpClient(
-              syncConfig.getRegistryWsUrl(),
-              syncConfig.getRegistryWsUser(),
-              syncConfig.getRegistryWsPassword());
-      clientsMap.put(syncConfig, newClient);
+              registryConfig.getRegistryWsUrl(),
+              registryConfig.getRegistryWsUser(),
+              registryConfig.getRegistryWsPassword());
+      clientsMap.put(registryConfig, newClient);
       return newClient;
     }
   }

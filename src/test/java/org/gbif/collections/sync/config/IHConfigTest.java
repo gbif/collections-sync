@@ -1,9 +1,9 @@
-package org.gbif.collections.sync;
+package org.gbif.collections.sync.config;
 
 import java.nio.file.Paths;
 import java.util.Collections;
 
-import org.gbif.collections.sync.config.IHConfig;
+import org.gbif.collections.sync.CliSyncArgs;
 
 import org.junit.Test;
 
@@ -23,7 +23,7 @@ public class IHConfigTest {
     IHConfig config = IHConfig.fromFileName(path);
 
     assertNotNull(config);
-    assertNotNull(config.getSyncConfig().getRegistryWsUrl());
+    assertNotNull(config.getSyncConfig().getRegistry().getRegistryWsUrl());
     assertTrue(config.getSyncConfig().isSaveResultsToFile());
     assertTrue(config.getSyncConfig().isDryRun());
     assertTrue(config.getSyncConfig().isSendNotifications());
@@ -44,7 +44,7 @@ public class IHConfigTest {
     IHConfig config = IHConfig.fromCliArgs(cliArgs);
 
     assertNotNull(config);
-    assertNotNull(config.getSyncConfig().getRegistryWsUrl());
+    assertNotNull(config.getSyncConfig().getRegistry().getRegistryWsUrl());
     assertNotNull(config.getIhWsUrl());
     assertTrue(config.getSyncConfig().isSaveResultsToFile());
     assertFalse(config.getSyncConfig().isDryRun());

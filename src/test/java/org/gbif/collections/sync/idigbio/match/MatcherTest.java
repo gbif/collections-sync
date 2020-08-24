@@ -7,6 +7,11 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.vocabulary.IdentifierType;
+import org.gbif.collections.sync.clients.proxy.IDigBioProxyClient;
+import org.gbif.collections.sync.common.DataLoader;
+import org.gbif.collections.sync.idigbio.BaseIDigBioTest;
+import org.gbif.collections.sync.idigbio.IDigBioDataLoader.IDigBioData;
+import org.gbif.collections.sync.idigbio.TestDataLoader;
 import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 import org.junit.Test;
@@ -16,7 +21,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /** Tests the {@link Matcher}. */
-public class MatcherTest {
+public class MatcherTest extends BaseIDigBioTest {
 
   @Test
   public void matchContactTest() {
@@ -30,20 +35,22 @@ public class MatcherTest {
     existing.setPosition("pos");
     existing.setPhone("123456");
 
-    MatchData matchData =
-        MatchData.builder()
+    DataLoader<IDigBioData> dataLoader =
+        TestDataLoader.builder()
             .persons(Collections.singletonList(existing))
             .institutions(Collections.emptyList())
             .collections(Collections.emptyList())
             .build();
-    Matcher matcher = new Matcher(matchData);
+    IDigBioProxyClient proxyClient =
+        IDigBioProxyClient.builder().dataLoader(dataLoader).iDigBioConfig(iDigBioConfig).build();
+    Matcher matcher = new Matcher(proxyClient);
 
-    assertFalse(matcher.matchContact(iDigBioRecord, Collections.emptySet()).isPresent());
+    assertTrue(matcher.matchContact(iDigBioRecord, Collections.emptySet()).isEmpty());
 
     existing.setFirstName(iDigBioRecord.getContact());
     existing.setEmail(iDigBioRecord.getContactEmail());
     existing.setPosition(iDigBioRecord.getContactRole());
-    assertTrue(matcher.matchContact(iDigBioRecord, Collections.emptySet()).isPresent());
+    assertFalse(matcher.matchContact(iDigBioRecord, Collections.emptySet()).isEmpty());
   }
 
   @Test
