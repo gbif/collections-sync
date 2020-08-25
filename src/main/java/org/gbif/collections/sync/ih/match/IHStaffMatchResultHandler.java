@@ -35,7 +35,7 @@ public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstituti
   @Builder
   public IHStaffMatchResultHandler(
       IHConfig ihConfig, IHProxyClient proxyClient, IHEntityConverter entityConverter) {
-    issueNotifier = IHIssueNotifier.create(ihConfig);
+    issueNotifier = IHIssueNotifier.getInstance(ihConfig);
     this.entityConverter = entityConverter;
     this.proxyClient = proxyClient;
   }

@@ -2,19 +2,19 @@ package org.gbif.collections.sync.idigbio;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.UnaryOperator;
 
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Person;
-import org.gbif.collections.sync.config.IDigBioConfig;
-import org.gbif.collections.sync.config.SyncConfig;
-import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 import org.gbif.collections.sync.common.notification.Issue;
 import org.gbif.collections.sync.common.notification.IssueNotifier;
+import org.gbif.collections.sync.config.IDigBioConfig;
+import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +29,9 @@ public class IDigBioIssueNotifier extends IssueNotifier {
   private static final String INVALID_ENTITIES_TITLE = "Invalid iDigBio entities";
   private static final String ENTITY_CONFLICT_TITLE =
       "%s with UUID %s matches with multiple GrSciColl entities";
+
+  private static final ConcurrentMap<IDigBioConfig, IDigBioIssueNotifier> notifiersMap =
+      new ConcurrentHashMap<>();
 
   private static final UnaryOperator<String> PORTAL_URL_NORMALIZER =
       url -> {
@@ -46,18 +49,15 @@ public class IDigBioIssueNotifier extends IssueNotifier {
         PORTAL_URL_NORMALIZER.apply(iDigBioConfig.getIDigBioPortalUrl()) + "/%s";
   }
 
-  public static IDigBioIssueNotifier create(IDigBioConfig iDigBioConfig) {
-    return new IDigBioIssueNotifier(iDigBioConfig);
-  }
-
-  public static IDigBioIssueNotifier fromDefaults() {
-    SyncConfig.NotificationConfig notificationConfig = new SyncConfig.NotificationConfig();
-    notificationConfig.setGhIssuesAssignees(Collections.emptySet());
-    SyncConfig syncConfig = new SyncConfig();
-    syncConfig.setNotification(notificationConfig);
-    IDigBioConfig iDigBioConfig = new IDigBioConfig();
-    iDigBioConfig.setSyncConfig(syncConfig);
-    return new IDigBioIssueNotifier(iDigBioConfig);
+  public static IDigBioIssueNotifier getInstance(IDigBioConfig iDigBioConfig) {
+    IDigBioIssueNotifier instance = notifiersMap.get(iDigBioConfig);
+    if (instance != null) {
+      return instance;
+    } else {
+      IDigBioIssueNotifier newInstance = new IDigBioIssueNotifier(iDigBioConfig);
+      notifiersMap.put(iDigBioConfig, newInstance);
+      return newInstance;
+    }
   }
 
   public void createConflict(List<CollectionEntity> entities, IDigBioRecord iDigBioRecord) {

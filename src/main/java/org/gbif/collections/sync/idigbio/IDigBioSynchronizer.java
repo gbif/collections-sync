@@ -29,7 +29,7 @@ public class IDigBioSynchronizer extends BaseSynchronizer<IDigBioRecord, IDigBio
       IDigBioEntityConverter entityConverter) {
     super(proxyClient, staffResultHandler, entityConverter);
     this.iDigBioPoxyClient = proxyClient;
-    this.issueNotifier = IDigBioIssueNotifier.create(proxyClient.getIDigBioConfig());
+    this.issueNotifier = IDigBioIssueNotifier.getInstance(proxyClient.getIDigBioConfig());
   }
 
   @Builder

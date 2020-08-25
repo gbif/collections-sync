@@ -7,6 +7,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -18,11 +20,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CallExecutor {
 
+  private static final ConcurrentMap<SyncConfig, CallExecutor> executorsMap =
+      new ConcurrentHashMap<>();
+
   private final boolean dryRun;
   private final boolean sendNotifications;
   private Path failedActionsPath;
 
-  public CallExecutor(SyncConfig syncConfig) {
+  private CallExecutor(SyncConfig syncConfig) {
     if (syncConfig != null) {
       this.dryRun = syncConfig.isDryRun();
       this.sendNotifications = syncConfig.isSendNotifications();
@@ -33,6 +38,17 @@ public class CallExecutor {
 
     log.info(
         "Call Executor created with dryRun {} and sendNotifications {}", dryRun, sendNotifications);
+  }
+
+  public static CallExecutor getInstance(SyncConfig config) {
+    CallExecutor instance = executorsMap.get(config);
+    if (instance != null) {
+      return instance;
+    } else {
+      CallExecutor newInstance = new CallExecutor(config);
+      executorsMap.put(config, newInstance);
+      return newInstance;
+    }
   }
 
   public void executeOrAddFailAsync(

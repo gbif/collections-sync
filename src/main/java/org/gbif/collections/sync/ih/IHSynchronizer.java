@@ -29,7 +29,7 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
       IHEntityConverter entityConverter) {
     super(proxyClient, staffResultHandler, entityConverter);
     this.ihProxyClient = proxyClient;
-    this.issueNotifier = IHIssueNotifier.create(proxyClient.getIhConfig());
+    this.issueNotifier = IHIssueNotifier.getInstance(proxyClient.getIhConfig());
   }
 
   @Builder

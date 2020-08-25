@@ -45,7 +45,7 @@ pipeline {
                 -c gbif-configuration/collections-sync/${params.ENV.toLowerCase()}/ih-config.yaml \
                 ${CLI_ARGS}
           """
-          archiveArtifacts artifacts: 'ih_sync_result_*', fingerprint: true, allowEmptyArchive: true
+          archiveArtifacts artifacts: 'ih_sync_result_*,failed_actions_*', fingerprint: true, allowEmptyArchive: true
         }
       }
     }

@@ -40,7 +40,7 @@ pipeline {
       when {
         allOf {
           not { expression { params.RELEASE } }
-          branch 'master';
+//          branch 'master';
         }
       }
       steps {

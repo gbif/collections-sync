@@ -6,16 +6,18 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Person;
+import org.gbif.collections.sync.common.notification.Issue;
+import org.gbif.collections.sync.common.notification.IssueNotifier;
 import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.config.SyncConfig;
 import org.gbif.collections.sync.ih.model.IHEntity;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
-import org.gbif.collections.sync.common.notification.Issue;
-import org.gbif.collections.sync.common.notification.IssueNotifier;
 
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,9 @@ public class IHIssueNotifier extends IssueNotifier {
   private static final String ENTITY_CONFLICT_TITLE =
       "IH %s with IRN %s matches with multiple GrSciColl entities";
 
+  private static final ConcurrentMap<IHConfig, IHIssueNotifier> notifiersMap =
+      new ConcurrentHashMap<>();
+
   private final String ihInstitutionLink;
   private final String ihStaffLink;
 
@@ -40,8 +45,15 @@ public class IHIssueNotifier extends IssueNotifier {
         PORTAL_URL_NORMALIZER.apply(config.getIhPortalUrl()) + "/ih/person-details/?irn=%s";
   }
 
-  public static IHIssueNotifier create(IHConfig config) {
-    return new IHIssueNotifier(config);
+  public static IHIssueNotifier getInstance(IHConfig config) {
+    IHIssueNotifier instance = notifiersMap.get(config);
+    if (instance != null) {
+      return instance;
+    } else {
+      IHIssueNotifier newInstance = new IHIssueNotifier(config);
+      notifiersMap.put(config, newInstance);
+      return newInstance;
+    }
   }
 
   public static IHIssueNotifier fromDefaults() {

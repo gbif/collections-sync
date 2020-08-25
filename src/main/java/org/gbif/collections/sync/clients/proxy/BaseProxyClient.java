@@ -22,7 +22,7 @@ public abstract class BaseProxyClient implements GrSciCollProxyClient {
   protected PersonHandler personHandler;
 
   public BaseProxyClient(SyncConfig syncConfig) {
-    this.callExecutor = new CallExecutor(syncConfig);
+    this.callExecutor = CallExecutor.getInstance(syncConfig);
     if (syncConfig != null && syncConfig.getRegistry() != null) {
       grSciCollHttpClient = GrSciCollHttpClient.getInstance(syncConfig.getRegistry());
     }
