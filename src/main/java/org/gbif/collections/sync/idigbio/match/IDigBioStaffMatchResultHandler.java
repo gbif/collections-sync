@@ -72,7 +72,8 @@ public class IDigBioStaffMatchResultHandler
               .merged(mergedPerson)
               .update(updated)
               .build();
-      Person updatedPerson = proxyClient.getPersonsByKey().get(mergedPerson.getKey());
+      Person updatedPerson =
+          proxyClient.getPersonsByKey().getOrDefault(mergedPerson.getKey(), mergedPerson);
 
       // add to the entity if needed
       proxyClient.linkPersonToEntity(updatedPerson, entities);

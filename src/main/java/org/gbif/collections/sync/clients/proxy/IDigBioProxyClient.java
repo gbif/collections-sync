@@ -125,16 +125,25 @@ public class IDigBioProxyClient extends BaseProxyClient {
   public void addNewPersonInMemory(Person person) {
     if (person != null) {
       persons.add(person);
+      if (person.getKey() != null) {
+        personsByKey.put(person.getKey(), person);
+      }
     }
   }
 
   public void updatePersonInMemory(Person oldPerson, Person updatedPerson) {
     if (oldPerson != null) {
       persons.remove(oldPerson);
+      if (oldPerson.getKey() != null) {
+        personsByKey.remove(oldPerson.getKey());
+      }
     }
     if (updatedPerson != null) {
       updatedPerson = personHandler.get(updatedPerson);
       persons.add(updatedPerson);
+      if (updatedPerson.getKey() != null) {
+        personsByKey.replace(updatedPerson.getKey(), updatedPerson);
+      }
     }
   }
 

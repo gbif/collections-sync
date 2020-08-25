@@ -47,9 +47,9 @@ public class Matcher {
     if (institutionMatch == null) {
       institutionMatch = matchWithNewInstitutions(iDigBioRecord);
     }
-    result.institutionMatched(institutionMatch);
 
     if (institutionMatch != null) {
+      result.institutionMatched(institutionMatch);
       // we try to find a match among the institution collections
       matchCollection(institutionMatch.getKey(), iDigBioRecord)
           .ifPresent(result::collectionMatched);

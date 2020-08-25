@@ -450,4 +450,18 @@ public class EntityConverterTest {
         IDigBioEntityConverter.addMachineTagIfNotExists(
             col, new MachineTag("ns", "name", "value3")));
   }
+
+  @Test
+  public void multipleCodesTest() {
+    IDigBioRecord r1 = new IDigBioRecord();
+    r1.setCollectionCode("A,B,C");
+    r1.setCollection("Coll 1");
+
+    Institution i = new Institution();
+    i.setKey(UUID.randomUUID());
+
+    Collection result = entityConverter.convertToCollection(r1, i);
+    assertEquals("A", result.getCode());
+    assertEquals(2, result.getAlternativeCodes().size());
+  }
 }

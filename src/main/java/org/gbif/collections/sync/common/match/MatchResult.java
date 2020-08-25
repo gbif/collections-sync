@@ -26,8 +26,12 @@ public interface MatchResult<S, R> {
 
   default List<CollectionEntity> getAllMatches() {
     List<CollectionEntity> all = new ArrayList<>();
-    all.addAll(getInstitutionMatches());
-    all.addAll(getCollectionMatches());
+    if (getInstitutionMatches() != null) {
+      all.addAll(getInstitutionMatches());
+    }
+    if (getCollectionMatches() != null) {
+      all.addAll(getCollectionMatches());
+    }
     return all;
   }
 

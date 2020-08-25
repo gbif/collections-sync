@@ -45,12 +45,17 @@ public class Utils {
       return mapByIrn;
     }
 
-    entities.forEach(
-        o ->
-            o.getIdentifiers().stream()
-                .filter(i -> i.getType() == IdentifierType.IH_IRN)
-                .forEach(
-                    i -> mapByIrn.computeIfAbsent(i.getIdentifier(), s -> new HashSet<>()).add(o)));
+    entities.stream()
+        .filter(o -> o.getIdentifiers() != null)
+        .forEach(
+            o ->
+                o.getIdentifiers().stream()
+                    .filter(i -> i.getType() == IdentifierType.IH_IRN)
+                    .forEach(
+                        i ->
+                            mapByIrn
+                                .computeIfAbsent(i.getIdentifier(), s -> new HashSet<>())
+                                .add(o)));
     return mapByIrn;
   }
 
