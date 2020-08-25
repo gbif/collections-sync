@@ -26,7 +26,6 @@ public class IHMatchResult implements MatchResult<IHInstitution, IHStaff> {
   @Singular(value = "collection")
   Set<Collection> collections;
 
-  // it's a bifunction just to make tests easier
   BiFunction<IHStaff, Set<Person>, Set<Person>> staffMatcher;
 
   @Override
