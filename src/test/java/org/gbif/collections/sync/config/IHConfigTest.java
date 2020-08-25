@@ -23,7 +23,7 @@ public class IHConfigTest {
     IHConfig config = IHConfig.fromFileName(path);
 
     assertNotNull(config);
-    assertNotNull(config.getSyncConfig().getRegistry().getRegistryWsUrl());
+    assertNotNull(config.getSyncConfig().getRegistry().getWsUrl());
     assertTrue(config.getSyncConfig().isSaveResultsToFile());
     assertTrue(config.getSyncConfig().isDryRun());
     assertTrue(config.getSyncConfig().isSendNotifications());
@@ -44,7 +44,7 @@ public class IHConfigTest {
     IHConfig config = IHConfig.fromCliArgs(cliArgs);
 
     assertNotNull(config);
-    assertNotNull(config.getSyncConfig().getRegistry().getRegistryWsUrl());
+    assertNotNull(config.getSyncConfig().getRegistry().getWsUrl());
     assertNotNull(config.getIhWsUrl());
     assertTrue(config.getSyncConfig().isSaveResultsToFile());
     assertFalse(config.getSyncConfig().isDryRun());

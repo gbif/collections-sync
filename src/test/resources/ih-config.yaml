@@ -2,7 +2,7 @@ ihWsUrl: http://test2.com/
 ihPortalUrl: https://c.com/
 syncConfig:
   registry:
-    registryWsUrl: http://test.com/
+    wsUrl: http://test.com/
   saveResultsToFile: true
   dryRun: true
   sendNotifications: true

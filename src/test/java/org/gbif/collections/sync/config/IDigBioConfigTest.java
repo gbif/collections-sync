@@ -23,7 +23,7 @@ public class IDigBioConfigTest {
     IDigBioConfig config = IDigBioConfig.fromFileName(path);
 
     assertNotNull(config);
-    assertNotNull(config.getSyncConfig().getRegistry().getRegistryWsUrl());
+    assertNotNull(config.getSyncConfig().getRegistry().getWsUrl());
     assertTrue(config.getSyncConfig().isSaveResultsToFile());
     assertTrue(config.getSyncConfig().isDryRun());
     assertTrue(config.getSyncConfig().isSendNotifications());
@@ -45,7 +45,7 @@ public class IDigBioConfigTest {
     assertNotNull(config);
     assertNotNull(config.getIDigBioPortalUrl());
     assertNotNull(config.getExportFilePath());
-    assertNotNull(config.getSyncConfig().getRegistry().getRegistryWsUrl());
+    assertNotNull(config.getSyncConfig().getRegistry().getWsUrl());
     assertTrue(config.getSyncConfig().isSaveResultsToFile());
     assertFalse(config.getSyncConfig().isDryRun());
     assertTrue(config.getSyncConfig().isSendNotifications());

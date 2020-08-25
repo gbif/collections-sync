@@ -88,9 +88,9 @@ public class GrSciCollHttpClient {
     } else {
       GrSciCollHttpClient newClient =
           new GrSciCollHttpClient(
-              registryConfig.getRegistryWsUrl(),
-              registryConfig.getRegistryWsUser(),
-              registryConfig.getRegistryWsPassword());
+              registryConfig.getWsUrl(),
+              registryConfig.getWsUser(),
+              registryConfig.getWsPassword());
       clientsMap.put(registryConfig, newClient);
       return newClient;
     }

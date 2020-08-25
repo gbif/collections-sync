@@ -15,7 +15,6 @@ import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 import org.junit.Test;
 
-import static org.gbif.collections.sync.TestUtils.assertEmptyStaffMatch;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -40,8 +39,7 @@ public class IDigBioSynchronizerTest extends BaseIDigBioTest {
     assertEquals(1, syncResult.getInstAndCollMatches().size());
     InstitutionAndCollectionMatch instAndCollMatch = syncResult.getInstAndCollMatches().get(0);
     assertEquals(1, instAndCollMatch.getStaffMatch().getMatchedPersons().size());
-    assertFalse(
-        instAndCollMatch.getStaffMatch().getMatchedPersons().iterator().next().isUpdate());
+    assertFalse(instAndCollMatch.getStaffMatch().getMatchedPersons().iterator().next().isUpdate());
 
     // assert no matches
     assertEquals(1, syncResult.getNoMatches().size());

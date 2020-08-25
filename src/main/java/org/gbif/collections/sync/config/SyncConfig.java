@@ -29,9 +29,9 @@ public class SyncConfig {
   @Setter
   @EqualsAndHashCode
   public static class RegistryConfig {
-    private String registryWsUrl;
-    private String registryWsUser;
-    private String registryWsPassword;
+    private String wsUrl;
+    private String wsUser;
+    private String wsPassword;
   }
 
   @Getter
@@ -63,15 +63,14 @@ public class SyncConfig {
 
   protected static void validateSyncConfig(SyncConfig config) {
     // do some checks for required fields
-    if (config.getRegistry() == null
-        || Strings.isNullOrEmpty(config.getRegistry().getRegistryWsUrl())) {
+    if (config.getRegistry() == null || Strings.isNullOrEmpty(config.getRegistry().getWsUrl())) {
       throw new IllegalArgumentException("Registry URL is required");
     }
 
     if (!config.isDryRun()
         && (config.getRegistry() == null
-            || (Strings.isNullOrEmpty(config.getRegistry().getRegistryWsUser())
-                || Strings.isNullOrEmpty(config.getRegistry().getRegistryWsPassword())))) {
+            || (Strings.isNullOrEmpty(config.getRegistry().getWsUser())
+                || Strings.isNullOrEmpty(config.getRegistry().getWsPassword())))) {
       throw new IllegalArgumentException(
           "Registry WS credentials are required if we are not doing a dry run");
     }
