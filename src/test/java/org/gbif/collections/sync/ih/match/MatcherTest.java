@@ -1,33 +1,37 @@
 package org.gbif.collections.sync.ih.match;
 
-import org.gbif.api.model.collections.Address;
-import org.gbif.api.model.collections.Person;
-import org.gbif.api.vocabulary.Country;
-import org.gbif.collections.sync.ih.model.IHStaff;
-import org.gbif.collections.sync.parsers.CountryParser;
-import org.gbif.collections.sync.staff.StaffNormalized;
-
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 
-import com.google.common.collect.Sets;
+import org.gbif.api.model.collections.Address;
+import org.gbif.api.model.collections.Person;
+import org.gbif.api.vocabulary.Country;
+import org.gbif.collections.sync.clients.proxy.IHProxyClient;
+import org.gbif.collections.sync.common.DataLoader;
+import org.gbif.collections.sync.common.staff.StaffNormalized;
+import org.gbif.collections.sync.ih.BaseIHTest;
+import org.gbif.collections.sync.ih.IHDataLoader.IHData;
+import org.gbif.collections.sync.ih.TestDataLoader;
+import org.gbif.collections.sync.ih.model.IHStaff;
+
 import org.junit.Test;
+
+import com.google.common.collect.Sets;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /** Tests the {@link Matcher}. */
-public class MatcherTest {
+public class MatcherTest extends BaseIHTest {
 
-  private static final CountryParser COUNTRY_PARSER =
-      CountryParser.from(Arrays.asList("U.K.", "U.S.A.", "United Kingdom", "United States"));
+  private final DataLoader<IHData> dataLoader =
+      TestDataLoader.builder().countries(COUNTRIES).build();
+  IHProxyClient proxyClient =
+      IHProxyClient.builder().dataLoader(dataLoader).ihConfig(ihConfig).build();
+  private final Matcher matcher = Matcher.create(proxyClient);
 
   @Test
   public void matchWithFieldsTest() {
-    Matcher matcher =
-        Matcher.builder().countryParser(COUNTRY_PARSER).ihStaff(Collections.emptyList()).build();
-
     // IH Staff
     IHStaff s = new IHStaff();
     s.setFirstName("First");
@@ -108,9 +112,6 @@ public class MatcherTest {
   /** Based on a real case. */
   @Test
   public void partialMatchInNamesTest() {
-    Matcher matcher =
-        Matcher.builder().countryParser(COUNTRY_PARSER).ihStaff(Collections.emptyList()).build();
-
     // IH Staff
     IHStaff s = new IHStaff();
     s.setFirstName("First Second");
@@ -160,9 +161,6 @@ public class MatcherTest {
 
   @Test
   public void corporateEmailTest() {
-    Matcher matcher =
-        Matcher.builder().countryParser(COUNTRY_PARSER).ihStaff(Collections.emptyList()).build();
-
     // IH Staff
     IHStaff s = new IHStaff();
     s.setFirstName("First");
@@ -183,9 +181,9 @@ public class MatcherTest {
     // When
     int score =
         Matcher.getEqualityScore(
-          StaffNormalized.fromIHStaff(s, null, null, COUNTRY_PARSER),
-          StaffNormalized.fromGrSciCollPerson(p1),
-          false);
+            StaffNormalized.fromIHStaff(s, null, null, countryParser),
+            StaffNormalized.fromGrSciCollPerson(p1),
+            false);
 
     // Expect
     assertEquals(0, score);
@@ -193,9 +191,6 @@ public class MatcherTest {
 
   @Test
   public void sameEmailPartialNameTest() {
-    Matcher matcher =
-        Matcher.builder().countryParser(COUNTRY_PARSER).ihStaff(Collections.emptyList()).build();
-
     // IH Staff
     IHStaff s = new IHStaff();
     s.setFirstName("First");
@@ -213,7 +208,7 @@ public class MatcherTest {
     // When
     int score =
         Matcher.getEqualityScore(
-            StaffNormalized.fromIHStaff(s, null, null, COUNTRY_PARSER),
+            StaffNormalized.fromIHStaff(s, null, null, countryParser),
             StaffNormalized.fromGrSciCollPerson(p1),
             false);
 

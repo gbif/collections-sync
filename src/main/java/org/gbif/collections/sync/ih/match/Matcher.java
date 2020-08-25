@@ -2,73 +2,62 @@ package org.gbif.collections.sync.ih.match;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
+import org.gbif.collections.sync.clients.proxy.IHProxyClient;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
-import org.gbif.collections.sync.parsers.CountryParser;
-import org.gbif.collections.sync.staff.StaffNormalized;
+import org.gbif.collections.sync.common.parsers.CountryParser;
+import org.gbif.collections.sync.common.staff.StaffNormalized;
 
 import com.google.common.annotations.VisibleForTesting;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 
-import static org.gbif.collections.sync.Utils.containsIrnIdentifier;
-import static org.gbif.collections.sync.Utils.encodeIRN;
-import static org.gbif.collections.sync.Utils.isPersonInContacts;
-import static org.gbif.collections.sync.Utils.mapByIrn;
-import static org.gbif.collections.sync.staff.StaffUtils.compareFullNamePartially;
-import static org.gbif.collections.sync.staff.StaffUtils.compareLists;
-import static org.gbif.collections.sync.staff.StaffUtils.compareStrings;
-import static org.gbif.collections.sync.staff.StaffUtils.compareStringsPartially;
+import static org.gbif.collections.sync.common.Utils.containsIrnIdentifier;
+import static org.gbif.collections.sync.common.Utils.encodeIRN;
+import static org.gbif.collections.sync.common.Utils.isPersonInContacts;
+import static org.gbif.collections.sync.common.staff.StaffUtils.compareFullNamePartially;
+import static org.gbif.collections.sync.common.staff.StaffUtils.compareLists;
+import static org.gbif.collections.sync.common.staff.StaffUtils.compareStrings;
+import static org.gbif.collections.sync.common.staff.StaffUtils.compareStringsPartially;
 
 /** Matches IH entities to GrSciColl ones. */
 public class Matcher {
 
+  private final IHProxyClient proxyClient;
   private final CountryParser countryParser;
-  private final Map<String, Set<Institution>> institutionsMapByIrn;
-  private final Map<String, Set<Collection>> collectionsMapByIrn;
-  private final Map<String, Set<Person>> grSciCollPersonsByIrn;
-  private final Set<Person> allGrSciCollPersons;
-  private final Map<String, List<IHStaff>> ihStaffMapByCode;
 
-  @Builder
-  private Matcher(
-      CountryParser countryParser,
-      List<Institution> institutions,
-      List<Collection> collections,
-      Set<Person> allGrSciCollPersons,
-      List<IHStaff> ihStaff) {
-    this.countryParser = countryParser;
-    institutionsMapByIrn = mapByIrn(institutions);
-    collectionsMapByIrn = mapByIrn(collections);
-    grSciCollPersonsByIrn = mapByIrn(allGrSciCollPersons);
-    this.allGrSciCollPersons = allGrSciCollPersons;
-    ihStaffMapByCode = ihStaff.stream().collect(Collectors.groupingBy(IHStaff::getCode));
+  private Matcher(IHProxyClient proxyClient) {
+    this.countryParser = CountryParser.from(proxyClient.getCountries());
+    this.proxyClient = proxyClient;
   }
 
-  public MatchResult match(IHInstitution ihInstitution) {
+  public static Matcher create(IHProxyClient proxyClient) {
+    return new Matcher(proxyClient);
+  }
+
+  public IHMatchResult match(IHInstitution ihInstitution) {
     String irn = encodeIRN(ihInstitution.getIrn());
 
     // find matches
     Set<Institution> institutionsMatched =
-        institutionsMapByIrn.getOrDefault(irn, Collections.emptySet());
+        proxyClient.getInstitutionsMapByIrn().getOrDefault(irn, Collections.emptySet());
     Set<Collection> collectionsMatched =
-        collectionsMapByIrn.getOrDefault(irn, Collections.emptySet());
+        proxyClient.getCollectionsMapByIrn().getOrDefault(irn, Collections.emptySet());
 
-    return MatchResult.builder()
+    return IHMatchResult.builder()
         .ihInstitution(ihInstitution)
-        .ihStaff(ihStaffMapByCode.getOrDefault(ihInstitution.getCode(), Collections.emptyList()))
+        .ihStaff(
+            proxyClient
+                .getIhStaffMapByCode()
+                .getOrDefault(ihInstitution.getCode(), Collections.emptyList()))
         .institutions(institutionsMatched)
         .collections(collectionsMatched)
         .staffMatcher(
@@ -90,15 +79,16 @@ public class Matcher {
 
       // first try with IRNs
       Set<Person> matchesWithIrn =
-          grSciCollPersonsByIrn.getOrDefault(
-              encodeIRN(ihStaffToMatch.ihStaff.getIrn()), Collections.emptySet());
+          proxyClient
+              .getGrSciCollPersonsByIrn()
+              .getOrDefault(encodeIRN(ihStaffToMatch.ihStaff.getIrn()), Collections.emptySet());
 
       if (!matchesWithIrn.isEmpty()) {
         return matchesWithIrn;
       }
 
       // if couldn't find any we try to match by comparing the fields of each person
-      return matchWithFields(ihStaffToMatch, allGrSciCollPersons, contacts, 14);
+      return matchWithFields(ihStaffToMatch, proxyClient.getAllGrSciCollPersons(), contacts, 14);
     };
   }
 

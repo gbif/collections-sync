@@ -1,7 +1,8 @@
 exportFilePath: src/main/resources/manualMatches.json
 iDigBioPortalUrl: https://d.com/
 syncConfig:
-  registryWsUrl: http://test.com/
+  registry:
+    wsUrl: http://test.com/
   saveResultsToFile: true
   dryRun: true
   sendNotifications: true

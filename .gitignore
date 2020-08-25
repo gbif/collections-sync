@@ -5,3 +5,5 @@ target/
 
 *.DS_Store
 
+/idigbio_sync_result_*
+/ih_sync_result_*

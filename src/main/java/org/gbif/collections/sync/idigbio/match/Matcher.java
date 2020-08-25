@@ -1,6 +1,7 @@
 package org.gbif.collections.sync.idigbio.match;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -13,46 +14,48 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifier;
-import org.gbif.collections.sync.Utils;
-import org.gbif.collections.sync.idigbio.IDigBioRecord;
-import org.gbif.collections.sync.staff.StaffNormalized;
+import org.gbif.collections.sync.clients.proxy.IDigBioProxyClient;
+import org.gbif.collections.sync.common.Utils;
+import org.gbif.collections.sync.common.staff.StaffNormalized;
+import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
-import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.gbif.collections.sync.Utils.countNonNullValues;
-import static org.gbif.collections.sync.Utils.removeUuidNamespace;
+import static org.gbif.collections.sync.common.Utils.countNonNullValues;
+import static org.gbif.collections.sync.common.Utils.removeUuidNamespace;
+import static org.gbif.collections.sync.common.staff.StaffUtils.compareLists;
+import static org.gbif.collections.sync.common.staff.StaffUtils.compareStrings;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
-import static org.gbif.collections.sync.staff.StaffUtils.compareLists;
-import static org.gbif.collections.sync.staff.StaffUtils.compareStrings;
 
 @Slf4j
 public class Matcher {
 
-  private final MatchData matchData;
+  private final IDigBioProxyClient proxyClient;
 
-  @Builder
-  private Matcher(MatchData matchData) {
-    this.matchData = matchData;
+  public Matcher(IDigBioProxyClient proxyClient) {
+    this.proxyClient = proxyClient;
   }
 
-  public MatchResult match(IDigBioRecord iDigBioRecord) {
-    MatchResult.MatchResultBuilder result = MatchResult.builder().iDigBioRecord(iDigBioRecord);
+  public IDigBioMatchResult match(IDigBioRecord iDigBioRecord) {
+    IDigBioMatchResult.IDigBioMatchResultBuilder result =
+        IDigBioMatchResult.builder().iDigBioRecord(iDigBioRecord);
 
     Institution institutionMatch =
-        matchData.getInstitutionsByKey().get(iDigBioRecord.getGrbioInstMatch());
+        proxyClient.getInstitutionsByKey().get(iDigBioRecord.getGrbioInstMatch());
     if (institutionMatch == null) {
       institutionMatch = matchWithNewInstitutions(iDigBioRecord);
     }
-    result.institutionMatched(institutionMatch);
 
     if (institutionMatch != null) {
+      result.institutionMatched(institutionMatch);
       // we try to find a match among the institution collections
       matchCollection(institutionMatch.getKey(), iDigBioRecord)
           .ifPresent(result::collectionMatched);
     }
+
+    result.staffMatcher(this::matchContact);
 
     return result.build();
   }
@@ -68,7 +71,7 @@ public class Matcher {
                     .anyMatch(identifier -> identifier.getIdentifier().equals(instUniqueNameUuid));
 
     List<Institution> institutionsMatched =
-        matchData.getNewlyCreatedIDigBioInstitutions().stream()
+        proxyClient.getNewlyCreatedIDigBioInstitutions().stream()
             .filter(
                 i ->
                     iDigBioCodes.contains(i.getCode())
@@ -85,7 +88,7 @@ public class Matcher {
   }
 
   private Optional<Collection> matchCollection(UUID institutionKey, IDigBioRecord iDigBioRecord) {
-    Set<Collection> collections = matchData.getCollectionsByInstitution().get(institutionKey);
+    Set<Collection> collections = proxyClient.getCollectionsByInstitution().get(institutionKey);
     if (collections == null) {
       return Optional.empty();
     }
@@ -134,15 +137,15 @@ public class Matcher {
     return matches.isEmpty() ? Optional.empty() : Optional.of(matches.get(0));
   }
 
-  public Optional<Person> matchContact(IDigBioRecord record, Set<Person> contacts) {
-    if (matchData.getPersons() == null) {
-      return Optional.empty();
+  Set<Person> matchContact(IDigBioRecord record, Set<Person> contacts) {
+    if (proxyClient.getPersons() == null) {
+      return Collections.emptySet();
     }
 
     StaffNormalized idigbioContact = StaffNormalized.fromIDigBioContact(record);
     Person bestMatch = null;
     int maxScore = 0;
-    for (Person person : matchData.getPersons()) {
+    for (Person person : proxyClient.getPersons()) {
       StaffNormalized personNormalized = StaffNormalized.fromGrSciCollPerson(person);
 
       boolean emailMatch = compareLists(personNormalized.getEmails(), idigbioContact.getEmails());
@@ -181,7 +184,7 @@ public class Matcher {
       }
     }
 
-    return Optional.ofNullable(bestMatch);
+    return bestMatch == null ? Collections.emptySet() : Collections.singleton(bestMatch);
   }
 
   private static Person comparePersonFieldCompleteness(Person p1, Person p2) {

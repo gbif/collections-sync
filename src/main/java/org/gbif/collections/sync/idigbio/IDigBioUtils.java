@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
-import static org.gbif.collections.sync.parsers.DataParser.getStringList;
+import static org.gbif.collections.sync.common.parsers.DataParser.getStringList;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IDigBioUtils {

@@ -4,7 +4,7 @@ import java.util.Comparator;
 
 import lombok.Data;
 
-import static org.gbif.collections.sync.Utils.countNonNullValues;
+import static org.gbif.collections.sync.common.Utils.countNonNullValues;
 
 /** Models an Index Herbariorum staff. */
 @Data
