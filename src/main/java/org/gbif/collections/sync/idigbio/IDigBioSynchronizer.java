@@ -15,7 +15,9 @@ import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 import com.google.common.base.Strings;
 import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class IDigBioSynchronizer extends BaseSynchronizer<IDigBioRecord, IDigBioRecord> {
 
   private final IDigBioProxyClient iDigBioPoxyClient;
@@ -46,6 +48,7 @@ public class IDigBioSynchronizer extends BaseSynchronizer<IDigBioRecord, IDigBio
   }
 
   public SyncResult sync() {
+    log.info("Starting the sync");
     List<IDigBioRecord> records = iDigBioPoxyClient.getIDigBioRecords();
     Matcher matcher = new Matcher(iDigBioPoxyClient);
     SyncResult.SyncResultBuilder resultBuilder = SyncResult.builder();

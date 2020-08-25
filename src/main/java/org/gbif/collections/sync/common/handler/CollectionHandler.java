@@ -5,16 +5,18 @@ import java.util.UUID;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
-import org.gbif.collections.sync.config.SyncConfig;
+import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
+import org.gbif.collections.sync.clients.proxy.CallExecutor;
 
 public class CollectionHandler extends BaseEntityHandler<Collection> {
 
-  private CollectionHandler(SyncConfig syncConfig) {
-    super(syncConfig);
+  private CollectionHandler(CallExecutor callExecutor, GrSciCollHttpClient grSciCollHttpClient) {
+    super(callExecutor, grSciCollHttpClient);
   }
 
-  public static CollectionHandler create(SyncConfig syncConfig) {
-    return new CollectionHandler(syncConfig);
+  public static CollectionHandler create(
+      CallExecutor callExecutor, GrSciCollHttpClient grSciCollHttpClient) {
+    return new CollectionHandler(callExecutor, grSciCollHttpClient);
   }
 
   @Override

@@ -12,7 +12,6 @@ import org.gbif.api.model.registry.MachineTaggable;
 import org.gbif.collections.sync.SyncResult.FailedAction;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
 import org.gbif.collections.sync.clients.proxy.CallExecutor;
-import org.gbif.collections.sync.config.SyncConfig;
 
 public abstract class BaseEntityHandler<
         T extends LenientEquals<T> & CollectionEntity & Identifiable & MachineTaggable>
@@ -21,11 +20,9 @@ public abstract class BaseEntityHandler<
   protected final CallExecutor callExecutor;
   protected GrSciCollHttpClient grSciCollHttpClient;
 
-  public BaseEntityHandler(SyncConfig syncConfig) {
-    this.callExecutor = new CallExecutor(syncConfig);
-    if (syncConfig != null && syncConfig.getRegistry() != null) {
-      this.grSciCollHttpClient = GrSciCollHttpClient.getInstance(syncConfig.getRegistry());
-    }
+  public BaseEntityHandler(CallExecutor callExecutor, GrSciCollHttpClient grSciCollHttpClient) {
+    this.callExecutor = callExecutor;
+    this.grSciCollHttpClient = grSciCollHttpClient;
   }
 
   @Override

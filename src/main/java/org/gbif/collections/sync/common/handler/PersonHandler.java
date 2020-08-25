@@ -10,18 +10,20 @@ import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
-import org.gbif.collections.sync.config.SyncConfig;
+import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
+import org.gbif.collections.sync.clients.proxy.CallExecutor;
 
 import static org.gbif.collections.sync.common.Utils.isPersonInContacts;
 
 public class PersonHandler extends BaseEntityHandler<Person> {
 
-  private PersonHandler(SyncConfig syncConfig) {
-    super(syncConfig);
+  private PersonHandler(CallExecutor callExecutor, GrSciCollHttpClient grSciCollHttpClient) {
+    super(callExecutor, grSciCollHttpClient);
   }
 
-  public static PersonHandler create(SyncConfig syncConfig) {
-    return new PersonHandler(syncConfig);
+  public static PersonHandler create(
+      CallExecutor callExecutor, GrSciCollHttpClient grSciCollHttpClient) {
+    return new PersonHandler(callExecutor, grSciCollHttpClient);
   }
 
   public <T extends CollectionEntity & Contactable> void linkPersonToEntity(
