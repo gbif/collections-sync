@@ -31,9 +31,20 @@ public class IDigBioSynchronizerTest extends BaseIDigBioTest {
     assertEquals(0, syncResult.getCollectionOnlyMatches().size());
 
     // assert institution only matches
-    assertEquals(1, syncResult.getInstitutionOnlyMatches().size());
+    assertEquals(2, syncResult.getInstitutionOnlyMatches().size());
     InstitutionOnlyMatch institutionOnlyMatch = syncResult.getInstitutionOnlyMatches().get(0);
     assertEquals(1, institutionOnlyMatch.getStaffMatch().getNewPersons().size());
+
+    assertEquals(
+        1,
+        syncResult.getInstitutionOnlyMatches().stream()
+            .filter(m -> m.getStaffMatch().getNewPersons().size() == 1)
+            .count());
+    assertEquals(
+        1,
+        syncResult.getInstitutionOnlyMatches().stream()
+            .filter(m -> m.getStaffMatch().getMatchedPersons().size() == 1)
+            .count());
 
     // assert institution and collection matches
     assertEquals(1, syncResult.getInstAndCollMatches().size());
@@ -45,6 +56,9 @@ public class IDigBioSynchronizerTest extends BaseIDigBioTest {
     assertEquals(1, syncResult.getNoMatches().size());
     NoEntityMatch noEntityMatch = syncResult.getNoMatches().get(0);
     assertEquals(1, noEntityMatch.getStaffMatch().getNewPersons().size());
+
+    // assert invalid
+    assertEquals(1, syncResult.getInvalidEntities().size());
   }
 
   private DataLoader<IDigBioData> createData() {
@@ -97,10 +111,20 @@ public class IDigBioSynchronizerTest extends BaseIDigBioTest {
     r3.setContactRole("role2");
     r3.setContactEmail("contact@test.com");
 
+    IDigBioRecord invalid = new IDigBioRecord();
+    invalid.setInstitution("inst 3");
+
+    IDigBioRecord repeated = new IDigBioRecord();
+    repeated.setInstitution("inst 3");
+    repeated.setInstitutionCode("i3");
+    repeated.setContact("contact");
+    repeated.setContactRole("role2");
+    repeated.setContactEmail("contact@test.com");
+
     return TestDataLoader.builder()
         .institutions(Arrays.asList(i1, i2))
         .collections(Arrays.asList(c1, c2))
-        .iDigBioRecords(Arrays.asList(r1, r2, r3))
+        .iDigBioRecords(Arrays.asList(r1, r2, r3, invalid, repeated))
         .build();
   }
 }

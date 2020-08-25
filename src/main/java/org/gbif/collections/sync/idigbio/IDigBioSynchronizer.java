@@ -73,10 +73,11 @@ public class IDigBioSynchronizer extends BaseSynchronizer<IDigBioRecord, IDigBio
     } else if (matchResult.onlyOneInstitutionMatch()) {
       syncResultBuilder.institutionOnlyMatch(handleInstitutionMatch(matchResult));
     } else if (matchResult.noMatches()) {
-      if (!hasCodeAndName(matchResult.getSource())) {
+      if (hasCodeAndName(matchResult.getSource())) {
+        syncResultBuilder.noMatch(handleNoMatch(matchResult));
+      } else {
         syncResultBuilder.invalidEntity(matchResult.getSource());
       }
-      syncResultBuilder.noMatch(handleNoMatch(matchResult));
     } else if (matchResult.institutionAndCollectionMatch()) {
       syncResultBuilder.instAndCollMatch(handleInstAndCollMatch(matchResult));
     } else {
