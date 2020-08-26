@@ -23,7 +23,7 @@ public class NotificationProxyClient {
 
   public void sendNotification(Issue issue) {
     callExecutor.sendNotification(
-        () -> githubClient.createIssue(issue),
+        () -> githubClient.createOrUpdateIssue(issue),
         e -> new FailedAction(issue, "Failed to create fails notification: " + e.getMessage()));
   }
 }
