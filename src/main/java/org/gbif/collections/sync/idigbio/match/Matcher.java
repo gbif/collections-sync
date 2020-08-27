@@ -24,7 +24,6 @@ import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.common.Utils.countNonNullValues;
-import static org.gbif.collections.sync.common.Utils.removeUuidNamespace;
 import static org.gbif.collections.sync.common.staff.StaffUtils.compareLists;
 import static org.gbif.collections.sync.common.staff.StaffUtils.compareStrings;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
@@ -63,7 +62,7 @@ public class Matcher {
   private Institution matchWithNewInstitutions(IDigBioRecord iDigBioRecord) {
     // we try with the newly created institutions
     List<String> iDigBioCodes = getIdigbioCodes(iDigBioRecord.getInstitutionCode());
-    String instUniqueNameUuid = removeUuidNamespace(iDigBioRecord.getUniqueNameUuid());
+    String instUniqueNameUuid = iDigBioRecord.getUniqueNameUuid();
     Predicate<List<Identifier>> containsIdentifier =
         ids ->
             Strings.isNullOrEmpty(iDigBioRecord.getUniqueNameUuid())

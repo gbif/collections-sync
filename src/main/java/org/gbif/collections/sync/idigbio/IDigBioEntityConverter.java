@@ -18,8 +18,8 @@ import org.gbif.api.model.registry.MachineTaggable;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.collections.sync.common.converter.EntityConverter;
-import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 import org.gbif.collections.sync.common.parsers.DataParser;
+import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 import com.google.common.base.Strings;
 import lombok.NoArgsConstructor;
@@ -29,14 +29,13 @@ import static org.gbif.collections.sync.common.CloneUtils.cloneCollection;
 import static org.gbif.collections.sync.common.CloneUtils.cloneInstitution;
 import static org.gbif.collections.sync.common.CloneUtils.clonePerson;
 import static org.gbif.collections.sync.common.Utils.containsIrnIdentifier;
-import static org.gbif.collections.sync.common.Utils.removeUuidNamespace;
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
 import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
 import static org.gbif.collections.sync.common.parsers.DataParser.TO_LOCAL_DATE_TIME_UTC;
 import static org.gbif.collections.sync.common.parsers.DataParser.cleanString;
 import static org.gbif.collections.sync.common.parsers.DataParser.getStringValue;
 import static org.gbif.collections.sync.common.parsers.DataParser.getStringValueOpt;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
 
 @NoArgsConstructor(staticName = "create")
 @Slf4j
@@ -54,8 +53,7 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
     getStringValueOpt(record.getUniqueNameUuid())
         .ifPresent(
             v -> {
-              addIdentifierIfNotExists(
-                  institution, new Identifier(IdentifierType.UUID, removeUuidNamespace(v)));
+              addIdentifierIfNotExists(institution, new Identifier(IdentifierType.UUID, v));
 
               addMachineTagIfNotExists(
                   institution, new MachineTag(IDIGBIO_NAMESPACE, "UniqueNameUUID", v));
@@ -162,8 +160,7 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
     getStringValueOpt(record.getCollectionUuid())
         .ifPresent(
             v -> {
-              addIdentifierIfNotExists(
-                  collection, new Identifier(IdentifierType.UUID, removeUuidNamespace(v)));
+              addIdentifierIfNotExists(collection, new Identifier(IdentifierType.UUID, v));
               addMachineTagIfNotExists(
                   collection, new MachineTag(IDIGBIO_NAMESPACE, "CollectionUUID", v));
             });
