@@ -14,6 +14,13 @@ public class TestUtils {
     assertEquals(0, staffMatch.getConflicts().size());
   }
 
+  public static boolean isEmptyStaffMatch(SyncResult.StaffMatch staffMatch) {
+    return staffMatch.getMatchedPersons().isEmpty()
+        && staffMatch.getNewPersons().isEmpty()
+        && staffMatch.getRemovedPersons().isEmpty()
+        && staffMatch.getConflicts().isEmpty();
+  }
+
   public static SyncConfig createTestSyncConfig() {
     SyncConfig syncConfig = new SyncConfig();
 

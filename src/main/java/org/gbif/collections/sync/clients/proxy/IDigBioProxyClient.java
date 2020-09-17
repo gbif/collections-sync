@@ -20,6 +20,8 @@ import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 import lombok.Builder;
 import lombok.Getter;
 
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IS_IDIGBIO_COLLECTION_UUID_MT;
+
 @Getter
 public class IDigBioProxyClient extends BaseProxyClient {
 
@@ -35,6 +37,7 @@ public class IDigBioProxyClient extends BaseProxyClient {
   // multiple times because it has multiple collections.
   private final Set<Institution> newlyCreatedIDigBioInstitutions = new HashSet<>();
   private Set<Person> persons = new HashSet<>();
+  private Map<String, Collection> collectionsByIDigBioUuid = new HashMap<>();
 
   @Builder
   public IDigBioProxyClient(IDigBioConfig iDigBioConfig, DataLoader<IDigBioData> dataLoader) {
@@ -59,6 +62,23 @@ public class IDigBioProxyClient extends BaseProxyClient {
                     Collection::getInstitutionKey, HashMap::new, Collectors.toSet()));
     this.persons = new HashSet<>(data.getPersons());
     this.iDigBioRecords = data.getIDigBioRecords();
+
+    // map collections by the iDigBio UUID machine tag
+    data.getCollections().stream()
+        .filter(o -> o.getMachineTags() != null)
+        .forEach(
+            o ->
+                o.getMachineTags().stream()
+                    .filter(IS_IDIGBIO_COLLECTION_UUID_MT)
+                    .forEach(
+                        mt -> {
+                          if (collectionsByIDigBioUuid.containsKey(mt.getValue())) {
+                            throw new IllegalArgumentException(
+                                "More than 1 collection is linked thru machine tags to the iDigBio collection UUID "
+                                    + mt.getValue());
+                          }
+                          collectionsByIDigBioUuid.put(mt.getValue(), o);
+                        }));
   }
 
   @Override

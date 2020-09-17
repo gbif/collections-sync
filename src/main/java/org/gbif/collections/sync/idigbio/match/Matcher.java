@@ -87,6 +87,16 @@ public class Matcher {
   }
 
   private Optional<Collection> matchCollection(UUID institutionKey, IDigBioRecord iDigBioRecord) {
+    // try first with machine tags
+    String iDigBioCollectionUuid = iDigBioRecord.getCollectionUuid();
+    if (!Strings.isNullOrEmpty(iDigBioCollectionUuid)) {
+      Collection collection = proxyClient.getCollectionsByIDigBioUuid().get(iDigBioCollectionUuid);
+      if (collection != null) {
+        return Optional.of(collection);
+      }
+    }
+
+    // if no machine tags found, we try with the collections of the institution matched
     Set<Collection> collections = proxyClient.getCollectionsByInstitution().get(institutionKey);
     if (collections == null) {
       return Optional.empty();

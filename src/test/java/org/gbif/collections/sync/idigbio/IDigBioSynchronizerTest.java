@@ -5,10 +5,12 @@ import java.util.UUID;
 
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.registry.MachineTag;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
 import org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
 import org.gbif.collections.sync.SyncResult.NoEntityMatch;
+import org.gbif.collections.sync.TestUtils;
 import org.gbif.collections.sync.common.DataLoader;
 import org.gbif.collections.sync.idigbio.IDigBioDataLoader.IDigBioData;
 import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
@@ -16,7 +18,6 @@ import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 public class IDigBioSynchronizerTest extends BaseIDigBioTest {
 
@@ -47,10 +48,22 @@ public class IDigBioSynchronizerTest extends BaseIDigBioTest {
             .count());
 
     // assert institution and collection matches
-    assertEquals(1, syncResult.getInstAndCollMatches().size());
-    InstitutionAndCollectionMatch instAndCollMatch = syncResult.getInstAndCollMatches().get(0);
-    assertEquals(1, instAndCollMatch.getStaffMatch().getMatchedPersons().size());
-    assertFalse(instAndCollMatch.getStaffMatch().getMatchedPersons().iterator().next().isUpdate());
+    assertEquals(2, syncResult.getInstAndCollMatches().size());
+    assertEquals(
+        1,
+        syncResult.getInstAndCollMatches().stream()
+            .map(InstitutionAndCollectionMatch::getStaffMatch)
+            .filter(TestUtils::isEmptyStaffMatch)
+            .count());
+    assertEquals(
+        1,
+        syncResult.getInstAndCollMatches().stream()
+            .map(InstitutionAndCollectionMatch::getStaffMatch)
+            .filter(
+                m ->
+                    m.getMatchedPersons().size() == 1
+                        && !m.getMatchedPersons().iterator().next().isUpdate())
+            .count());
 
     // assert no matches
     assertEquals(1, syncResult.getNoMatches().size());
@@ -121,10 +134,30 @@ public class IDigBioSynchronizerTest extends BaseIDigBioTest {
     repeated.setContactRole("role2");
     repeated.setContactEmail("contact@test.com");
 
+    IDigBioRecord r4 = new IDigBioRecord();
+    r4.setGrbioInstMatch(i2.getKey());
+    r4.setInstitution("inst 2");
+    r4.setInstitutionCode("i2");
+    r4.setCollectionCode("cmt");
+    r4.setCollection("Collection machine tag");
+    r4.setCollectionUuid("uuid-test");
+
+    Collection cmt = new Collection();
+    cmt.setKey(UUID.randomUUID());
+    cmt.setCode("foo");
+    cmt.setName("bar");
+    cmt.setInstitutionKey(i2.getKey());
+    cmt.getMachineTags()
+        .add(
+            new MachineTag(
+                IDigBioUtils.IDIGBIO_NAMESPACE,
+                IDigBioUtils.IDIGBIO_UUID_TAG_NAME,
+                r4.getCollectionUuid()));
+
     return TestDataLoader.builder()
         .institutions(Arrays.asList(i1, i2))
-        .collections(Arrays.asList(c1, c2))
-        .iDigBioRecords(Arrays.asList(r1, r2, r3, invalid, repeated))
+        .collections(Arrays.asList(c1, c2, cmt))
+        .iDigBioRecords(Arrays.asList(r1, r2, r3, invalid, repeated, r4))
         .build();
   }
 }
