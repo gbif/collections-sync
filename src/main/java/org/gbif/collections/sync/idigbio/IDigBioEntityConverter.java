@@ -213,6 +213,11 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
         collection.setMailingAddress(
             convertAddress(record.getMailingAddress(), collection.getMailingAddress()));
       }
+    } else {
+      // if the description in grscicoll was empty we use the one from iDigBio
+      if (Strings.isNullOrEmpty(collection.getDescription())){
+        getStringValueOpt(record.getDescription()).ifPresent(collection::setDescription);
+      }
     }
 
     return collection;
