@@ -10,6 +10,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.gbif.api.model.collections.Collection;
+import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Contactable;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.common.DataLoader;
@@ -122,15 +124,34 @@ public class IDigBioProxyClient extends BaseProxyClient {
     return updated;
   }
 
+  @Override
+  public <T extends CollectionEntity & Contactable> void linkPersonToEntity(
+      Person person, List<T> entities) {
+    super.linkPersonToEntity(person, entities);
+
+    // update entities with the contacts list updates
+    entities.forEach(
+        e -> {
+          if (e instanceof Institution) {
+            updateInstitutionInMemory((Institution) e);
+          } else if (e instanceof Collection) {
+            Collection c = (Collection) e;
+            updateCollectionInMemory(c, c);
+          }
+        });
+  }
+
   private void updateCollectionInMemory(Collection oldCollection, Collection newCollection) {
     Collection updatedCollection = collectionHandler.get(newCollection);
     if (updatedCollection != null && updatedCollection.getKey() != null) {
-      collectionsByKey.replace(updatedCollection.getKey(), updatedCollection);
+      collectionsByKey.put(oldCollection.getKey(), updatedCollection);
 
       if (updatedCollection.getInstitutionKey() != null
           && collectionsByInstitution.containsKey(oldCollection.getInstitutionKey())) {
-        collectionsByInstitution.get(updatedCollection.getInstitutionKey()).remove(oldCollection);
-        collectionsByInstitution.get(updatedCollection.getInstitutionKey()).add(updatedCollection);
+        Set<Collection> collectionsInInstitution =
+            collectionsByInstitution.get(updatedCollection.getInstitutionKey());
+        collectionsInInstitution.removeIf(c -> c.getKey().equals(oldCollection.getKey()));
+        collectionsInInstitution.add(updatedCollection);
       }
     }
   }
@@ -138,7 +159,7 @@ public class IDigBioProxyClient extends BaseProxyClient {
   public void updateInstitutionInMemory(Institution newInstitution) {
     Institution institution = institutionHandler.get(newInstitution);
     if (institution != null && institution.getKey() != null) {
-      institutionsByKey.replace(institution.getKey(), institution);
+      institutionsByKey.put(institution.getKey(), institution);
     }
   }
 
@@ -162,7 +183,7 @@ public class IDigBioProxyClient extends BaseProxyClient {
       updatedPerson = personHandler.get(updatedPerson);
       persons.add(updatedPerson);
       if (updatedPerson.getKey() != null) {
-        personsByKey.replace(updatedPerson.getKey(), updatedPerson);
+        personsByKey.put(updatedPerson.getKey(), updatedPerson);
       }
     }
   }

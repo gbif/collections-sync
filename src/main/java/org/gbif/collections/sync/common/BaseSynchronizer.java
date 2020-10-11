@@ -72,7 +72,7 @@ public abstract class BaseSynchronizer<S, R> {
 
     StaffMatch staffMatch =
         staffResultHandler.handleStaff(
-            matchResult, Collections.singletonList(entityMatch.getMatched()));
+            matchResult, Collections.singletonList(entityMatch.getMerged()));
 
     return CollectionOnlyMatch.builder()
         .matchedCollection(entityMatch)
@@ -93,7 +93,7 @@ public abstract class BaseSynchronizer<S, R> {
     // same staff for both entities
     StaffMatch staffMatch =
         staffResultHandler.handleStaff(
-            matchResult, Arrays.asList(institutionEntityMatch.getMatched(), createdCollection));
+            matchResult, Arrays.asList(institutionEntityMatch.getMerged(), createdCollection));
 
     return InstitutionOnlyMatch.builder()
         .matchedInstitution(institutionEntityMatch)

@@ -9,8 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
-import org.gbif.collections.sync.config.SyncConfig.NotificationConfig;
 import org.gbif.collections.sync.common.notification.Issue;
+import org.gbif.collections.sync.config.SyncConfig.NotificationConfig;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -81,7 +81,7 @@ public class IDigBioIssueNotifier extends IssueNotifier {
             .append(formatEntity(iDigBioRecord))
             .append("have multiple candidates in GrSciColl: " + NEW_LINE)
             .append(formatRegistryEntities(entities))
-            .append("A")
+            .append("A ")
             .append(entityType)
             .append(
                 " should be associated to only one GrSciColl entity. Please resolve the conflict.");

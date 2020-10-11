@@ -99,13 +99,11 @@ public class CallExecutor {
       Runnable runnable, Function<Throwable, FailedAction> exceptionHandler) {
     if (sendNotifications) {
       // do the call
-      CompletableFuture.runAsync(runnable)
-          .whenCompleteAsync(
-              (r, e) -> {
-                if (e != null) {
-                  writeFailedAction(exceptionHandler.apply(e));
-                }
-              });
+      try {
+        runnable.run();
+      } catch (Exception e) {
+        writeFailedAction(exceptionHandler.apply(e));
+      }
     }
   }
 
@@ -116,7 +114,8 @@ public class CallExecutor {
 
     try {
       try (BufferedWriter writer =
-          Files.newBufferedWriter(failedActionsPath, StandardOpenOption.APPEND)) {
+          Files.newBufferedWriter(
+              failedActionsPath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
         writer.write(failedAction.toString());
         writer.newLine();
       }

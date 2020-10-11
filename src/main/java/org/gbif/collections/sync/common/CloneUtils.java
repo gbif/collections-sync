@@ -52,6 +52,9 @@ public class CloneUtils {
         if (clone.getMailingAddress() != null) {
           clone.setMailingAddress((Address) BeanUtils.cloneBean(clone.getMailingAddress()));
         }
+        if (clone.getContacts() != null) {
+          clone.setContacts(new ArrayList<>(clone.getContacts()));
+        }
       } catch (Exception e) {
         log.warn("Couldn't copy collection entity properties from bean: {}", entity);
       }

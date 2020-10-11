@@ -58,7 +58,7 @@ public class PersonHandler extends BaseEntityHandler<Person> {
       grSciCollHttpClient.addPersonToInstitution(p.getKey(), e.getKey());
     }
 
-    // we add it to the contacts to avoid adding it again if there are duplicates in IH
+    // we add it to the contacts to avoid adding it again if there are duplicates in the source(e.g.:IH)
     e.getContacts().add(p);
   }
 
@@ -73,6 +73,8 @@ public class PersonHandler extends BaseEntityHandler<Person> {
     } else if (e instanceof Institution) {
       grSciCollHttpClient.removePersonFromInstitution(p.getKey(), e.getKey());
     }
+
+    e.getContacts().remove(p);
   }
 
   @Override

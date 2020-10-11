@@ -68,7 +68,7 @@ public class IDigBioStaffMatchResultHandler
 
       EntityMatch<Person> entityMatch =
           EntityMatch.<Person>builder()
-              .merged(matchedPerson)
+              .matched(matchedPerson)
               .merged(mergedPerson)
               .update(updated)
               .build();

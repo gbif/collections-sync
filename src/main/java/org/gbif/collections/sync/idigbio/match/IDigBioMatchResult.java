@@ -7,6 +7,7 @@ import java.util.function.BiFunction;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
+import org.gbif.collections.sync.clients.proxy.IDigBioProxyClient;
 import org.gbif.collections.sync.common.match.MatchResult;
 import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
@@ -19,6 +20,7 @@ public class IDigBioMatchResult implements MatchResult<IDigBioRecord, IDigBioRec
   Institution institutionMatched;
   Collection collectionMatched;
   BiFunction<IDigBioRecord, Set<Person>, Set<Person>> staffMatcher;
+  IDigBioProxyClient proxyClient;
 
   @Override
   public IDigBioRecord getSource() {
@@ -33,14 +35,20 @@ public class IDigBioMatchResult implements MatchResult<IDigBioRecord, IDigBioRec
   @Override
   public Set<Institution> getInstitutionMatches() {
     return institutionMatched != null
-        ? Collections.singleton(institutionMatched)
+        ? Collections.singleton(
+            proxyClient
+                .getInstitutionsByKey()
+                .getOrDefault(institutionMatched.getKey(), institutionMatched))
         : Collections.emptySet();
   }
 
   @Override
   public Set<Collection> getCollectionMatches() {
     return collectionMatched != null
-        ? Collections.singleton(collectionMatched)
+        ? Collections.singleton(
+            proxyClient
+                .getCollectionsByKey()
+                .getOrDefault(collectionMatched.getKey(), collectionMatched))
         : Collections.emptySet();
   }
 

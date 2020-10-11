@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_UUID_TAG_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
@@ -404,7 +405,7 @@ public class EntityConverterTest {
 
     Optional<MachineTag> mtCollUuid =
         collectionConverted.getMachineTags().stream()
-            .filter(mt -> mt.getName().equals("CollectionUUID"))
+            .filter(mt -> mt.getName().equals(IDIGBIO_UUID_TAG_NAME))
             .findFirst();
     assertTrue(mtCollUuid.isPresent());
     assertEquals(IDIGBIO_NAMESPACE, mtCollUuid.get().getNamespace());

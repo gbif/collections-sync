@@ -39,7 +39,7 @@ public class Matcher {
 
   public IDigBioMatchResult match(IDigBioRecord iDigBioRecord) {
     IDigBioMatchResult.IDigBioMatchResultBuilder result =
-        IDigBioMatchResult.builder().iDigBioRecord(iDigBioRecord);
+        IDigBioMatchResult.builder().iDigBioRecord(iDigBioRecord).proxyClient(proxyClient);
 
     Institution institutionMatch =
         proxyClient.getInstitutionsByKey().get(iDigBioRecord.getGrbioInstMatch());
@@ -102,7 +102,23 @@ public class Matcher {
       return Optional.empty();
     }
 
+    // filter the ones created by this import, we only want to match with existing ones
+    collections =
+        collections.stream()
+            .filter(
+                c ->
+                    c.getCreatedBy() != null // needed for dryRun
+                        && !c.getCreatedBy()
+                            .equals(
+                                proxyClient
+                                    .getIDigBioConfig()
+                                    .getSyncConfig()
+                                    .getRegistry()
+                                    .getWsUser()))
+            .collect(Collectors.toSet());
+
     List<String> iDigBioCodes = getIdigbioCodes(iDigBioRecord.getCollectionCode());
+
     List<Collection> matches = null;
     if (!Strings.isNullOrEmpty(iDigBioRecord.getSameAs())
         && iDigBioRecord.getSameAs().contains("irn=")) {
@@ -205,6 +221,7 @@ public class Matcher {
 
   @VisibleForTesting
   static long stringSimilarity(String n1, String n2) {
+    // TODO: ser mas estricto, no hacer split  hacer tolowercase
     long common1 =
         Arrays.stream(n1.split(" ")).filter(v -> v.length() > 3).filter(n2::contains).count();
     long common2 =
