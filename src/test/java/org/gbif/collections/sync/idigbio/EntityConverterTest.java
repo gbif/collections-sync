@@ -5,10 +5,12 @@ import java.net.URI;
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.gbif.api.model.collections.Address;
+import org.gbif.api.model.collections.AlternativeCode;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
@@ -59,7 +61,8 @@ public class EntityConverterTest {
     assertEquals(TO_BIGDECIMAL.apply(iDigBioRecord.getLat()), institutionConverted.getLatitude());
     assertEquals(existing.getLongitude(), institutionConverted.getLongitude());
     assertEquals(existing.getDescription(), institutionConverted.getDescription());
-    assertTrue(institutionConverted.getAlternativeCodes().containsKey(existing.getCode()));
+    assertTrue(
+        containsAlternativeCode(institutionConverted.getAlternativeCodes(), existing.getCode()));
     assertIdentifiersAndTagsInstitution(iDigBioRecord, institutionConverted, false);
 
     // make iDigBio less recent than the existing one
@@ -92,7 +95,8 @@ public class EntityConverterTest {
     assertEquals(existing.getLongitude(), institutionConverted.getLongitude());
     assertEquals(existing.getDescription(), institutionConverted.getDescription());
     assertTrue(
-        institutionConverted.getAlternativeCodes().containsKey(iDigBioRecord.getInstitutionCode()));
+        containsAlternativeCode(
+            institutionConverted.getAlternativeCodes(), iDigBioRecord.getInstitutionCode()));
 
     assertIdentifiersAndTagsInstitution(iDigBioRecord, institutionConverted, true);
   }
@@ -464,5 +468,9 @@ public class EntityConverterTest {
     Collection result = entityConverter.convertToCollection(r1, i);
     assertEquals("A", result.getCode());
     assertEquals(2, result.getAlternativeCodes().size());
+  }
+
+  private boolean containsAlternativeCode(List<AlternativeCode> altCodes, String code) {
+    return altCodes.stream().anyMatch(ac -> ac.getCode().equals(code));
   }
 }

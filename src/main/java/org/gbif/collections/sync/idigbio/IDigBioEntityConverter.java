@@ -3,11 +3,11 @@ package org.gbif.collections.sync.idigbio;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.gbif.api.model.collections.Address;
+import org.gbif.api.model.collections.AlternativeCode;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
@@ -94,7 +94,11 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
     } else {
       idigbioCodes.stream()
           .filter(c -> !c.equalsIgnoreCase(institution.getCode()))
-          .forEach(c -> institution.getAlternativeCodes().put(c, "Code migrated from iDigBio"));
+          .forEach(
+              c ->
+                  institution
+                      .getAlternativeCodes()
+                      .add(new AlternativeCode(c, "Code migrated from iDigBio")));
     }
 
     return institution;
@@ -126,7 +130,11 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
       // if they don't match we keep the IH one and add the other to the alternatives
       idigbioCodes.stream()
           .filter(c -> !c.equalsIgnoreCase(collection.getCode()))
-          .forEach(c -> collection.getAlternativeCodes().put(c, "Code migrated from iDigBio"));
+          .forEach(
+              c ->
+                  collection
+                      .getAlternativeCodes()
+                      .add(new AlternativeCode(c, "Code migrated from iDigBio")));
     } else {
       if (!idigbioCodes.isEmpty()) {
         setCodes(
@@ -216,7 +224,7 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
       }
     } else {
       // if the description in grscicoll was empty we use the one from iDigBio
-      if (Strings.isNullOrEmpty(collection.getDescription())){
+      if (Strings.isNullOrEmpty(collection.getDescription())) {
         getStringValueOpt(record.getDescription()).ifPresent(collection::setDescription);
       }
     }
@@ -227,7 +235,7 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
   private static void setCodes(
       List<String> idigbioCodes,
       String currentCode,
-      Map<String, String> alternativeCodes,
+      List<AlternativeCode> alternativeCodes,
       Consumer<String> codeSetter) {
     if (idigbioCodes.isEmpty()
         || idigbioCodes.stream().allMatch(c -> c.equalsIgnoreCase(currentCode))) {
@@ -241,15 +249,16 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
       codeSetter.accept(iDigBioMainCode);
 
       if (currentCode != null) {
-        alternativeCodes.put(
-            currentCode, "code replaced by the one migrated from iDigBio: " + iDigBioMainCode);
+        alternativeCodes.add(
+            new AlternativeCode(
+                currentCode, "code replaced by the one migrated from iDigBio: " + iDigBioMainCode));
       }
     }
 
     while (iDigBioCodesIterator.hasNext()) {
       String code = iDigBioCodesIterator.next();
       if (!code.equalsIgnoreCase(currentCode)) {
-        alternativeCodes.put(code, "Code migrated from iDigBio");
+        alternativeCodes.add(new AlternativeCode(code, "Code migrated from iDigBio"));
       }
     }
   }

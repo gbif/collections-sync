@@ -19,6 +19,8 @@ import org.gbif.collections.sync.common.Utils;
 import org.gbif.collections.sync.common.staff.StaffNormalized;
 import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
@@ -138,6 +140,8 @@ public class Matcher {
         return Optional.empty();
       }
 
+      iDigBioCodes.removeAll(getIdigbioCodes(iDigBioRecord.getInstitutionCode()));
+
       Predicate<Collection> hasSomeSimilarity =
           c -> {
             long score = stringSimilarity(iDigBioRecord.getCollection(), c.getName());
@@ -221,13 +225,21 @@ public class Matcher {
 
   @VisibleForTesting
   static long stringSimilarity(String n1, String n2) {
-    // TODO: ser mas estricto, no hacer split  hacer tolowercase
-    long common1 =
-        Arrays.stream(n1.split(" ")).filter(v -> v.length() > 3).filter(n2::contains).count();
-    long common2 =
-        Arrays.stream(n2.split(" ")).filter(v -> v.length() > 3).filter(n1::contains).count();
+    String n1Normalized = StringUtils.normalizeSpace(n1.toLowerCase());
+    String n2Normalized = StringUtils.normalizeSpace(n2.toLowerCase());
 
-    return common1 + common2;
+    n1Normalized =
+        Arrays.stream(n1Normalized.split(" "))
+            .filter(v -> v.length() > 3)
+            .sorted()
+            .collect(Collectors.joining(" "));
+    n2Normalized =
+        Arrays.stream(n2Normalized.split(" "))
+            .filter(v -> v.length() > 3)
+            .sorted()
+            .collect(Collectors.joining(" "));
+
+    return n1Normalized.contains(n2Normalized) || n2Normalized.contains(n1Normalized) ? 1 : 0;
   }
 
   @VisibleForTesting
