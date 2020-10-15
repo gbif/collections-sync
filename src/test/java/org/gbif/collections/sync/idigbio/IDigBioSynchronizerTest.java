@@ -85,6 +85,7 @@ public class IDigBioSynchronizerTest extends BaseIDigBioTest {
     c1.setCode("c1");
     c1.setName("Collection1");
     c1.setInstitutionKey(i1.getKey());
+    c1.setCreatedBy("test");
 
     IDigBioRecord r1 = new IDigBioRecord();
     r1.setGrbioInstMatch(i1.getKey());
@@ -106,6 +107,7 @@ public class IDigBioSynchronizerTest extends BaseIDigBioTest {
     c2.setCode("c2");
     c2.setName("Collection2");
     c2.setInstitutionKey(i2.getKey());
+    c2.setCreatedBy("test");
 
     IDigBioRecord r2 = new IDigBioRecord();
     r2.setGrbioInstMatch(i2.getKey());
@@ -147,11 +149,12 @@ public class IDigBioSynchronizerTest extends BaseIDigBioTest {
     cmt.setCode("foo");
     cmt.setName("bar");
     cmt.setInstitutionKey(i2.getKey());
+    cmt.setCreatedBy("test");
     cmt.getMachineTags()
         .add(
             new MachineTag(
                 IDigBioUtils.IDIGBIO_NAMESPACE,
-                IDigBioUtils.IDIGBIO_UUID_TAG_NAME,
+                IDigBioUtils.IDIGBIO_COLLECTION_UUID,
                 r4.getCollectionUuid()));
 
     return TestDataLoader.builder()

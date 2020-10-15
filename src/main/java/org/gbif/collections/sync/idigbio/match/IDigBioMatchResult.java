@@ -34,22 +34,34 @@ public class IDigBioMatchResult implements MatchResult<IDigBioRecord, IDigBioRec
 
   @Override
   public Set<Institution> getInstitutionMatches() {
-    return institutionMatched != null
-        ? Collections.singleton(
-            proxyClient
-                .getInstitutionsByKey()
-                .getOrDefault(institutionMatched.getKey(), institutionMatched))
-        : Collections.emptySet();
+    if (institutionMatched == null) {
+      return Collections.emptySet();
+    }
+
+    if (proxyClient == null) {
+      return Collections.singleton(institutionMatched);
+    }
+
+    return Collections.singleton(
+        proxyClient
+            .getInstitutionsByKey()
+            .getOrDefault(institutionMatched.getKey(), institutionMatched));
   }
 
   @Override
   public Set<Collection> getCollectionMatches() {
-    return collectionMatched != null
-        ? Collections.singleton(
-            proxyClient
-                .getCollectionsByKey()
-                .getOrDefault(collectionMatched.getKey(), collectionMatched))
-        : Collections.emptySet();
+    if (collectionMatched == null) {
+      return Collections.emptySet();
+    }
+
+    if (proxyClient == null) {
+      return Collections.singleton(collectionMatched);
+    }
+
+    return Collections.singleton(
+        proxyClient
+            .getCollectionsByKey()
+            .getOrDefault(collectionMatched.getKey(), collectionMatched));
   }
 
   @Override

@@ -35,7 +35,7 @@ import static org.gbif.collections.sync.common.parsers.DataParser.cleanString;
 import static org.gbif.collections.sync.common.parsers.DataParser.getStringValue;
 import static org.gbif.collections.sync.common.parsers.DataParser.getStringValueOpt;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_UUID_TAG_NAME;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_COLLECTION_UUID;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
 
 @NoArgsConstructor(staticName = "create")
@@ -171,7 +171,7 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
             v -> {
               addIdentifierIfNotExists(collection, new Identifier(IdentifierType.UUID, v));
               addMachineTagIfNotExists(
-                  collection, new MachineTag(IDIGBIO_NAMESPACE, IDIGBIO_UUID_TAG_NAME, v));
+                  collection, new MachineTag(IDIGBIO_NAMESPACE, IDIGBIO_COLLECTION_UUID, v));
             });
 
     if (shouldUpdateRecord(record, collection.getModified())) {

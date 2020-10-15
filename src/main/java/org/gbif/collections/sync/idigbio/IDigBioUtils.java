@@ -15,10 +15,10 @@ import static org.gbif.collections.sync.common.parsers.DataParser.getStringList;
 public class IDigBioUtils {
 
   public static final String IDIGBIO_NAMESPACE = "iDigBio.org";
-  public static final String IDIGBIO_UUID_TAG_NAME = "CollectionUUID";
+  public static final String IDIGBIO_COLLECTION_UUID = "CollectionUUID";
   public static final Predicate<MachineTag> IS_IDIGBIO_COLLECTION_UUID_MT =
       mt ->
-          mt.getNamespace().equals(IDIGBIO_NAMESPACE) && mt.getName().equals(IDIGBIO_UUID_TAG_NAME);
+          mt.getNamespace().equals(IDIGBIO_NAMESPACE) && mt.getName().equals(IDIGBIO_COLLECTION_UUID);
   public static final String IH_SUFFIX_IDIGBIO = "<IH>";
 
   public static List<String> getIdigbioCodes(String idigbioCode) {

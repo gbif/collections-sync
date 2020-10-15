@@ -55,9 +55,11 @@ public class MatcherTest extends BaseIDigBioTest {
 
   @Test
   public void stringSimilarityTest() {
-    assertTrue(Matcher.stringSimilarity("test phrase", "test other") > 0);
+    assertTrue(Matcher.stringSimilarity("test phrase", "test") > 0);
+    assertTrue(Matcher.stringSimilarity("test phrase", "test  PHrase  ") > 0);
+    assertTrue(Matcher.stringSimilarity("test phrase", "test other") == 0);
     assertTrue(Matcher.stringSimilarity("test phrases", "my phrase") > 0);
-    assertFalse(Matcher.stringSimilarity("the test phrase", "the other thing") > 0);
+    assertTrue(Matcher.stringSimilarity("the test phrase", "the other thing") == 0);
   }
 
   @Test

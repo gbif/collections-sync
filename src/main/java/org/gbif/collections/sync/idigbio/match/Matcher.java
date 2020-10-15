@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import static org.gbif.collections.sync.common.Utils.countNonNullValues;
 import static org.gbif.collections.sync.common.staff.StaffUtils.compareLists;
 import static org.gbif.collections.sync.common.staff.StaffUtils.compareStrings;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IS_IDIGBIO_COLLECTION_UUID_MT;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
 
 @Slf4j
@@ -125,6 +126,12 @@ public class Matcher {
     if (!Strings.isNullOrEmpty(iDigBioRecord.getSameAs())
         && iDigBioRecord.getSameAs().contains("irn=")) {
 
+      if (!Strings.isNullOrEmpty(iDigBioRecord.getCollection())
+          && !iDigBioRecord.getCollection().toLowerCase().contains("herbari")
+          && !iDigBioRecord.getCollection().toLowerCase().startsWith("botany")) {
+        return Optional.empty();
+      }
+
       if (iDigBioCodes.isEmpty()) {
         iDigBioCodes.addAll(getIdigbioCodes(iDigBioRecord.getInstitutionCode()));
       }
@@ -134,6 +141,7 @@ public class Matcher {
           collections.stream()
               .filter(c -> countIdentifierMatches(Utils.encodeIRN(irn), c) > 0)
               .filter(c -> iDigBioCodes.isEmpty() || iDigBioCodes.contains(c.getCode()))
+              .filter(c -> c.getMachineTags().stream().noneMatch(IS_IDIGBIO_COLLECTION_UUID_MT))
               .collect(Collectors.toList());
     } else {
       if (iDigBioCodes.isEmpty()) {

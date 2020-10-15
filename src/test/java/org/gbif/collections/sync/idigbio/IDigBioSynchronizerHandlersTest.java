@@ -20,10 +20,7 @@ import static org.junit.Assert.assertTrue;
 public class IDigBioSynchronizerHandlersTest extends BaseIDigBioTest {
 
   private final IDigBioSynchronizer synchronizer =
-      IDigBioSynchronizer.builder()
-          .dataLoader(TestDataLoader.builder().build())
-          .iDigBioConfig(iDigBioConfig)
-          .build();
+      IDigBioSynchronizer.create(iDigBioConfig, TestDataLoader.builder().build());
 
   @Test
   public void collectionToUpdateTest() {
