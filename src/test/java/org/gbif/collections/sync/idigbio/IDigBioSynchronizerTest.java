@@ -66,12 +66,12 @@ public class IDigBioSynchronizerTest extends BaseIDigBioTest {
             .count());
 
     // assert no matches
-    assertEquals(1, syncResult.getNoMatches().size());
+    assertEquals(2, syncResult.getNoMatches().size());
     NoEntityMatch noEntityMatch = syncResult.getNoMatches().get(0);
     assertEquals(1, noEntityMatch.getStaffMatch().getNewPersons().size());
 
     // assert invalid
-    assertEquals(1, syncResult.getInvalidEntities().size());
+    assertEquals(0, syncResult.getInvalidEntities().size());
   }
 
   private DataLoader<IDigBioData> createData() {
@@ -126,8 +126,8 @@ public class IDigBioSynchronizerTest extends BaseIDigBioTest {
     r3.setContactRole("role2");
     r3.setContactEmail("contact@test.com");
 
-    IDigBioRecord invalid = new IDigBioRecord();
-    invalid.setInstitution("inst 3");
+    IDigBioRecord noCodeRecord = new IDigBioRecord();
+    noCodeRecord.setInstitution("inst 3");
 
     IDigBioRecord repeated = new IDigBioRecord();
     repeated.setInstitution("inst 3");
@@ -160,7 +160,7 @@ public class IDigBioSynchronizerTest extends BaseIDigBioTest {
     return TestDataLoader.builder()
         .institutions(Arrays.asList(i1, i2))
         .collections(Arrays.asList(c1, c2, cmt))
-        .iDigBioRecords(Arrays.asList(r1, r2, r3, invalid, repeated, r4))
+        .iDigBioRecords(Arrays.asList(r1, r2, r3, noCodeRecord, repeated, r4))
         .build();
   }
 }
