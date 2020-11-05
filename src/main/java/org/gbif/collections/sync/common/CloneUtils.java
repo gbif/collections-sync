@@ -8,6 +8,7 @@ import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contactable;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
+import org.gbif.api.model.registry.Commentable;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.MachineTaggable;
 import org.gbif.api.model.registry.Taggable;
@@ -22,15 +23,28 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CloneUtils {
   public static Institution cloneInstitution(Institution institution) {
-    return cloneCollectionEntity(institution, new Institution());
+    Institution clone = cloneCollectionEntity(institution, new Institution());
+
+    if (clone.getAlternativeCodes() != null) {
+      clone.setAlternativeCodes(new ArrayList<>(clone.getAlternativeCodes()));
+    }
+    return clone;
   }
 
   public static Collection cloneCollection(Collection collection) {
-    return cloneCollectionEntity(collection, new Collection());
+    Collection clone = cloneCollectionEntity(collection, new Collection());
+
+    if (clone.getAlternativeCodes() != null) {
+      clone.setAlternativeCodes(new ArrayList<>(clone.getAlternativeCodes()));
+    }
+
+    return clone;
   }
 
   private static <
-          T extends CollectionEntity & Identifiable & Taggable & MachineTaggable & Contactable>
+          T extends
+              CollectionEntity & Identifiable & Taggable & MachineTaggable & Contactable
+                  & Commentable>
       T cloneCollectionEntity(T entity, T clone) {
     if (entity != null) {
       // copy fields
@@ -54,6 +68,9 @@ public class CloneUtils {
         }
         if (clone.getContacts() != null) {
           clone.setContacts(new ArrayList<>(clone.getContacts()));
+        }
+        if (clone.getComments() != null) {
+          clone.setComments(new ArrayList<>(clone.getComments()));
         }
       } catch (Exception e) {
         log.warn("Couldn't copy collection entity properties from bean: {}", entity);

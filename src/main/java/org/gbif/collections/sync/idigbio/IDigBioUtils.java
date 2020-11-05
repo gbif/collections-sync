@@ -20,6 +20,7 @@ public class IDigBioUtils {
       mt ->
           mt.getNamespace().equals(IDIGBIO_NAMESPACE) && mt.getName().equals(IDIGBIO_COLLECTION_UUID);
   public static final String IH_SUFFIX_IDIGBIO = "<IH>";
+  public static final String IDIGBIO_NO_CODE = "<idigbio-no-code>";
 
   public static List<String> getIdigbioCodes(String idigbioCode) {
     return getStringList(idigbioCode).stream()

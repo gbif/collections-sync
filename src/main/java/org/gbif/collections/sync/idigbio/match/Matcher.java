@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import static org.gbif.collections.sync.common.Utils.countNonNullValues;
 import static org.gbif.collections.sync.common.staff.StaffUtils.compareLists;
 import static org.gbif.collections.sync.common.staff.StaffUtils.compareStrings;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NO_CODE;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.IS_IDIGBIO_COLLECTION_UUID_MT;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
 
@@ -47,6 +48,7 @@ public class Matcher {
     Institution institutionMatch =
         proxyClient.getInstitutionsByKey().get(iDigBioRecord.getGrbioInstMatch());
     if (institutionMatch == null) {
+      fixNullCodes(iDigBioRecord);
       institutionMatch = matchWithNewInstitutions(iDigBioRecord);
     }
 
@@ -222,6 +224,14 @@ public class Matcher {
     }
 
     return bestMatch == null ? Collections.emptySet() : Collections.singleton(bestMatch);
+  }
+
+  private void fixNullCodes(IDigBioRecord iDigBioRecord) {
+    if (Strings.isNullOrEmpty(iDigBioRecord.getInstitutionCode())
+        && Strings.isNullOrEmpty(iDigBioRecord.getCollectionCode())) {
+      iDigBioRecord.setInstitutionCode(IDIGBIO_NO_CODE);
+      iDigBioRecord.setCollectionCode(IDIGBIO_NO_CODE);
+    }
   }
 
   private static Person comparePersonFieldCompleteness(Person p1, Person p2) {
