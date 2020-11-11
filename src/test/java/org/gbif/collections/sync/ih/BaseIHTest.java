@@ -170,6 +170,7 @@ public class BaseIHTest {
   protected TestEntity<Collection, IHInstitution> createCollectionNoChange() {
     Collection c = new Collection();
     c.setKey(UUID.randomUUID());
+    c.setName("name");
     c.setCode("A");
     c.setIndexHerbariorumRecord(true);
     c.setEmail(Collections.singletonList("aa@aa.com"));
@@ -188,6 +189,7 @@ public class BaseIHTest {
   protected TestEntity<Collection, IHInstitution> createCollectionToUpdate() {
     Collection c = new Collection();
     c.setKey(UUID.randomUUID());
+    c.setName("collName");
     c.setCode("B");
     c.setEmail(Collections.singletonList("bb@bb.com"));
     c.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST)));
@@ -197,7 +199,7 @@ public class BaseIHTest {
     Collection expected = new Collection();
     expected.setKey(c.getKey());
     expected.setCode(ih.getCode());
-    expected.setName(ih.getOrganization());
+    expected.setName(c.getName());
     expected.setIndexHerbariorumRecord(true);
     expected.setNumberSpecimens(ih.getSpecimenTotal());
     expected.setEmail(Collections.singletonList(ih.getContact().getEmail()));

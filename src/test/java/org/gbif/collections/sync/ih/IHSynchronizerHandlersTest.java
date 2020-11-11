@@ -11,7 +11,6 @@ import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.ih.match.IHMatchResult;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.gbif.collections.sync.TestUtils.assertEmptyStaffMatch;
@@ -21,7 +20,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-@Ignore
 public class IHSynchronizerHandlersTest extends BaseIHTest {
 
   @Test

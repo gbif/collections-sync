@@ -165,13 +165,9 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
       collection.setInstitutionKey(institution.getKey());
     }
 
-    String organizationName = cleanString(ihInstitution.getOrganization());
+    // we don't overwrite the name
     if (collection.getName() == null) {
       collection.setName(DEFAULT_COLLECTION_NAME);
-    } else if (collection.getName().equals(organizationName)) {
-      collection.setName(DEFAULT_COLLECTION_NAME);
-    } else {
-      collection.setName(cleanString(ihInstitution.getOrganization()));
     }
 
     collection.setCode(cleanString(ihInstitution.getCode()));
