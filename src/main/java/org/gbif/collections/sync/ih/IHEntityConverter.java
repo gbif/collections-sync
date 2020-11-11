@@ -24,12 +24,12 @@ import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.collections.sync.clients.http.IHHttpClient;
 import org.gbif.collections.sync.common.Utils;
-import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.common.converter.EntityConverter;
-import org.gbif.collections.sync.ih.model.IHInstitution;
-import org.gbif.collections.sync.ih.model.IHStaff;
 import org.gbif.collections.sync.common.parsers.CountryParser;
 import org.gbif.collections.sync.common.parsers.DataParser;
+import org.gbif.collections.sync.config.IHConfig;
+import org.gbif.collections.sync.ih.model.IHInstitution;
+import org.gbif.collections.sync.ih.model.IHStaff;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -39,8 +39,6 @@ import static org.gbif.collections.sync.common.CloneUtils.cloneCollection;
 import static org.gbif.collections.sync.common.CloneUtils.cloneInstitution;
 import static org.gbif.collections.sync.common.CloneUtils.clonePerson;
 import static org.gbif.collections.sync.common.Utils.containsIrnIdentifier;
-import static org.gbif.collections.sync.ih.model.IHInstitution.CollectionSummary;
-import static org.gbif.collections.sync.ih.model.IHInstitution.Location;
 import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
 import static org.gbif.collections.sync.common.parsers.DataParser.cleanString;
 import static org.gbif.collections.sync.common.parsers.DataParser.getFirstString;
@@ -49,10 +47,14 @@ import static org.gbif.collections.sync.common.parsers.DataParser.getStringValue
 import static org.gbif.collections.sync.common.parsers.DataParser.parseDate;
 import static org.gbif.collections.sync.common.parsers.DataParser.parseStringList;
 import static org.gbif.collections.sync.common.parsers.DataParser.parseUri;
+import static org.gbif.collections.sync.ih.model.IHInstitution.CollectionSummary;
+import static org.gbif.collections.sync.ih.model.IHInstitution.Location;
 
 /** Converts IH insitutions to the GrSciColl entities {@link Institution} and {@link Collection}. */
 @Slf4j
 public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff> {
+
+  private static final String DEFAULT_COLLECTION_NAME = "Herbarium";
 
   private final CountryParser countryParser;
 
@@ -163,7 +165,15 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
       collection.setInstitutionKey(institution.getKey());
     }
 
-    collection.setName(cleanString(ihInstitution.getOrganization()));
+    String organizationName = cleanString(ihInstitution.getOrganization());
+    if (collection.getName() == null) {
+      collection.setName(DEFAULT_COLLECTION_NAME);
+    } else if (collection.getName().equals(organizationName)) {
+      collection.setName(DEFAULT_COLLECTION_NAME);
+    } else {
+      collection.setName(cleanString(ihInstitution.getOrganization()));
+    }
+
     collection.setCode(cleanString(ihInstitution.getCode()));
     collection.setIndexHerbariorumRecord(true);
     collection.setActive(isActive(ihInstitution.getCurrentStatus()));
