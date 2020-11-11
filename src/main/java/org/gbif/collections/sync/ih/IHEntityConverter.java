@@ -54,7 +54,7 @@ import static org.gbif.collections.sync.ih.model.IHInstitution.Location;
 @Slf4j
 public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff> {
 
-  private static final String DEFAULT_COLLECTION_NAME = "Herbarium";
+  public static final String DEFAULT_COLLECTION_NAME = "Herbarium";
 
   private final CountryParser countryParser;
 
