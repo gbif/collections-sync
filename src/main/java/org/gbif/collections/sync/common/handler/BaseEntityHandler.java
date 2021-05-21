@@ -1,17 +1,13 @@
 package org.gbif.collections.sync.common.handler;
 
-import java.util.UUID;
-import java.util.function.Function;
-
 import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.registry.Identifiable;
-import org.gbif.api.model.registry.Identifier;
-import org.gbif.api.model.registry.LenientEquals;
-import org.gbif.api.model.registry.MachineTag;
-import org.gbif.api.model.registry.MachineTaggable;
+import org.gbif.api.model.registry.*;
 import org.gbif.collections.sync.SyncResult.FailedAction;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
 import org.gbif.collections.sync.clients.proxy.CallExecutor;
+
+import java.util.UUID;
+import java.util.function.Function;
 
 public abstract class BaseEntityHandler<
         T extends LenientEquals<T> & CollectionEntity & Identifiable & MachineTaggable>
@@ -45,13 +41,21 @@ public abstract class BaseEntityHandler<
 
   @Override
   public T create(T newEntity) {
-    return callExecutor.executeAndReturnOrAddFail(
-        () -> {
-          UUID createdKey = createCall(newEntity);
-          return getCall(createdKey);
-        },
-        exceptionHandler(newEntity, "Failed to create entity"),
-        newEntity);
+    T entity =
+        callExecutor.executeAndReturnOrAddFail(
+            () -> {
+              UUID createdKey = createCall(newEntity);
+              return getCall(createdKey);
+            },
+            exceptionHandler(newEntity, "Failed to create entity"),
+            newEntity);
+
+    // create identifiers and machine tags if needed
+    callExecutor.executeOrAddFailAsync(
+        () -> addSubEntities(entity),
+        exceptionHandler(entity, "Failed to add identifiers and machine tags of entity"));
+
+    return entity;
   }
 
   @Override
