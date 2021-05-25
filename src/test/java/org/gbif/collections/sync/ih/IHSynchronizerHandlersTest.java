@@ -1,8 +1,5 @@
 package org.gbif.collections.sync.ih;
 
-import java.util.Collections;
-import java.util.UUID;
-
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.registry.Identifier;
@@ -11,11 +8,15 @@ import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.ih.match.IHMatchResult;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 
+import java.util.Collections;
+import java.util.UUID;
+
 import org.junit.Test;
 
 import static org.gbif.collections.sync.TestUtils.assertEmptyStaffMatch;
 import static org.gbif.collections.sync.common.Utils.encodeIRN;
 import static org.gbif.collections.sync.ih.IHEntityConverter.DEFAULT_COLLECTION_NAME;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -153,9 +154,9 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
   }
 
   @Test
-  public void identifierAndTagUpdateInCollectionTest() {
+  public void machineTagUpdateInCollectionTest() {
     TestEntity<Collection, IHInstitution> collectionNoChange = createCollectionNoChange();
-    collectionNoChange.getEntity().setIdentifiers(Collections.emptyList());
+    collectionNoChange.getEntity().setMachineTags(Collections.emptyList());
     IHMatchResult match =
         IHMatchResult.builder()
             .collections(Collections.singleton(collectionNoChange.entity))
@@ -167,9 +168,9 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
   }
 
   @Test
-  public void identifierAndTagUpdateInInstitutionTest() {
+  public void machineTagUpdateInInstitutionTest() {
     TestEntity<Institution, IHInstitution> institutionNoChange = createInstitutionNoChange();
-    institutionNoChange.getEntity().setIdentifiers(Collections.emptyList());
+    institutionNoChange.getEntity().setMachineTags(Collections.emptyList());
     IHMatchResult match =
         IHMatchResult.builder()
             .institutions(Collections.singleton(institutionNoChange.entity))

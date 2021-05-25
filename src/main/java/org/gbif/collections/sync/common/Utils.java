@@ -1,16 +1,12 @@
 package org.gbif.collections.sync.common;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifiable;
+import org.gbif.api.model.registry.MachineTaggable;
 import org.gbif.api.vocabulary.IdentifierType;
+
+import java.util.*;
 
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
@@ -20,6 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
 public class Utils {
+
+  public static final String IH_NAMESPACE = "ih.gbif.org";
+  public static final String IRN_TAG = "irn";
 
   /**
    * Encodes the IH IRN into the format stored on the GRSciColl identifier. E.g. 123 ->
@@ -38,7 +37,13 @@ public class Utils {
         && entity.getIdentifiers().stream().anyMatch(i -> i.getType() == IdentifierType.IH_IRN);
   }
 
-  public static <T extends CollectionEntity & Identifiable> Map<String, Set<T>> mapByIrn(
+  public static boolean containsIrnMachineTag(MachineTaggable entity) {
+    return entity.getMachineTags() != null
+        && entity.getMachineTags().stream()
+            .anyMatch(mt -> mt.getNamespace().equals(IH_NAMESPACE) && mt.getName().equals(IRN_TAG));
+  }
+
+  public static <T extends CollectionEntity & MachineTaggable> Map<String, Set<T>> mapByIrn(
       java.util.Collection<T> entities) {
     Map<String, Set<T>> mapByIrn = new HashMap<>();
     if (entities == null) {
@@ -46,16 +51,16 @@ public class Utils {
     }
 
     entities.stream()
-        .filter(o -> o.getIdentifiers() != null)
+        .filter(o -> o.getDeleted() == null && o.getMachineTags() != null)
         .forEach(
             o ->
-                o.getIdentifiers().stream()
-                    .filter(i -> i.getType() == IdentifierType.IH_IRN)
+                o.getMachineTags().stream()
+                    .filter(
+                        mt ->
+                            mt.getNamespace().equals(IH_NAMESPACE) && mt.getName().equals(IRN_TAG))
                     .forEach(
-                        i ->
-                            mapByIrn
-                                .computeIfAbsent(i.getIdentifier(), s -> new HashSet<>())
-                                .add(o)));
+                        mt ->
+                            mapByIrn.computeIfAbsent(mt.getValue(), s -> new HashSet<>()).add(o)));
     return mapByIrn;
   }
 

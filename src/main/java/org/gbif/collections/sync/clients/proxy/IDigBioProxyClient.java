@@ -39,7 +39,7 @@ public class IDigBioProxyClient extends BaseProxyClient {
   // multiple times because it has multiple collections.
   private final Set<Institution> newlyCreatedIDigBioInstitutions = new HashSet<>();
   private Set<Person> persons = new HashSet<>();
-  private Map<String, Collection> collectionsByIDigBioUuid = new HashMap<>();
+  private final Map<String, Collection> collectionsByIDigBioUuid = new HashMap<>();
 
   @Builder
   public IDigBioProxyClient(IDigBioConfig iDigBioConfig, DataLoader<IDigBioData> dataLoader) {

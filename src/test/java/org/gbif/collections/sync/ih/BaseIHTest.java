@@ -1,22 +1,11 @@
 package org.gbif.collections.sync.ih;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import org.gbif.api.model.collections.Address;
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
-import org.gbif.api.model.registry.Identifier;
+import org.gbif.api.model.collections.*;
 import org.gbif.api.model.registry.LenientEquals;
+import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.util.IsoDateParsingUtils;
 import org.gbif.api.vocabulary.Country;
-import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.api.vocabulary.collections.InstitutionType;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.common.parsers.CountryParser;
@@ -25,12 +14,16 @@ import org.gbif.collections.sync.ih.model.IHEntity;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 
+import java.util.*;
+
 import lombok.Builder;
 import lombok.Data;
 
 import static org.gbif.collections.sync.TestUtils.createTestSyncConfig;
-import static org.gbif.collections.sync.common.Utils.encodeIRN;
+import static org.gbif.collections.sync.common.Utils.IH_NAMESPACE;
+import static org.gbif.collections.sync.common.Utils.IRN_TAG;
 import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -69,7 +62,7 @@ public class BaseIHTest {
     i.setName("bar");
     i.setIndexHerbariorumRecord(true);
     i.setNumberSpecimens(1000);
-    i.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST)));
+    i.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST));
 
     IHInstitution ih = new IHInstitution();
     ih.setIrn(IRN_TEST);
@@ -156,9 +149,9 @@ public class BaseIHTest {
     physicalAddress.setCountry(Country.UNITED_STATES);
     expected.setAddress(physicalAddress);
 
-    Identifier newIdentifier = new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST));
-    newIdentifier.setCreatedBy(TEST_USER);
-    expected.getIdentifiers().add(newIdentifier);
+    MachineTag newMachineTag = new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST);
+    newMachineTag.setCreatedBy(TEST_USER);
+    expected.getMachineTags().add(newMachineTag);
 
     return TestEntity.<Institution, IHInstitution>builder()
         .entity(i)
@@ -174,7 +167,7 @@ public class BaseIHTest {
     c.setCode("A");
     c.setIndexHerbariorumRecord(true);
     c.setEmail(Collections.singletonList("aa@aa.com"));
-    c.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST)));
+    c.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST));
 
     IHInstitution ih = new IHInstitution();
     ih.setIrn(IRN_TEST);
@@ -192,7 +185,7 @@ public class BaseIHTest {
     c.setName("collName");
     c.setCode("B");
     c.setEmail(Collections.singletonList("bb@bb.com"));
-    c.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST)));
+    c.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST));
 
     IHInstitution ih = createIHInstitution();
 
@@ -203,7 +196,6 @@ public class BaseIHTest {
     expected.setIndexHerbariorumRecord(true);
     expected.setNumberSpecimens(ih.getSpecimenTotal());
     expected.setEmail(Collections.singletonList(ih.getContact().getEmail()));
-    expected.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST)));
     expected.setActive(true);
     expected.setNumberSpecimens(ih.getSpecimenTotal());
     expected.setTaxonomicCoverage(ih.getTaxonomicCoverage());
@@ -222,6 +214,10 @@ public class BaseIHTest {
     physicalAddress.setCity(ih.getAddress().getPhysicalCity());
     physicalAddress.setCountry(Country.UNITED_STATES);
     expected.setAddress(physicalAddress);
+
+    MachineTag newMachineTag = new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST);
+    newMachineTag.setCreatedBy(TEST_USER);
+    expected.getMachineTags().add(newMachineTag);
 
     return TestEntity.<Collection, IHInstitution>builder()
         .entity(c)
@@ -273,9 +269,9 @@ public class BaseIHTest {
     expectedAddress.setProvince(address.getState());
     expectedAddress.setCountry(Country.UNITED_STATES);
     expected.setMailingAddress(expectedAddress);
-    Identifier newIdentifier = new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST));
-    newIdentifier.setCreatedBy(TEST_USER);
-    expected.getIdentifiers().add(newIdentifier);
+    MachineTag newMachineTag = new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST);
+    newMachineTag.setCreatedBy(TEST_USER);
+    expected.getMachineTags().add(newMachineTag);
 
     return TestEntity.<Person, IHStaff>builder().entity(p).ih(s).expected(expected).build();
   }
@@ -285,7 +281,7 @@ public class BaseIHTest {
     p.setFirstName("foo");
     p.setKey(UUID.randomUUID());
     p.setEmail("foo@foo.com");
-    p.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST)));
+    p.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST));
 
     IHStaff s = new IHStaff();
     s.setFirstName("foo");
@@ -341,6 +337,9 @@ public class BaseIHTest {
     expectedAddress.setProvince(address.getState());
     expectedAddress.setCountry(Country.UNITED_STATES);
     expected.setMailingAddress(expectedAddress);
+    MachineTag newMachineTag = new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST);
+    newMachineTag.setCreatedBy(TEST_USER);
+    expected.getMachineTags().add(newMachineTag);
 
     return TestEntity.<Person, IHStaff>builder().ih(s).expected(expected).build();
   }

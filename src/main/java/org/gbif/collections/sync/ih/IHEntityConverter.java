@@ -1,35 +1,28 @@
 package org.gbif.collections.sync.ih;
 
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import org.gbif.api.model.collections.Address;
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.Contactable;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
+import org.gbif.api.model.collections.*;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.Identifier;
+import org.gbif.api.model.registry.MachineTag;
+import org.gbif.api.model.registry.MachineTaggable;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.collections.sync.clients.http.IHHttpClient;
-import org.gbif.collections.sync.common.Utils;
 import org.gbif.collections.sync.common.converter.EntityConverter;
 import org.gbif.collections.sync.common.parsers.CountryParser;
 import org.gbif.collections.sync.common.parsers.DataParser;
 import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
+
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -38,15 +31,8 @@ import lombok.extern.slf4j.Slf4j;
 import static org.gbif.collections.sync.common.CloneUtils.cloneCollection;
 import static org.gbif.collections.sync.common.CloneUtils.cloneInstitution;
 import static org.gbif.collections.sync.common.CloneUtils.clonePerson;
-import static org.gbif.collections.sync.common.Utils.containsIrnIdentifier;
-import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
-import static org.gbif.collections.sync.common.parsers.DataParser.cleanString;
-import static org.gbif.collections.sync.common.parsers.DataParser.getFirstString;
-import static org.gbif.collections.sync.common.parsers.DataParser.getListValue;
-import static org.gbif.collections.sync.common.parsers.DataParser.getStringValue;
-import static org.gbif.collections.sync.common.parsers.DataParser.parseDate;
-import static org.gbif.collections.sync.common.parsers.DataParser.parseStringList;
-import static org.gbif.collections.sync.common.parsers.DataParser.parseUri;
+import static org.gbif.collections.sync.common.Utils.*;
+import static org.gbif.collections.sync.common.parsers.DataParser.*;
 import static org.gbif.collections.sync.ih.model.IHInstitution.CollectionSummary;
 import static org.gbif.collections.sync.ih.model.IHInstitution.Location;
 
@@ -95,7 +81,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
             ihInstitution.getDateFounded(),
             "Invalid date for institution " + ihInstitution.getIrn()));
 
-    addIdentifierIfNotExists(institution, Utils.encodeIRN(ihInstitution.getIrn()));
+    addIrnIfNotExists(institution, ihInstitution.getIrn());
 
     return institution;
   }
@@ -186,7 +172,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     collection.setPhone(getIhPhones(ihInstitution));
     collection.setHomepage(getIhHomepage(ihInstitution));
 
-    addIdentifierIfNotExists(collection, Utils.encodeIRN(ihInstitution.getIrn()));
+    addIrnIfNotExists(collection, ihInstitution.getIrn());
 
     return collection;
   }
@@ -279,7 +265,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
       person.getMailingAddress().setCountry(mailingAddressCountry);
     }
 
-    addIdentifierIfNotExists(person, Utils.encodeIRN(ihStaff.getIrn()));
+    addIrnIfNotExists(person, ihStaff.getIrn());
 
     return person;
   }
@@ -388,11 +374,16 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
         .orElse(null);
   }
 
-  private static void addIdentifierIfNotExists(Identifiable entity, String irn) {
-    if (!containsIrnIdentifier(entity)) {
+  private static <T extends CollectionEntity & Identifiable & MachineTaggable>
+      void addIrnIfNotExists(T entity, String irn) {
+    // we only add the IH identifier for new entities
+    if (entity.getKey() == null && !containsIrnIdentifier(entity)) {
       // add identifier
-      Identifier ihIdentifier = new Identifier(IdentifierType.IH_IRN, irn);
-      entity.getIdentifiers().add(ihIdentifier);
+      entity.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(irn)));
+    }
+
+    if (!containsIrnMachineTag(entity)) {
+      entity.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, irn));
     }
   }
 

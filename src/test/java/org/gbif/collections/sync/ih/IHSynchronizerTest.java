@@ -1,30 +1,27 @@
 package org.gbif.collections.sync.ih;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
-import org.gbif.api.model.registry.Identifier;
-import org.gbif.api.vocabulary.IdentifierType;
+import org.gbif.api.model.registry.MachineTag;
 import org.gbif.collections.sync.SyncResult;
-import org.gbif.collections.sync.SyncResult.CollectionOnlyMatch;
-import org.gbif.collections.sync.SyncResult.EntityMatch;
-import org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
-import org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
-import org.gbif.collections.sync.SyncResult.NoEntityMatch;
+import org.gbif.collections.sync.SyncResult.*;
 import org.gbif.collections.sync.common.DataLoader;
-import org.gbif.collections.sync.common.Utils;
 import org.gbif.collections.sync.ih.IHDataLoader.IHData;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 import org.gbif.collections.sync.ih.model.IHStaff.Contact;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
 import org.junit.Test;
 
 import static org.gbif.collections.sync.TestUtils.assertEmptyStaffMatch;
+import static org.gbif.collections.sync.common.Utils.IH_NAMESPACE;
+import static org.gbif.collections.sync.common.Utils.IRN_TAG;
+
 import static org.junit.Assert.assertEquals;
 
 public class IHSynchronizerTest extends BaseIHTest {
@@ -126,23 +123,21 @@ public class IHSynchronizerTest extends BaseIHTest {
     i1.setKey(UUID.randomUUID());
     i1.setCode("c11");
     i1.setName("Inst 1");
-    i1.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(ih1.getIrn())));
+    i1.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, ih1.getIrn()));
 
     Collection c1 = new Collection();
     c1.setKey(UUID.randomUUID());
     c1.setInstitutionKey(i1.getKey());
     c1.setCode("c1");
     c1.setName("Coll 1");
-    c1.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(ih1.getIrn())));
+    c1.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, ih1.getIrn()));
 
     Person pNoChange = new Person();
     pNoChange.setKey(UUID.randomUUID());
     pNoChange.setFirstName(is1.getFirstName());
     pNoChange.setLastName(is1.getLastName());
     pNoChange.setEmail(is1.getContact().getEmail());
-    pNoChange
-        .getIdentifiers()
-        .add(new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(is1.getIrn())));
+    pNoChange.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, is1.getIrn()));
     i1.getContacts().add(pNoChange);
 
     Person pToRemove = new Person();
@@ -160,13 +155,13 @@ public class IHSynchronizerTest extends BaseIHTest {
     i2.setKey(UUID.randomUUID());
     i2.setCode("c2");
     i2.setName("Inst 2");
-    i2.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(ih2.getIrn())));
+    i2.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, ih2.getIrn()));
 
     Collection c2 = new Collection();
     c2.setKey(UUID.randomUUID());
     c2.setCode("c2");
     c2.setName("Coll 2");
-    c2.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, Utils.encodeIRN(ih3.getIrn())));
+    c2.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, ih3.getIrn()));
 
     List<Institution> institutions = Arrays.asList(i1, i2);
     List<Collection> collections = Arrays.asList(c1, c2);
