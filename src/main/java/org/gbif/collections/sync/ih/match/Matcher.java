@@ -79,7 +79,7 @@ public class Matcher {
       Set<Person> matchesWithIrn =
           proxyClient
               .getGrSciCollPersonsByIrn()
-              .getOrDefault(encodeIRN(ihStaffToMatch.ihStaff.getIrn()), Collections.emptySet());
+              .getOrDefault(ihStaffToMatch.ihStaff.getIrn(), Collections.emptySet());
 
       if (!matchesWithIrn.isEmpty()) {
         return matchesWithIrn;
