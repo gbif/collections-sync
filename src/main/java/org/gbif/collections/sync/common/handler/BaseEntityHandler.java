@@ -30,7 +30,7 @@ public abstract class BaseEntityHandler<
             () -> updateCall(newEntity), exceptionHandler(newEntity, "Failed to update entity"));
       }
       // create identifiers and machine tags if needed
-      callExecutor.executeOrAddFailAsync(
+      callExecutor.executeOrAddFail(
           () -> addSubEntities(newEntity),
           exceptionHandler(newEntity, "Failed to add identifiers and machine tags of entity"));
 
@@ -51,9 +51,12 @@ public abstract class BaseEntityHandler<
             newEntity);
 
     // create identifiers and machine tags if needed
-    callExecutor.executeOrAddFailAsync(
-        () -> addSubEntities(entity),
-        exceptionHandler(entity, "Failed to add identifiers and machine tags of entity"));
+    if (entity.getKey() != null) {
+      newEntity.setKey(entity.getKey());
+      callExecutor.executeOrAddFail(
+          () -> addSubEntities(newEntity),
+          exceptionHandler(entity, "Failed to add identifiers and machine tags of entity"));
+    }
 
     return entity;
   }
