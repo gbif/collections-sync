@@ -15,6 +15,13 @@ public class TestUtils {
     assertEquals(0, staffMatch.getConflicts().size());
   }
 
+  public static void assertEmptyContactMatch(SyncResult.ContactMatch contactMatch) {
+    assertEquals(0, contactMatch.getMatchedContacts().size());
+    assertEquals(0, contactMatch.getNewContacts().size());
+    assertEquals(0, contactMatch.getRemovedContacts().size());
+    assertEquals(0, contactMatch.getConflicts().size());
+  }
+
   public static boolean isEmptyStaffMatch(SyncResult.StaffMatch staffMatch) {
     return staffMatch.getMatchedPersons().isEmpty()
         && staffMatch.getNewPersons().isEmpty()

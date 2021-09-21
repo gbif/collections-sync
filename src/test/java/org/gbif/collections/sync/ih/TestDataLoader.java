@@ -3,6 +3,7 @@ package org.gbif.collections.sync.ih;
 import java.util.List;
 
 import org.gbif.api.model.collections.Collection;
+import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.common.DataLoader;
@@ -24,6 +25,9 @@ public class TestDataLoader implements DataLoader<IHData> {
 
   @Singular(value = "person")
   private final List<Person> persons;
+
+  @Singular(value = "contact")
+  private final List<Contact> contacts;
 
   @Singular(value = "ihInstitution")
   private final List<IHInstitution> ihInstitutions;

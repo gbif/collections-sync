@@ -1,17 +1,14 @@
 package org.gbif.collections.sync.clients.proxy;
 
-import java.util.List;
-
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Contactable;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
+import org.gbif.api.model.collections.*;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
 import org.gbif.collections.sync.common.handler.CollectionHandler;
 import org.gbif.collections.sync.common.handler.InstitutionHandler;
 import org.gbif.collections.sync.common.handler.PersonHandler;
 import org.gbif.collections.sync.config.SyncConfig;
+
+import java.util.List;
+import java.util.UUID;
 
 public abstract class BaseProxyClient implements GrSciCollProxyClient {
 
@@ -65,5 +62,29 @@ public abstract class BaseProxyClient implements GrSciCollProxyClient {
   public <T extends CollectionEntity & Contactable> void unlinkPersonFromEntity(
       Person personToRemove, List<T> entities) {
     personHandler.unlinkPersonFromEntity(personToRemove, entities);
+  }
+
+  public Integer addContactToInstitution(UUID entityKey, Contact contact) {
+    return institutionHandler.addContactToEntityCall(entityKey, contact);
+  }
+
+  public boolean updateContactInInstitution(UUID entityKey, Contact oldContact, Contact newContact) {
+    return institutionHandler.updateContactInEntityCall(entityKey, oldContact, newContact);
+  }
+
+  public void removeContactFromInstitution(UUID entityKey, int contactKey) {
+    institutionHandler.removeContactFromEntityCall(entityKey, contactKey);
+  }
+
+  public Integer addContactToCollection(UUID entityKey, Contact contact) {
+    return collectionHandler.addContactToEntityCall(entityKey, contact);
+  }
+
+  public boolean updateContactInCollection(UUID entityKey, Contact oldContact, Contact newContact) {
+    return collectionHandler.updateContactInEntityCall(entityKey, oldContact, newContact);
+  }
+
+  public void removeContactFromCollection(UUID entityKey, int contactKey) {
+    collectionHandler.removeContactFromEntityCall(entityKey, contactKey);
   }
 }

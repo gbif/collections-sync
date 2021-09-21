@@ -1,15 +1,7 @@
 package org.gbif.collections.sync.idigbio.match;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Contactable;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
+import org.gbif.api.model.collections.*;
+import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.EntityMatch;
 import org.gbif.collections.sync.SyncResult.StaffMatch;
 import org.gbif.collections.sync.clients.proxy.IDigBioProxyClient;
@@ -17,6 +9,11 @@ import org.gbif.collections.sync.common.match.MatchResult;
 import org.gbif.collections.sync.common.match.StaffResultHandler;
 import org.gbif.collections.sync.idigbio.IDigBioEntityConverter;
 import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
@@ -92,6 +89,13 @@ public class IDigBioStaffMatchResultHandler
     }
 
     return staffSyncBuilder.build();
+  }
+
+  @Override
+  public <T extends CollectionEntity & Contactable> SyncResult.ContactMatch handleStaff(
+      MatchResult<IDigBioRecord, IDigBioRecord> matchResult, T entity) {
+    // Not implemented
+    return null;
   }
 
   private static <T extends CollectionEntity & Contactable> StaffMatch handleOnlyContactEmail(

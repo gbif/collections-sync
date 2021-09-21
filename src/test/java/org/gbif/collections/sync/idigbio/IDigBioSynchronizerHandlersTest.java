@@ -1,7 +1,5 @@
 package org.gbif.collections.sync.idigbio;
 
-import java.util.UUID;
-
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.collections.sync.SyncResult;
@@ -9,9 +7,10 @@ import org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
 import org.gbif.collections.sync.idigbio.match.IDigBioMatchResult;
 import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
+import java.util.UUID;
+
 import org.junit.Test;
 
-import static org.gbif.collections.sync.TestUtils.assertEmptyStaffMatch;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -45,7 +44,6 @@ public class IDigBioSynchronizerHandlersTest extends BaseIDigBioTest {
             .getMatchedCollection()
             .getMerged()
             .lenientEquals(collectionOnlyMatch.getMatchedCollection().getMatched()));
-    assertEmptyStaffMatch(collectionOnlyMatch.getStaffMatch());
   }
 
   @Test
@@ -73,7 +71,6 @@ public class IDigBioSynchronizerHandlersTest extends BaseIDigBioTest {
             .getMatchedCollection()
             .getMerged()
             .lenientEquals(collectionOnlyMatch.getMatchedCollection().getMatched()));
-    assertEmptyStaffMatch(collectionOnlyMatch.getStaffMatch());
   }
 
   @Test
@@ -103,7 +100,6 @@ public class IDigBioSynchronizerHandlersTest extends BaseIDigBioTest {
             .getMatchedInstitution()
             .getMerged()
             .lenientEquals(institutionOnlyMatch.getMatchedInstitution().getMatched()));
-    assertEmptyStaffMatch(institutionOnlyMatch.getStaffMatch());
   }
 
   @Test
@@ -132,7 +128,6 @@ public class IDigBioSynchronizerHandlersTest extends BaseIDigBioTest {
             .getMatchedInstitution()
             .getMerged()
             .lenientEquals(institutionOnlyMatch.getMatchedInstitution().getMatched()));
-    assertEmptyStaffMatch(institutionOnlyMatch.getStaffMatch());
   }
 
   @Test
@@ -164,7 +159,6 @@ public class IDigBioSynchronizerHandlersTest extends BaseIDigBioTest {
     // Should
     assertTrue(noEntityMatch.getNewCollection().lenientEquals(expectedCollection));
     assertTrue(noEntityMatch.getNewInstitution().lenientEquals(expectedInstitution));
-    assertEmptyStaffMatch(noEntityMatch.getStaffMatch());
   }
 
   @Test
@@ -204,7 +198,6 @@ public class IDigBioSynchronizerHandlersTest extends BaseIDigBioTest {
     assertEquals(
         iDigBioRecord.getInstitution(),
         instAndColMatch.getMatchedCollection().getMerged().getName());
-    assertEmptyStaffMatch(instAndColMatch.getStaffMatch());
   }
 
   @Test
@@ -270,7 +263,6 @@ public class IDigBioSynchronizerHandlersTest extends BaseIDigBioTest {
     assertFalse(collectionOnlyMatch.getMatchedCollection().getMerged().getMachineTags().isEmpty());
 
     assertTrue(collectionOnlyMatch.getMatchedCollection().getMatched().getIdentifiers().isEmpty());
-    assertEmptyStaffMatch(collectionOnlyMatch.getStaffMatch());
   }
 
   @Test
@@ -305,6 +297,5 @@ public class IDigBioSynchronizerHandlersTest extends BaseIDigBioTest {
         institutionOnlyMatch.getMatchedInstitution().getMerged().getMachineTags().isEmpty());
     assertTrue(
         institutionOnlyMatch.getMatchedInstitution().getMatched().getIdentifiers().isEmpty());
-    assertEmptyStaffMatch(institutionOnlyMatch.getStaffMatch());
   }
 }

@@ -6,24 +6,17 @@ import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.DoubleFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
@@ -172,6 +165,10 @@ public class DataParser {
 
   public static String getStringValue(String value) {
     return hasValue(value) ? value.trim() : null;
+  }
+
+  public static List<String> getStringValueAsList(String value) {
+    return hasValue(value) ? Collections.singletonList(value.trim()) : Collections.emptyList();
   }
 
   public static Optional<String> getStringValueOpt(String value) {

@@ -1,8 +1,6 @@
 package org.gbif.collections.sync.ih;
 
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
+import org.gbif.api.model.collections.*;
 import org.gbif.api.model.registry.MachineTag;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.*;
@@ -10,7 +8,6 @@ import org.gbif.collections.sync.common.DataLoader;
 import org.gbif.collections.sync.ih.IHDataLoader.IHData;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
-import org.gbif.collections.sync.ih.model.IHStaff.Contact;
 
 import java.util.Arrays;
 import java.util.List;
@@ -18,7 +15,7 @@ import java.util.UUID;
 
 import org.junit.Test;
 
-import static org.gbif.collections.sync.TestUtils.assertEmptyStaffMatch;
+import static org.gbif.collections.sync.TestUtils.assertEmptyContactMatch;
 import static org.gbif.collections.sync.common.Utils.IH_NAMESPACE;
 import static org.gbif.collections.sync.common.Utils.IRN_TAG;
 
@@ -36,34 +33,34 @@ public class IHSynchronizerTest extends BaseIHTest {
     // assert collection only matches
     assertEquals(1, syncResult.getCollectionOnlyMatches().size());
     CollectionOnlyMatch collectionOnlyMatch = syncResult.getCollectionOnlyMatches().get(0);
-    assertEmptyStaffMatch(collectionOnlyMatch.getStaffMatch());
+    assertEmptyContactMatch(collectionOnlyMatch.getContactMatch());
 
     // assert institution only matches
     assertEquals(1, syncResult.getInstitutionOnlyMatches().size());
     InstitutionOnlyMatch institutionOnlyMatch = syncResult.getInstitutionOnlyMatches().get(0);
-    assertEmptyStaffMatch(institutionOnlyMatch.getStaffMatch());
+    assertEmptyContactMatch(collectionOnlyMatch.getContactMatch());
 
     // assert institution and collection matches
     assertEquals(1, syncResult.getInstAndCollMatches().size());
     InstitutionAndCollectionMatch instAndCollMatch = syncResult.getInstAndCollMatches().get(0);
-    assertEquals(2, instAndCollMatch.getStaffMatch().getMatchedPersons().size());
+    assertEquals(2, instAndCollMatch.getContactMatch().getMatchedContacts().size());
     assertEquals(
         1,
-        instAndCollMatch.getStaffMatch().getMatchedPersons().stream()
+        instAndCollMatch.getContactMatch().getMatchedContacts().stream()
             .filter(EntityMatch::isUpdate)
             .count());
     assertEquals(
         1,
-        instAndCollMatch.getStaffMatch().getMatchedPersons().stream()
+        instAndCollMatch.getContactMatch().getMatchedContacts().stream()
             .filter(m -> !m.isUpdate())
             .count());
-    assertEquals(1, instAndCollMatch.getStaffMatch().getNewPersons().size());
-    assertEquals(1, instAndCollMatch.getStaffMatch().getRemovedPersons().size());
+    assertEquals(4, instAndCollMatch.getContactMatch().getNewContacts().size());
+    assertEquals(1, instAndCollMatch.getContactMatch().getRemovedContacts().size());
 
     // assert no matches
     assertEquals(1, syncResult.getNoMatches().size());
     NoEntityMatch noEntityMatch = syncResult.getNoMatches().get(0);
-    assertEquals(1, noEntityMatch.getStaffMatch().getNewPersons().size());
+    assertEquals(2, noEntityMatch.getContactMatch().getNewContacts().size());
   }
 
   private DataLoader<IHData> createData() {
@@ -75,7 +72,7 @@ public class IHSynchronizerTest extends BaseIHTest {
     IHStaff is1 = new IHStaff();
     is1.setFirstName("first");
     is1.setLastName("last");
-    Contact contact1 = new Contact();
+    IHStaff.Contact contact1 = new IHStaff.Contact();
     contact1.setEmail("bb@test.com");
     is1.setContact(contact1);
     is1.setIrn("11");
@@ -91,7 +88,7 @@ public class IHSynchronizerTest extends BaseIHTest {
     is3.setFirstName("first3");
     is3.setLastName("last3");
     is3.setIrn("13");
-    Contact contact3 = new Contact();
+    IHStaff.Contact contact3 = new IHStaff.Contact();
     contact3.setEmail("aa@test.com");
     is3.setContact(contact3);
     is3.setCode(ih1.getCode());
@@ -132,24 +129,25 @@ public class IHSynchronizerTest extends BaseIHTest {
     c1.setName("Coll 1");
     c1.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, ih1.getIrn()));
 
-    Person pNoChange = new Person();
-    pNoChange.setKey(UUID.randomUUID());
-    pNoChange.setFirstName(is1.getFirstName());
-    pNoChange.setLastName(is1.getLastName());
-    pNoChange.setEmail(is1.getContact().getEmail());
-    pNoChange.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, is1.getIrn()));
-    i1.getContacts().add(pNoChange);
+    Contact cNoChange = new Contact();
+    cNoChange.setKey(1);
+    cNoChange.setFirstName(is1.getFirstName());
+    cNoChange.setLastName(is1.getLastName());
+    cNoChange.getEmail().add(is1.getContact().getEmail());
+    cNoChange.getUserIds().add(new UserId(IdType.IH_IRN, is1.getIrn()));
+    i1.getContactPersons().add(cNoChange);
 
-    Person pToRemove = new Person();
-    pToRemove.setKey(UUID.randomUUID());
-    pToRemove.setFirstName("person to remove");
-    i1.getContacts().add(pToRemove);
+    Contact cToRemove = new Contact();
+    cToRemove.setKey(2);
+    cToRemove.setFirstName("person to remove");
+    i1.getContactPersons().add(cToRemove);
 
-    Person pToUpdate = new Person();
-    pToUpdate.setKey(UUID.randomUUID());
-    pToUpdate.setFirstName(is3.getFirstName() + "  " + is3.getLastName());
-    pToUpdate.setEmail(is3.getContact().getEmail());
-    i1.getContacts().add(pToUpdate);
+    Contact cToUpdate = new Contact();
+    cToUpdate.setKey(3);
+    cToUpdate.setFirstName(is3.getFirstName() + "  " + is3.getLastName());
+    cToUpdate.getEmail().add(is3.getContact().getEmail());
+    cToUpdate.getUserIds().add(new UserId(IdType.IH_IRN, is3.getIrn()));
+    i1.getContactPersons().add(cToUpdate);
 
     Institution i2 = new Institution();
     i2.setKey(UUID.randomUUID());
@@ -165,14 +163,14 @@ public class IHSynchronizerTest extends BaseIHTest {
 
     List<Institution> institutions = Arrays.asList(i1, i2);
     List<Collection> collections = Arrays.asList(c1, c2);
-    List<Person> persons = Arrays.asList(pNoChange, pToRemove, pToUpdate);
+    List<Contact> contacts = Arrays.asList(cNoChange, cToRemove, cToUpdate);
     List<IHInstitution> ihInstitutions = Arrays.asList(ih1, ih2, ih3, ih4);
     List<IHStaff> ihStaff = Arrays.asList(is1, is2, is3, is4);
 
     return TestDataLoader.builder()
         .institutions(institutions)
         .collections(collections)
-        .persons(persons)
+        .contacts(contacts)
         .ihInstitutions(ihInstitutions)
         .ihStaff(ihStaff)
         .countries(COUNTRIES)
