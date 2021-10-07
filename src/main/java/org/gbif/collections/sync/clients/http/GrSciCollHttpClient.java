@@ -1,16 +1,7 @@
 package org.gbif.collections.sync.clients.http;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
 import org.gbif.api.model.collections.Collection;
+import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.common.paging.PagingResponse;
@@ -18,6 +9,12 @@ import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.collections.sync.config.SyncConfig.RegistryConfig;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
@@ -31,13 +28,7 @@ import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
-import retrofit2.http.Body;
-import retrofit2.http.DELETE;
-import retrofit2.http.GET;
-import retrofit2.http.POST;
-import retrofit2.http.PUT;
-import retrofit2.http.Path;
-import retrofit2.http.Query;
+import retrofit2.http.*;
 
 import static org.gbif.collections.sync.clients.http.SyncCall.syncCall;
 
@@ -216,6 +207,30 @@ public class GrSciCollHttpClient {
     syncCall(api.removePersonFromCollection(collectionKey, personKey));
   }
 
+  public int addContactToInstitution(UUID institutionKey, Contact contact) {
+    return syncCall(api.addContactToInstitution(institutionKey, contact));
+  }
+
+  public void updateContactInInstitution(UUID institutionKey, Contact contact) {
+    syncCall(api.updateContactInInstitution(institutionKey, contact.getKey(), contact));
+  }
+
+  public void removeContactFromInstitution(UUID institutionKey, int contactKey) {
+    syncCall(api.removeContactFromInstitution(institutionKey, contactKey));
+  }
+
+  public int addContactToCollection(UUID institutionKey, Contact contact) {
+    return syncCall(api.addContactToCollection(institutionKey, contact));
+  }
+
+  public void updateContactInCollection(UUID institutionKey, Contact contact) {
+    syncCall(api.updateContactInCollection(institutionKey, contact.getKey(), contact));
+  }
+
+  public void removeContactFromCollection(UUID institutionKey, int contactKey) {
+    syncCall(api.removeContactFromCollection(institutionKey, contactKey));
+  }
+
   public Person getPerson(UUID key) {
     return syncCall(api.getPerson(key));
   }
@@ -297,6 +312,34 @@ public class GrSciCollHttpClient {
     @DELETE("collection/{collectionKey}/contact/{personKey}")
     Call<Void> removePersonFromCollection(
         @Path("collectionKey") UUID collectionKey, @Path("personKey") UUID personKey);
+
+    @POST("institution/{institutionKey}/contactPerson")
+    Call<Integer> addContactToInstitution(
+        @Path("institutionKey") UUID institutionKey, @Body Contact contact);
+
+    @PUT("institution/{institutionKey}/contactPerson/{contactKey}")
+    Call<Void> updateContactInInstitution(
+        @Path("institutionKey") UUID institutionKey,
+        @Path("contactKey") int contactKey,
+        @Body Contact contact);
+
+    @DELETE("institution/{institutionKey}/contactPerson/{contactKey}")
+    Call<Void> removeContactFromInstitution(
+        @Path("institutionKey") UUID institutionKey, @Path("contactKey") int contactKey);
+
+    @POST("collection/{collectionKey}/contactPerson")
+    Call<Integer> addContactToCollection(
+        @Path("collectionKey") UUID collectionKey, @Body Contact contact);
+
+    @PUT("collection/{collectionKey}/contactPerson/{contactKey}")
+    Call<Void> updateContactInCollection(
+        @Path("collectionKey") UUID collectionKey,
+        @Path("contactKey") int contactKey,
+        @Body Contact contact);
+
+    @DELETE("collection/{collectionKey}/contactPerson/{contactKey}")
+    Call<Void> removeContactFromCollection(
+        @Path("collectionKey") UUID collectionKey, @Path("contactKey") int contactKey);
   }
 
   /** Adapter necessary for retrofit due to versioning. */

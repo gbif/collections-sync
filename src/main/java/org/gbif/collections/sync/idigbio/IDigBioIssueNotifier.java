@@ -1,5 +1,12 @@
 package org.gbif.collections.sync.idigbio;
 
+import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Person;
+import org.gbif.collections.sync.common.notification.Issue;
+import org.gbif.collections.sync.common.notification.IssueNotifier;
+import org.gbif.collections.sync.config.IDigBioConfig;
+import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -8,13 +15,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.UnaryOperator;
-
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Person;
-import org.gbif.collections.sync.common.notification.Issue;
-import org.gbif.collections.sync.common.notification.IssueNotifier;
-import org.gbif.collections.sync.config.IDigBioConfig;
-import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
@@ -80,7 +80,7 @@ public class IDigBioIssueNotifier extends IssueNotifier {
             .append(":")
             .append(formatEntity(iDigBioRecord))
             .append("have multiple candidates in GrSciColl: " + NEW_LINE)
-            .append(formatRegistryEntities(entities))
+            .append(formatRegistryEntities(entities, e -> e.getKey().toString()))
             .append("A ")
             .append(entityType)
             .append(

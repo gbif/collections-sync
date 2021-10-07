@@ -1,12 +1,9 @@
 package org.gbif.collections.sync;
 
+import org.gbif.api.model.collections.*;
+
 import java.util.List;
 import java.util.Set;
-
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -50,6 +47,7 @@ public class SyncResult {
   public static class CollectionOnlyMatch {
     private EntityMatch<Collection> matchedCollection;
     private StaffMatch staffMatch;
+    private ContactMatch contactMatch;
   }
 
   @Data
@@ -58,6 +56,7 @@ public class SyncResult {
     private EntityMatch<Institution> matchedInstitution;
     private Collection newCollection;
     private StaffMatch staffMatch;
+    private ContactMatch contactMatch;
   }
 
   @Data
@@ -66,6 +65,7 @@ public class SyncResult {
     private EntityMatch<Institution> matchedInstitution;
     private EntityMatch<Collection> matchedCollection;
     private StaffMatch staffMatch;
+    private ContactMatch contactMatch;
   }
 
   @Data
@@ -74,8 +74,10 @@ public class SyncResult {
     private Institution newInstitution;
     private Collection newCollection;
     private StaffMatch staffMatch;
+    private ContactMatch contactMatch;
   }
 
+  @Deprecated
   @Data
   @Builder
   public static class StaffMatch {
@@ -94,7 +96,23 @@ public class SyncResult {
 
   @Data
   @Builder
-  public static class EntityMatch<T extends CollectionEntity> {
+  public static class ContactMatch {
+    @Singular(value = "newContact")
+    private List<Contact> newContacts;
+
+    @Singular(value = "matchedContact")
+    private List<EntityMatch<Contact>> matchedContacts;
+
+    @Singular(value = "removedContact")
+    private List<Contact> removedContacts;
+
+    @Singular(value = "conflict")
+    private List<Conflict> conflicts;
+  }
+
+  @Data
+  @Builder
+  public static class EntityMatch<T> {
     private T matched;
     private T merged;
     // false if no change, true otherwise
@@ -112,6 +130,6 @@ public class SyncResult {
   @AllArgsConstructor
   public static class Conflict {
     private Object entity;
-    private List<CollectionEntity> grSciCollEntities;
+    private List<?> grSciCollEntities;
   }
 }

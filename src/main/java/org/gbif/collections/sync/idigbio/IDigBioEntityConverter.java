@@ -6,11 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import org.gbif.api.model.collections.Address;
-import org.gbif.api.model.collections.AlternativeCode;
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
+import org.gbif.api.model.collections.*;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
@@ -297,6 +293,18 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
     person.setPosition(cleanString(iDigBioRecord.getContactRole()));
 
     return person;
+  }
+
+  @Override
+  public Contact convertToContact(IDigBioRecord staffSource) {
+    // Not implemented
+    return null;
+  }
+
+  @Override
+  public Contact convertToContact(IDigBioRecord staffSource, Contact existing) {
+    // Not implemented
+    return null;
   }
 
   private static boolean existsAddress(IDigBioRecord.Address idigbioAddress) {

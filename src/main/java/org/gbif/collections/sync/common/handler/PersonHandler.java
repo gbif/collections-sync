@@ -3,11 +3,7 @@ package org.gbif.collections.sync.common.handler;
 import java.util.List;
 import java.util.UUID;
 
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Contactable;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
+import org.gbif.api.model.collections.*;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;

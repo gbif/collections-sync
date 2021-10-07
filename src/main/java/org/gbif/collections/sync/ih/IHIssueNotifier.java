@@ -1,15 +1,7 @@
 package org.gbif.collections.sync.ih;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
 import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.common.notification.Issue;
 import org.gbif.collections.sync.common.notification.IssueNotifier;
@@ -18,6 +10,12 @@ import org.gbif.collections.sync.config.SyncConfig;
 import org.gbif.collections.sync.ih.model.IHEntity;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
+
+import java.net.URI;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
@@ -67,15 +65,19 @@ public class IHIssueNotifier extends IssueNotifier {
   }
 
   public void createConflict(List<CollectionEntity> entities, IHInstitution ihInstitution) {
-    createConflict(entities, ihInstitution, "institution");
+    createConflict(entities, ihInstitution, "institution", e -> e.getKey().toString());
   }
 
   public void createStaffConflict(Set<Person> persons, IHStaff ihStaff) {
-    createConflict(new ArrayList<>(persons), ihStaff, "staff");
+    createConflict(new ArrayList<>(persons), ihStaff, "staff", e -> e.getKey().toString());
   }
 
-  private <T extends CollectionEntity> void createConflict(
-      List<T> entities, IHEntity ihEntity, String ihEntityType) {
+  public void createContactConflict(Set<Contact> contacts, IHStaff ihStaff) {
+    createConflict(new ArrayList<>(contacts), ihStaff, "contact", e -> e.getKey().toString());
+  }
+
+  private <T> void createConflict(
+      List<T> entities, IHEntity ihEntity, String ihEntityType, Function<T, String> keyExtractor) {
     // create body
     StringBuilder body =
         new StringBuilder()
@@ -84,7 +86,7 @@ public class IHIssueNotifier extends IssueNotifier {
             .append(":")
             .append(formatEntity(ihEntity))
             .append("have multiple candidates in GrSciColl: " + NEW_LINE)
-            .append(formatRegistryEntities(entities))
+            .append(formatRegistryEntities(entities, keyExtractor))
             .append("A IH ")
             .append(ihEntityType)
             .append(

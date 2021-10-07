@@ -29,6 +29,7 @@ import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.common.CloneUtils.cloneCollection;
+import static org.gbif.collections.sync.common.CloneUtils.cloneContact;
 import static org.gbif.collections.sync.common.CloneUtils.cloneInstitution;
 import static org.gbif.collections.sync.common.CloneUtils.clonePerson;
 import static org.gbif.collections.sync.common.Utils.*;
@@ -270,6 +271,68 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     return person;
   }
 
+  @Override
+  public Contact convertToContact(IHStaff ihStaff) {
+    return convertToContact(ihStaff, new Contact());
+  }
+
+  @Override
+  public Contact convertToContact(IHStaff ihStaff, Contact existing) {
+    Contact contact = cloneContact(existing);
+
+    buildFirstName(ihStaff).ifPresent(contact::setFirstName);
+    contact.setLastName(getStringValue(ihStaff.getLastName()));
+    contact.setPosition(getStringValueAsList(ihStaff.getPosition()));
+
+    if (ihStaff.getContact() != null) {
+      setListValue(
+          ihStaff.getContact().getEmail(),
+          DataParser::isValidEmail,
+          contact::setEmail,
+          "Invalid email of IH Staff " + ihStaff.getIrn());
+      setListValue(
+          ihStaff.getContact().getPhone(),
+          DataParser::isValidPhone,
+          contact::setPhone,
+          "Invalid phone of IH Staff " + ihStaff.getIrn());
+      setListValue(
+          ihStaff.getContact().getFax(),
+          DataParser::isValidFax,
+          contact::setFax,
+          "Invalid fax of IH Staff " + ihStaff.getIrn());
+    } else {
+      contact.setEmail(null);
+      contact.setPhone(null);
+      contact.setFax(null);
+    }
+
+    if (ihStaff.getAddress() != null) {
+      contact.setAddress(
+          Collections.singletonList(getStringValue(ihStaff.getAddress().getStreet())));
+      contact.setCity(getStringValue(ihStaff.getAddress().getCity()));
+      contact.setProvince(getStringValue(ihStaff.getAddress().getState()));
+      contact.setPostalCode(getStringValue(ihStaff.getAddress().getZipCode()));
+
+      Country addressCountry = null;
+      if (!Strings.isNullOrEmpty(ihStaff.getAddress().getCountry())) {
+        addressCountry = countryParser.parse(ihStaff.getAddress().getCountry());
+        if (addressCountry == null) {
+          log.warn(
+              "Country not found for {} and IH staff {}",
+              ihStaff.getAddress().getCountry(),
+              ihStaff.getIrn());
+        }
+      }
+      contact.setCountry(addressCountry);
+    }
+
+    if (contact.getUserIds().stream().noneMatch(userId -> userId.getType() == IdType.IH_IRN)) {
+      contact.setUserIds(Collections.singletonList(new UserId(IdType.IH_IRN, ihStaff.getIrn())));
+    }
+
+    return contact;
+  }
+
   private Optional<String> buildFirstName(IHStaff ihStaff) {
     StringBuilder firstNameBuilder = new StringBuilder();
     if (!Strings.isNullOrEmpty(ihStaff.getFirstName())) {
@@ -280,7 +343,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     }
 
     String firstName = firstNameBuilder.toString();
-    if (org.gbif.common.shaded.com.google.common.base.Strings.isNullOrEmpty(firstName)) {
+    if (Strings.isNullOrEmpty(firstName)) {
       return Optional.empty();
     }
 
@@ -305,8 +368,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     contactable.getAddress().setPostalCode(getStringValue(ih.getAddress().getPhysicalZipCode()));
 
     Country physicalAddressCountry = null;
-    if (!org.gbif.common.shaded.com.google.common.base.Strings.isNullOrEmpty(
-        ih.getAddress().getPhysicalCountry())) {
+    if (!Strings.isNullOrEmpty(ih.getAddress().getPhysicalCountry())) {
       physicalAddressCountry = countryParser.parse(ih.getAddress().getPhysicalCountry());
       if (physicalAddressCountry == null) {
         log.warn(
@@ -401,5 +463,25 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     }
 
     setter.accept(null);
+  }
+
+  private static void setListValue(
+      String value, Predicate<String> validator, Consumer<List<String>> setter, String errorMsg) {
+    List<String> listValue = parseStringList(value);
+
+    if (!listValue.isEmpty()) {
+      List<String> validValues = new ArrayList<>();
+      for (String val : listValue) {
+        if (validator.test(val)) {
+          validValues.add(val);
+        } else {
+          log.warn("{}: {}", errorMsg, val);
+        }
+      }
+      setter.accept(validValues);
+      return;
+    }
+
+    setter.accept(Collections.emptyList());
   }
 }

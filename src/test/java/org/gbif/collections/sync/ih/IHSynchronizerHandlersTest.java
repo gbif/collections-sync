@@ -13,7 +13,7 @@ import java.util.UUID;
 
 import org.junit.Test;
 
-import static org.gbif.collections.sync.TestUtils.assertEmptyStaffMatch;
+import static org.gbif.collections.sync.TestUtils.assertEmptyContactMatch;
 import static org.gbif.collections.sync.common.Utils.encodeIRN;
 import static org.gbif.collections.sync.ih.IHEntityConverter.DEFAULT_COLLECTION_NAME;
 
@@ -34,7 +34,7 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
 
     SyncResult.CollectionOnlyMatch collectionOnlyMatch = synchronizer.handleCollectionMatch(match);
     assertEntityMatch(collectionOnlyMatch.getMatchedCollection(), collectionToUpdate, true);
-    assertEmptyStaffMatch(collectionOnlyMatch.getStaffMatch());
+    assertEmptyContactMatch(collectionOnlyMatch.getContactMatch());
   }
 
   @Test
@@ -48,7 +48,7 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
 
     SyncResult.CollectionOnlyMatch collectionOnlyMatch = synchronizer.handleCollectionMatch(match);
     assertEntityMatch(collectionOnlyMatch.getMatchedCollection(), collectionNoChange, false);
-    assertEmptyStaffMatch(collectionOnlyMatch.getStaffMatch());
+    assertEmptyContactMatch(collectionOnlyMatch.getContactMatch());
   }
 
   @Test
@@ -63,7 +63,7 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
     SyncResult.InstitutionOnlyMatch institutionOnlyMatch =
         synchronizer.handleInstitutionMatch(match);
     assertEntityMatch(institutionOnlyMatch.getMatchedInstitution(), institutionToUpdate, true);
-    assertEmptyStaffMatch(institutionOnlyMatch.getStaffMatch());
+    assertEmptyContactMatch(institutionOnlyMatch.getContactMatch());
   }
 
   @Test
@@ -78,7 +78,7 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
     SyncResult.InstitutionOnlyMatch institutionOnlyMatch =
         synchronizer.handleInstitutionMatch(match);
     assertEntityMatch(institutionOnlyMatch.getMatchedInstitution(), institutionNoChange, false);
-    assertEmptyStaffMatch(institutionOnlyMatch.getStaffMatch());
+    assertEmptyContactMatch(institutionOnlyMatch.getContactMatch());
   }
 
   @Test
@@ -112,7 +112,7 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
     SyncResult.NoEntityMatch noEntityMatch = synchronizer.handleNoMatch(match);
     assertTrue(noEntityMatch.getNewCollection().lenientEquals(expectedCollection));
     assertTrue(noEntityMatch.getNewInstitution().lenientEquals(expectedInstitution));
-    assertEmptyStaffMatch(noEntityMatch.getStaffMatch());
+    assertEmptyContactMatch(noEntityMatch.getContactMatch());
   }
 
   @Test
@@ -130,7 +130,7 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
         synchronizer.handleInstAndCollMatch(match);
     assertEntityMatch(instAndColMatch.getMatchedCollection(), collectionToUpdate, true);
     assertEntityMatch(instAndColMatch.getMatchedInstitution(), institutionToUpdate, true);
-    assertEmptyStaffMatch(instAndColMatch.getStaffMatch());
+    assertEmptyContactMatch(instAndColMatch.getContactMatch());
   }
 
   @Test

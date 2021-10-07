@@ -1,5 +1,9 @@
 package org.gbif.collections.sync;
 
+import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Contact;
+import org.gbif.api.model.collections.Person;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -9,9 +13,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
-
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Person;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -58,11 +59,16 @@ public class SyncResultExporter {
       printWithNewLineAfter(writer, "Collections created: " + counts.collectionsCreated);
       printWithNewLineAfter(writer, "Collections updated: " + counts.collectionsUpdated);
       printWithNewLineAfter(writer, "Collections no change: " + counts.collectionsNoChange);
-      printWithNewLineAfter(writer, "Persons created: " + counts.countStaffMatch.personsCreated);
-      printWithNewLineAfter(writer, "Persons updated: " + counts.countStaffMatch.personsUpdated);
-      printWithNewLineAfter(writer, "Persons no change: " + counts.countStaffMatch.personsNoChange);
-      printWithNewLineAfter(writer, "Persons removed: " + counts.countStaffMatch.personsRemoved);
-      printWithNewLineAfter(writer, "Staff conflicts: " + counts.countStaffMatch.staffConflicts);
+      printWithNewLineAfter(
+          writer, "Contacts created: " + counts.countContactMatch.contactsCreated);
+      printWithNewLineAfter(
+          writer, "Contacts updated: " + counts.countContactMatch.contactsUpdated);
+      printWithNewLineAfter(
+          writer, "Contacts no change: " + counts.countContactMatch.contactsNoChange);
+      printWithNewLineAfter(
+          writer, "Contacts removed: " + counts.countContactMatch.contactsRemoved);
+      printWithNewLineAfter(
+          writer, "Contacts conflicts: " + counts.countContactMatch.contactsConflicts);
 
       writer.newLine();
       writer.newLine();
@@ -76,7 +82,7 @@ public class SyncResultExporter {
               m -> {
                 printMatchTitle(writer, "Collection Match");
                 printEntityMatch(writer, m.getMatchedCollection());
-                printStaffMatch(writer, m.getStaffMatch());
+                printContactMatch(writer, m.getContactMatch());
               });
 
       writer.newLine();
@@ -89,7 +95,7 @@ public class SyncResultExporter {
                 printMatchTitle(writer, "Institution Match");
                 printEntityMatch(writer, m.getMatchedInstitution());
                 printEntity(writer, "New Collection", m.getNewCollection());
-                printStaffMatch(writer, m.getStaffMatch());
+                printContactMatch(writer, m.getContactMatch());
               });
 
       writer.newLine();
@@ -102,7 +108,7 @@ public class SyncResultExporter {
                 printMatchTitle(writer, "Institution & Collection Match");
                 printEntityMatch(writer, m.getMatchedInstitution());
                 printEntityMatch(writer, m.getMatchedCollection());
-                printStaffMatch(writer, m.getStaffMatch());
+                printContactMatch(writer, m.getContactMatch());
               });
 
       writer.newLine();
@@ -114,7 +120,7 @@ public class SyncResultExporter {
                 printMatchTitle(writer, "No Match");
                 printEntity(writer, "New Institution", m.getNewInstitution());
                 printEntity(writer, "New Collection", m.getNewCollection());
-                printStaffMatch(writer, m.getStaffMatch());
+                printContactMatch(writer, m.getContactMatch());
               });
 
       // Conflicts
@@ -194,6 +200,7 @@ public class SyncResultExporter {
     }
   }
 
+  @Deprecated
   private static void printStaffMatch(BufferedWriter writer, SyncResult.StaffMatch staffMatch) {
     try {
       writer.newLine();
@@ -208,6 +215,24 @@ public class SyncResultExporter {
       writer.newLine();
     } catch (IOException e) {
       log.warn("Couldn't print staff match {}", staffMatch, e);
+    }
+  }
+
+  private static void printContactMatch(
+      BufferedWriter writer, SyncResult.ContactMatch contactMatch) {
+    try {
+      writer.newLine();
+      printWithNewLineAfter(writer, SMALL_INDENT + ">>> Contacts");
+      printSubsection(writer, "New Contacts", contactMatch.getNewContacts());
+      printSubsectionTitle(writer, "Matched Contacts: " + contactMatch.getMatchedContacts().size());
+      contactMatch.getMatchedContacts().stream()
+          .sorted(Comparator.comparing(SyncResult.EntityMatch::isUpdate))
+          .forEach(m -> printContactEntityMatch(writer, m));
+      printSubsection(writer, "Removed Contacts", contactMatch.getRemovedContacts());
+      printSubsection(writer, "Contacts Conflicts", contactMatch.getConflicts());
+      writer.newLine();
+    } catch (IOException e) {
+      log.warn("Couldn't print contact match {}", contactMatch, e);
     }
   }
 
@@ -229,6 +254,7 @@ public class SyncResultExporter {
     }
   }
 
+  @Deprecated
   private static <T extends CollectionEntity> void printStaffEntityMatch(
       BufferedWriter writer, SyncResult.EntityMatch<T> entityMatch) {
     try {
@@ -240,6 +266,24 @@ public class SyncResultExporter {
       } else {
         printWithNewLineAfter(
             writer, BIG_INDENT + LINE_STARTER + " Staff No Change: " + entityMatch.getMatched());
+      }
+      writer.newLine();
+    } catch (IOException e) {
+      log.warn("Couldn't print entity match {}", entityMatch, e);
+    }
+  }
+
+  private static void printContactEntityMatch(
+      BufferedWriter writer, SyncResult.EntityMatch<Contact> entityMatch) {
+    try {
+      if (entityMatch.isUpdate()) {
+        printWithNewLineAfter(writer, BIG_INDENT + LINE_STARTER + " Contact Updated:");
+        printWithNewLineAfter(writer, BIG_INDENT + "OLD: " + entityMatch.getMatched());
+        writer.newLine();
+        printWithNewLineAfter(writer, BIG_INDENT + "NEW: " + entityMatch.getMerged());
+      } else {
+        printWithNewLineAfter(
+            writer, BIG_INDENT + LINE_STARTER + " Contact No Change: " + entityMatch.getMatched());
       }
       writer.newLine();
     } catch (IOException e) {
@@ -281,6 +325,22 @@ public class SyncResultExporter {
           }
         };
 
+    Consumer<SyncResult.ContactMatch> countContacts =
+        contactMatch -> {
+          if (contactMatch != null) {
+            counts.countContactMatch.contactsCreated += contactMatch.getNewContacts().size();
+            counts.countContactMatch.contactsRemoved += contactMatch.getRemovedContacts().size();
+            counts.countContactMatch.contactsConflicts += contactMatch.getConflicts().size();
+            for (SyncResult.EntityMatch<Contact> c : contactMatch.getMatchedContacts()) {
+              if (c.isUpdate()) {
+                counts.countContactMatch.contactsUpdated++;
+              } else {
+                counts.countContactMatch.contactsNoChange++;
+              }
+            }
+          }
+        };
+
     for (SyncResult.CollectionOnlyMatch m : result.getCollectionOnlyMatches()) {
       if (m.getMatchedCollection().isUpdate()) {
         counts.collectionsUpdated++;
@@ -288,6 +348,7 @@ public class SyncResultExporter {
         counts.collectionsNoChange++;
       }
       countStaff.accept(m.getStaffMatch());
+      countContacts.accept(m.getContactMatch());
     }
 
     for (SyncResult.InstitutionOnlyMatch m : result.getInstitutionOnlyMatches()) {
@@ -301,6 +362,7 @@ public class SyncResultExporter {
         counts.collectionsCreated++;
       }
       countStaff.accept(m.getStaffMatch());
+      countContacts.accept(m.getContactMatch());
     }
 
     for (SyncResult.InstitutionAndCollectionMatch m : result.getInstAndCollMatches()) {
@@ -316,6 +378,7 @@ public class SyncResultExporter {
         counts.collectionsNoChange++;
       }
       countStaff.accept(m.getStaffMatch());
+      countContacts.accept(m.getContactMatch());
     }
 
     for (SyncResult.NoEntityMatch m : result.getNoMatches()) {
@@ -326,6 +389,7 @@ public class SyncResultExporter {
         counts.collectionsCreated++;
       }
       countStaff.accept(m.getStaffMatch());
+      countContacts.accept(m.getContactMatch());
     }
 
     return counts;
@@ -339,13 +403,23 @@ public class SyncResultExporter {
     int collectionsUpdated = 0;
     int collectionsNoChange = 0;
     CountStaffMatch countStaffMatch = new CountStaffMatch();
+    CountContactMatch countContactMatch = new CountContactMatch();
 
+    @Deprecated
     private static class CountStaffMatch {
       private int personsCreated;
       private int personsUpdated;
       private int personsNoChange;
       private int personsRemoved;
       private int staffConflicts;
+    }
+
+    private static class CountContactMatch {
+      private int contactsCreated;
+      private int contactsUpdated;
+      private int contactsNoChange;
+      private int contactsRemoved;
+      private int contactsConflicts;
     }
   }
 }

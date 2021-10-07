@@ -34,41 +34,13 @@ public class IDigBioSynchronizerTest extends BaseIDigBioTest {
     // assert institution only matches
     assertEquals(2, syncResult.getInstitutionOnlyMatches().size());
     InstitutionOnlyMatch institutionOnlyMatch = syncResult.getInstitutionOnlyMatches().get(0);
-    assertEquals(1, institutionOnlyMatch.getStaffMatch().getNewPersons().size());
-
-    assertEquals(
-        1,
-        syncResult.getInstitutionOnlyMatches().stream()
-            .filter(m -> m.getStaffMatch().getNewPersons().size() == 1)
-            .count());
-    assertEquals(
-        1,
-        syncResult.getInstitutionOnlyMatches().stream()
-            .filter(m -> m.getStaffMatch().getMatchedPersons().size() == 1)
-            .count());
 
     // assert institution and collection matches
     assertEquals(2, syncResult.getInstAndCollMatches().size());
-    assertEquals(
-        1,
-        syncResult.getInstAndCollMatches().stream()
-            .map(InstitutionAndCollectionMatch::getStaffMatch)
-            .filter(TestUtils::isEmptyStaffMatch)
-            .count());
-    assertEquals(
-        1,
-        syncResult.getInstAndCollMatches().stream()
-            .map(InstitutionAndCollectionMatch::getStaffMatch)
-            .filter(
-                m ->
-                    m.getMatchedPersons().size() == 1
-                        && !m.getMatchedPersons().iterator().next().isUpdate())
-            .count());
 
     // assert no matches
     assertEquals(2, syncResult.getNoMatches().size());
     NoEntityMatch noEntityMatch = syncResult.getNoMatches().get(0);
-    assertEquals(1, noEntityMatch.getStaffMatch().getNewPersons().size());
 
     // assert invalid
     assertEquals(0, syncResult.getInvalidEntities().size());

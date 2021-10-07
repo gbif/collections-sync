@@ -1,21 +1,16 @@
 package org.gbif.collections.sync.common;
 
-import java.util.Arrays;
-import java.util.Collections;
-
 import org.gbif.api.model.collections.Collection;
+import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.collections.sync.SyncResult.CollectionOnlyMatch;
-import org.gbif.collections.sync.SyncResult.Conflict;
-import org.gbif.collections.sync.SyncResult.EntityMatch;
-import org.gbif.collections.sync.SyncResult.InstitutionAndCollectionMatch;
-import org.gbif.collections.sync.SyncResult.InstitutionOnlyMatch;
-import org.gbif.collections.sync.SyncResult.NoEntityMatch;
-import org.gbif.collections.sync.SyncResult.StaffMatch;
+import org.gbif.collections.sync.SyncResult.*;
 import org.gbif.collections.sync.clients.proxy.GrSciCollProxyClient;
 import org.gbif.collections.sync.common.converter.EntityConverter;
 import org.gbif.collections.sync.common.match.MatchResult;
 import org.gbif.collections.sync.common.match.StaffResultHandler;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -70,13 +65,12 @@ public abstract class BaseSynchronizer<S, R> {
         updateCollection(
             matchResult.getSource(), matchResult.getCollectionMatches().iterator().next());
 
-    StaffMatch staffMatch =
-        staffResultHandler.handleStaff(
-            matchResult, Collections.singletonList(entityMatch.getMerged()));
+    ContactMatch contactMatch =
+        staffResultHandler.handleStaff(matchResult, entityMatch.getMerged());
 
     return CollectionOnlyMatch.builder()
         .matchedCollection(entityMatch)
-        .staffMatch(staffMatch)
+        .contactMatch(contactMatch)
         .build();
   }
 
@@ -90,15 +84,17 @@ public abstract class BaseSynchronizer<S, R> {
     Collection createdCollection =
         createCollection(matchResult.getSource(), institutionEntityMatch.getMerged());
 
-    // same staff for both entities
-    StaffMatch staffMatch =
-        staffResultHandler.handleStaff(
-            matchResult, Arrays.asList(institutionEntityMatch.getMerged(), createdCollection));
+    // staff for both entities
+    ContactMatch contactMatchInstitution =
+        staffResultHandler.handleStaff(matchResult, institutionEntityMatch.getMerged());
+
+    ContactMatch contactMatchCollection =
+        staffResultHandler.handleStaff(matchResult, createdCollection);
 
     return InstitutionOnlyMatch.builder()
         .matchedInstitution(institutionEntityMatch)
         .newCollection(createdCollection)
-        .staffMatch(staffMatch)
+        .contactMatch(mergeContactMatches(contactMatchInstitution, contactMatchCollection))
         .build();
   }
 
@@ -118,14 +114,13 @@ public abstract class BaseSynchronizer<S, R> {
     Institution institution = institutionEntityMatch.getMerged();
     Collection collection = collectionEntityMatch.getMerged();
 
-    // then we handle the staff of both entities at the same time to avoid creating duplicates
-    StaffMatch staffMatch =
-        staffResultHandler.handleStaff(matchResult, Arrays.asList(institution, collection));
+    ContactMatch contactMatchInstitution = staffResultHandler.handleStaff(matchResult, institution);
+    ContactMatch contactMatchCollection = staffResultHandler.handleStaff(matchResult, collection);
 
     return InstitutionAndCollectionMatch.builder()
         .matchedInstitution(institutionEntityMatch)
         .matchedCollection(collectionEntityMatch)
-        .staffMatch(staffMatch)
+        .contactMatch(mergeContactMatches(contactMatchInstitution, contactMatchCollection))
         .build();
   }
 
@@ -140,19 +135,67 @@ public abstract class BaseSynchronizer<S, R> {
     Collection createdCollection = createCollection(matchResult.getSource(), createdInstitution);
 
     // same staff for both entities
-    StaffMatch staffMatch =
-        staffResultHandler.handleStaff(
-            matchResult, Arrays.asList(createdInstitution, createdCollection));
+    ContactMatch contactMatchInstitution =
+        staffResultHandler.handleStaff(matchResult, createdInstitution);
+    ContactMatch contactMatchCollection =
+        staffResultHandler.handleStaff(matchResult, createdCollection);
 
     return NoEntityMatch.builder()
         .newCollection(createdCollection)
         .newInstitution(createdInstitution)
-        .staffMatch(staffMatch)
+        .contactMatch(mergeContactMatches(contactMatchInstitution, contactMatchCollection))
         .build();
   }
 
   @VisibleForTesting
   public Conflict handleConflict(MatchResult<S, R> matchResult) {
     return new Conflict(matchResult.getSource(), matchResult.getAllMatches());
+  }
+
+  private ContactMatch mergeContactMatches(ContactMatch contactMatch1, ContactMatch contactMatch2) {
+    if (contactMatch1 == null) {
+      return contactMatch2;
+    } else if (contactMatch2 == null) {
+      return contactMatch1;
+    }
+
+    List<Contact> newContacts = new ArrayList<>();
+    if (contactMatch1.getNewContacts() != null) {
+      newContacts.addAll(contactMatch1.getNewContacts());
+    }
+    if (contactMatch2.getNewContacts() != null) {
+      newContacts.addAll(contactMatch2.getNewContacts());
+    }
+
+    List<EntityMatch<Contact>> matchedContacts = new ArrayList<>();
+    if (contactMatch1.getMatchedContacts() != null) {
+      matchedContacts.addAll(contactMatch1.getMatchedContacts());
+    }
+    if (contactMatch2.getMatchedContacts() != null) {
+      matchedContacts.addAll(contactMatch2.getMatchedContacts());
+    }
+
+    List<Contact> removedContacts = new ArrayList<>();
+    if (contactMatch1.getRemovedContacts() != null) {
+      removedContacts.addAll(contactMatch1.getRemovedContacts());
+    }
+    if (contactMatch2.getRemovedContacts() != null) {
+      removedContacts.addAll(contactMatch2.getRemovedContacts());
+    }
+
+    List<Conflict> conflicts = new ArrayList<>();
+    if (contactMatch1.getConflicts() != null) {
+      conflicts.addAll(contactMatch1.getConflicts());
+    }
+    if (contactMatch2.getConflicts() != null) {
+      conflicts.addAll(contactMatch2.getConflicts());
+    }
+
+    return ContactMatch.builder()
+        .newContacts(newContacts)
+        .matchedContacts(matchedContacts)
+        .removedContacts(removedContacts)
+        .conflicts(conflicts)
+        .build();
   }
 }

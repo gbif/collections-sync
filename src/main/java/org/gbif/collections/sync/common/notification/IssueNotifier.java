@@ -1,18 +1,18 @@
 package org.gbif.collections.sync.common.notification;
 
+import org.gbif.api.model.collections.Collection;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.collections.sync.SyncResult;
+import org.gbif.collections.sync.clients.proxy.NotificationProxyClient;
+import org.gbif.collections.sync.config.SyncConfig;
+
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
-
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.collections.sync.SyncResult;
-import org.gbif.collections.sync.clients.proxy.NotificationProxyClient;
-import org.gbif.collections.sync.config.SyncConfig;
 
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
@@ -100,14 +100,14 @@ public abstract class IssueNotifier {
         + NEW_LINE;
   }
 
-  protected <T extends CollectionEntity> String formatRegistryEntities(List<T> entities) {
+  protected <T> String formatRegistryEntities(List<T> entities, Function<T, String> keyExtractor) {
     StringBuilder sb = new StringBuilder();
 
     for (int i = 0; i < entities.size(); i++) {
       T entity = entities.get(i);
       sb.append(i + 1)
           .append(". ")
-          .append(createRegistryLink(entity.getKey().toString(), entity))
+          .append(createRegistryLink(keyExtractor.apply(entity), entity))
           .append(NEW_LINE);
     }
 
@@ -122,7 +122,7 @@ public abstract class IssueNotifier {
     return sb.toString();
   }
 
-  private <T extends CollectionEntity> String createRegistryLink(String id, T entity) {
+  private <T> String createRegistryLink(String id, T entity) {
     String linkTemplate;
     if (entity instanceof Institution) {
       linkTemplate = registryInstitutionLink;

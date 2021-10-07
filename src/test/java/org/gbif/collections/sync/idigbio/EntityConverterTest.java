@@ -1,5 +1,12 @@
 package org.gbif.collections.sync.idigbio;
 
+import org.gbif.api.model.collections.*;
+import org.gbif.api.model.registry.Identifier;
+import org.gbif.api.model.registry.MachineTag;
+import org.gbif.api.vocabulary.Country;
+import org.gbif.api.vocabulary.IdentifierType;
+import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
+
 import java.math.BigDecimal;
 import java.net.URI;
 import java.sql.Date;
@@ -9,22 +16,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.gbif.api.model.collections.Address;
-import org.gbif.api.model.collections.AlternativeCode;
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
-import org.gbif.api.model.registry.Identifier;
-import org.gbif.api.model.registry.MachineTag;
-import org.gbif.api.vocabulary.Country;
-import org.gbif.api.vocabulary.IdentifierType;
-import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
-
 import org.junit.Test;
 
 import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_COLLECTION_UUID;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
@@ -121,7 +118,7 @@ public class EntityConverterTest {
     assertEquals(iDigBioRecord.getCollection(), collectionConverted.getName());
     assertEquals(URI.create(iDigBioRecord.getCollectionUrl()), collectionConverted.getHomepage());
     assertEquals(
-        Integer.valueOf(iDigBioRecord.getCollectionExtent()).intValue(),
+        Integer.valueOf(iDigBioRecord.getCollectionExtent()),
         collectionConverted.getNumberSpecimens());
     assertEquals(iDigBioRecord.getTaxonCoverage(), collectionConverted.getTaxonomicCoverage());
     assertEquals(iDigBioRecord.getGeographicRange(), collectionConverted.getGeography());
@@ -152,7 +149,7 @@ public class EntityConverterTest {
     assertEquals(iDigBioRecord.getCollection(), collectionConverted.getName());
     assertEquals(URI.create(iDigBioRecord.getCollectionUrl()), collectionConverted.getHomepage());
     assertEquals(
-        Integer.valueOf(iDigBioRecord.getCollectionExtent()).intValue(),
+        Integer.valueOf(iDigBioRecord.getCollectionExtent()),
         collectionConverted.getNumberSpecimens());
     assertEquals(iDigBioRecord.getTaxonCoverage(), collectionConverted.getTaxonomicCoverage());
     assertEquals(iDigBioRecord.getGeographicRange(), collectionConverted.getGeography());

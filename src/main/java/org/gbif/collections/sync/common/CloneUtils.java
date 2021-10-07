@@ -1,23 +1,17 @@
 package org.gbif.collections.sync.common;
 
-import java.util.ArrayList;
-
-import org.gbif.api.model.collections.Address;
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Contactable;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
+import org.gbif.api.model.collections.*;
 import org.gbif.api.model.registry.Commentable;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.MachineTaggable;
 import org.gbif.api.model.registry.Taggable;
 
-import org.apache.commons.beanutils.BeanUtils;
+import java.util.ArrayList;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.beanutils.BeanUtils;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
@@ -72,6 +66,9 @@ public class CloneUtils {
         if (clone.getComments() != null) {
           clone.setComments(new ArrayList<>(clone.getComments()));
         }
+        if (clone.getContactPersons() != null) {
+          clone.setContactPersons(new ArrayList<>(clone.getContactPersons()));
+        }
       } catch (Exception e) {
         log.warn("Couldn't copy collection entity properties from bean: {}", entity);
       }
@@ -104,6 +101,19 @@ public class CloneUtils {
       }
     }
 
+    return clone;
+  }
+
+  public static Contact cloneContact(Contact contact) {
+    Contact clone = new Contact();
+    if (contact != null) {
+      // copy fields
+      try {
+        BeanUtils.copyProperties(clone, contact);
+      } catch (Exception e) {
+        log.warn("Couldn't copy contact properties from bean: {}", contact);
+      }
+    }
     return clone;
   }
 }
