@@ -13,7 +13,7 @@ public class IHInstitution implements IHEntity {
   private String code;
   private String division;
   private String department;
-  private int specimenTotal;
+  private Integer specimenTotal;
   private Address address;
   private Contact contact;
   private Location location;

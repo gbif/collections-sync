@@ -343,7 +343,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     }
 
     String firstName = firstNameBuilder.toString();
-    if (org.gbif.common.shaded.com.google.common.base.Strings.isNullOrEmpty(firstName)) {
+    if (Strings.isNullOrEmpty(firstName)) {
       return Optional.empty();
     }
 
@@ -368,8 +368,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     contactable.getAddress().setPostalCode(getStringValue(ih.getAddress().getPhysicalZipCode()));
 
     Country physicalAddressCountry = null;
-    if (!org.gbif.common.shaded.com.google.common.base.Strings.isNullOrEmpty(
-        ih.getAddress().getPhysicalCountry())) {
+    if (!Strings.isNullOrEmpty(ih.getAddress().getPhysicalCountry())) {
       physicalAddressCountry = countryParser.parse(ih.getAddress().getPhysicalCountry());
       if (physicalAddressCountry == null) {
         log.warn(
