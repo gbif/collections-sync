@@ -307,11 +307,12 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     }
 
     if (ihStaff.getAddress() != null) {
-      contact.setAddress(
-          Collections.singletonList(getStringValue(ihStaff.getAddress().getStreet())));
-      contact.setCity(getStringValue(ihStaff.getAddress().getCity()));
-      contact.setProvince(getStringValue(ihStaff.getAddress().getState()));
-      contact.setPostalCode(getStringValue(ihStaff.getAddress().getZipCode()));
+      getStringValueOpt(ihStaff.getAddress().getStreet())
+          .map(Collections::singletonList)
+          .ifPresent(contact::setAddress);
+      getStringValueOpt(ihStaff.getAddress().getCity()).ifPresent(contact::setCity);
+      getStringValueOpt(ihStaff.getAddress().getState()).ifPresent(contact::setProvince);
+      getStringValueOpt(ihStaff.getAddress().getZipCode()).ifPresent(contact::setPostalCode);
 
       Country addressCountry = null;
       if (!Strings.isNullOrEmpty(ihStaff.getAddress().getCountry())) {
