@@ -14,6 +14,7 @@ import org.gbif.collections.sync.ih.model.IHEntity;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 
+import java.time.ZoneId;
 import java.util.*;
 
 import lombok.Builder;
@@ -137,7 +138,11 @@ public class BaseIHTest {
     expected.setLongitude(TO_BIGDECIMAL.apply(ih.getLocation().getLon()));
     expected.setEmail(Collections.singletonList(ih.getContact().getEmail()));
     expected.setActive(true);
-    expected.setFoundingDate(IsoDateParsingUtils.parseDate(ih.getDateFounded()));
+    expected.setFoundingDate(
+        Date.from(
+            IsoDateParsingUtils.parseDate(ih.getDateFounded())
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant()));
 
     Address expectedMailingAddress = new Address();
     expectedMailingAddress.setCity(ih.getAddress().getPostalCity());
