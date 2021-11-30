@@ -17,9 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Utils {
 
-  // TODO: use new namespace and name from master source
-  public static final String IH_NAMESPACE = "ih.gbif.org";
-  public static final String IRN_TAG = "irn";
+  public static final String IH_NAMESPACE = "master-source.collections.gbif.org";
+  public static final String IRN_TAG = "ih_irn";
 
   /**
    * Encodes the IH IRN into the format stored on the GRSciColl identifier. E.g. 123 ->
