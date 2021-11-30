@@ -439,8 +439,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
 
   private static <T extends CollectionEntity & Identifiable & MachineTaggable>
       void addIrnIfNotExists(T entity, String irn) {
-    // we only add the IH identifier for new entities
-    if (entity.getKey() == null && !containsIrnIdentifier(entity)) {
+    if (!containsIrnIdentifier(entity)) {
       // add identifier
       entity.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(irn)));
     }

@@ -2,10 +2,12 @@ package org.gbif.collections.sync.ih;
 
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.*;
+import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.LenientEquals;
 import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.util.IsoDateParsingUtils;
 import org.gbif.api.vocabulary.Country;
+import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.api.vocabulary.collections.InstitutionType;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.common.parsers.CountryParser;
@@ -64,6 +66,7 @@ public class BaseIHTest {
     i.setIndexHerbariorumRecord(true);
     i.setNumberSpecimens(1000);
     i.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST));
+    i.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, IRN_TEST));
 
     IHInstitution ih = new IHInstitution();
     ih.setIrn(IRN_TEST);
@@ -173,6 +176,7 @@ public class BaseIHTest {
     c.setIndexHerbariorumRecord(true);
     c.setEmail(Collections.singletonList("aa@aa.com"));
     c.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST));
+    c.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, IRN_TEST));
 
     IHInstitution ih = new IHInstitution();
     ih.setIrn(IRN_TEST);
@@ -287,6 +291,7 @@ public class BaseIHTest {
     p.setKey(UUID.randomUUID());
     p.setEmail("foo@foo.com");
     p.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST));
+    p.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, IRN_TEST));
 
     IHStaff s = new IHStaff();
     s.setFirstName("foo");

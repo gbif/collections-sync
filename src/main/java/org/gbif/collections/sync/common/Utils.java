@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Utils {
 
+  // TODO: use new namespace and name from master source
   public static final String IH_NAMESPACE = "ih.gbif.org";
   public static final String IRN_TAG = "irn";
 
