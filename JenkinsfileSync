@@ -53,7 +53,7 @@ pipeline {
   post {
     failure {
       slackSend message: "IH Sync failed for env ${ENV} and dryRun ${DRY_RUN} - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)",
-              channel: "#ih-sync"
+              channel: "#jenkins"
     }
   }
 }
