@@ -4,10 +4,11 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.*;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.Identifier;
-import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.model.registry.MachineTaggable;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
+import org.gbif.api.vocabulary.collections.IdType;
+import org.gbif.api.vocabulary.collections.Source;
 import org.gbif.collections.sync.clients.http.IHHttpClient;
 import org.gbif.collections.sync.common.converter.EntityConverter;
 import org.gbif.collections.sync.common.parsers.CountryParser;
@@ -32,7 +33,8 @@ import static org.gbif.collections.sync.common.CloneUtils.cloneCollection;
 import static org.gbif.collections.sync.common.CloneUtils.cloneContact;
 import static org.gbif.collections.sync.common.CloneUtils.cloneInstitution;
 import static org.gbif.collections.sync.common.CloneUtils.clonePerson;
-import static org.gbif.collections.sync.common.Utils.*;
+import static org.gbif.collections.sync.common.Utils.containsIrnIdentifier;
+import static org.gbif.collections.sync.common.Utils.encodeIRN;
 import static org.gbif.collections.sync.common.parsers.DataParser.*;
 import static org.gbif.collections.sync.ih.model.IHInstitution.CollectionSummary;
 import static org.gbif.collections.sync.ih.model.IHInstitution.Location;
@@ -266,7 +268,8 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
       person.getMailingAddress().setCountry(mailingAddressCountry);
     }
 
-    addIrnIfNotExists(person, ihStaff.getIrn());
+    // removed because the new method is only for primary entities
+    //    addIrnIfNotExists(person, ihStaff.getIrn());
 
     return person;
   }
@@ -437,15 +440,15 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
         .orElse(null);
   }
 
-  private static <T extends CollectionEntity & Identifiable & MachineTaggable>
+  private static <T extends PrimaryCollectionEntity & Identifiable & MachineTaggable>
       void addIrnIfNotExists(T entity, String irn) {
     if (!containsIrnIdentifier(entity)) {
       // add identifier
       entity.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, encodeIRN(irn)));
     }
 
-    if (!containsIrnMachineTag(entity)) {
-      entity.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, irn));
+    if (entity.getMasterSourceMetadata() == null) {
+      entity.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, irn));
     }
   }
 

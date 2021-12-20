@@ -2,8 +2,10 @@ package org.gbif.collections.sync.ih;
 
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.MasterSourceMetadata;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.vocabulary.IdentifierType;
+import org.gbif.api.vocabulary.collections.Source;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.ih.match.IHMatchResult;
 import org.gbif.collections.sync.ih.model.IHInstitution;
@@ -85,6 +87,7 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
   public void noMatchTest() {
     // IH institution
     IHInstitution ih = new IHInstitution();
+    ih.setIrn(IRN_TEST);
     ih.setCode("foo");
     ih.setOrganization("foo");
     ih.setSpecimenTotal(1000);
@@ -94,6 +97,7 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
     expectedInstitution.setCode(ih.getCode());
     expectedInstitution.setName(ih.getOrganization());
     expectedInstitution.setIndexHerbariorumRecord(true);
+    expectedInstitution.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
 
     // Expected collection
     Collection expectedCollection = new Collection();
@@ -101,6 +105,7 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
     expectedCollection.setName(DEFAULT_COLLECTION_NAME);
     expectedCollection.setNumberSpecimens(1000);
     expectedCollection.setIndexHerbariorumRecord(true);
+    expectedCollection.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
 
     // add identifier to expected entities
     Identifier newIdentifier = new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST));
@@ -154,9 +159,9 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
   }
 
   @Test
-  public void machineTagUpdateInCollectionTest() {
+  public void masterSourceMetadataUpdateInCollectionTest() {
     TestEntity<Collection, IHInstitution> collectionNoChange = createCollectionNoChange();
-    collectionNoChange.getEntity().setMachineTags(Collections.emptyList());
+    collectionNoChange.getEntity().setMasterSourceMetadata(null);
     IHMatchResult match =
         IHMatchResult.builder()
             .collections(Collections.singleton(collectionNoChange.entity))
@@ -168,9 +173,9 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
   }
 
   @Test
-  public void machineTagUpdateInInstitutionTest() {
+  public void masterSourceMetadataUpdateInInstitutionTest() {
     TestEntity<Institution, IHInstitution> institutionNoChange = createInstitutionNoChange();
-    institutionNoChange.getEntity().setMachineTags(Collections.emptyList());
+    institutionNoChange.getEntity().setMasterSourceMetadata(null);
     IHMatchResult match =
         IHMatchResult.builder()
             .institutions(Collections.singleton(institutionNoChange.entity))

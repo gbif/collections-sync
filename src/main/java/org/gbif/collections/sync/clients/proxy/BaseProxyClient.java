@@ -68,7 +68,8 @@ public abstract class BaseProxyClient implements GrSciCollProxyClient {
     return institutionHandler.addContactToEntityCall(entityKey, contact);
   }
 
-  public boolean updateContactInInstitution(UUID entityKey, Contact oldContact, Contact newContact) {
+  public boolean updateContactInInstitution(
+      UUID entityKey, Contact oldContact, Contact newContact) {
     return institutionHandler.updateContactInEntityCall(entityKey, oldContact, newContact);
   }
 

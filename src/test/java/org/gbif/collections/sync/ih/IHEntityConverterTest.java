@@ -2,6 +2,7 @@ package org.gbif.collections.sync.ih;
 
 import org.gbif.api.model.collections.*;
 import org.gbif.api.vocabulary.Country;
+import org.gbif.api.vocabulary.collections.IdType;
 import org.gbif.collections.sync.common.converter.EntityConverter;
 import org.gbif.collections.sync.common.parsers.CountryParser;
 import org.gbif.collections.sync.ih.model.IHInstitution;

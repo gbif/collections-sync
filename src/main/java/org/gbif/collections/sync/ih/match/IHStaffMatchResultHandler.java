@@ -1,6 +1,7 @@
 package org.gbif.collections.sync.ih.match;
 
 import org.gbif.api.model.collections.*;
+import org.gbif.api.vocabulary.collections.IdType;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.Conflict;
 import org.gbif.collections.sync.SyncResult.EntityMatch;

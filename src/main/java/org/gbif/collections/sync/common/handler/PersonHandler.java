@@ -1,13 +1,13 @@
 package org.gbif.collections.sync.common.handler;
 
-import java.util.List;
-import java.util.UUID;
-
 import org.gbif.api.model.collections.*;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
 import org.gbif.collections.sync.clients.proxy.CallExecutor;
+
+import java.util.List;
+import java.util.UUID;
 
 import static org.gbif.collections.sync.common.Utils.isPersonInContacts;
 
@@ -54,7 +54,8 @@ public class PersonHandler extends BaseEntityHandler<Person> {
       grSciCollHttpClient.addPersonToInstitution(p.getKey(), e.getKey());
     }
 
-    // we add it to the contacts to avoid adding it again if there are duplicates in the source(e.g.:IH)
+    // we add it to the contacts to avoid adding it again if there are duplicates in the
+    // source(e.g.:IH)
     e.getContacts().add(p);
   }
 

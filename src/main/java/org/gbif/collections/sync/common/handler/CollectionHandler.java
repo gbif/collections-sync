@@ -2,6 +2,7 @@ package org.gbif.collections.sync.common.handler;
 
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Contact;
+import org.gbif.api.model.collections.MasterSourceMetadata;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
@@ -9,7 +10,7 @@ import org.gbif.collections.sync.clients.proxy.CallExecutor;
 
 import java.util.UUID;
 
-public class CollectionHandler extends BaseEntityHandler<Collection> {
+public class CollectionHandler extends BasePrimaryEntityHandler<Collection> {
 
   private CollectionHandler(CallExecutor callExecutor, GrSciCollHttpClient grSciCollHttpClient) {
     super(callExecutor, grSciCollHttpClient);
@@ -43,6 +44,12 @@ public class CollectionHandler extends BaseEntityHandler<Collection> {
   @Override
   protected void addMachineTagToEntityCall(UUID entityKey, MachineTag machineTag) {
     grSciCollHttpClient.addMachineTagToCollection(entityKey, machineTag);
+  }
+
+  @Override
+  protected void addMasterSourceMetadataToEntityCall(
+      UUID entityKey, MasterSourceMetadata metadata) {
+    grSciCollHttpClient.addMasterSourceMetadataToCollection(entityKey, metadata);
   }
 
   public Integer addContactToEntityCall(UUID entityKey, Contact contact) {

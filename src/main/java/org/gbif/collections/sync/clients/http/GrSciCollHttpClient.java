@@ -1,13 +1,12 @@
 package org.gbif.collections.sync.clients.http;
 
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.Contact;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
+import org.gbif.api.model.collections.*;
 import org.gbif.api.model.common.paging.PagingResponse;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.vocabulary.Country;
+import org.gbif.api.vocabulary.collections.MasterSourceType;
 import org.gbif.collections.sync.config.SyncConfig.RegistryConfig;
 
 import java.io.IOException;
@@ -94,7 +93,24 @@ public class GrSciCollHttpClient {
     boolean endRecords = false;
     int offset = 0;
     while (!endRecords) {
-      PagingResponse<Institution> response = syncCall(api.listInstitutions(1000, offset));
+      PagingResponse<Institution> response = syncCall(api.listInstitutions(null, 1000, offset));
+      endRecords = response.isEndOfRecords();
+      offset += response.getLimit();
+      result.addAll(response.getResults());
+    }
+
+    return result;
+  }
+
+  /** Returns all IH institutions in GrSciColl. */
+  public List<Institution> getIhInstitutions() {
+    List<Institution> result = new ArrayList<>();
+
+    boolean endRecords = false;
+    int offset = 0;
+    while (!endRecords) {
+      PagingResponse<Institution> response =
+          syncCall(api.listInstitutions(MasterSourceType.IH, 1000, offset));
       endRecords = response.isEndOfRecords();
       offset += response.getLimit();
       result.addAll(response.getResults());
@@ -123,6 +139,23 @@ public class GrSciCollHttpClient {
     syncCall(api.addMachineTagToInstitution(institutionKey, machineTag));
   }
 
+  /** Returns all IH institutions in GrSciCol. */
+  public List<Collection> getIhCollections() {
+    List<Collection> result = new ArrayList<>();
+
+    boolean endRecords = false;
+    int offset = 0;
+    while (!endRecords) {
+      PagingResponse<Collection> response =
+          syncCall(api.listCollections(MasterSourceType.IH, 1000, offset));
+      endRecords = response.isEndOfRecords();
+      offset += response.getLimit();
+      result.addAll(response.getResults());
+    }
+
+    return result;
+  }
+
   /** Returns all institutions in GrSciCol. */
   public List<Collection> getCollections() {
     List<Collection> result = new ArrayList<>();
@@ -130,7 +163,7 @@ public class GrSciCollHttpClient {
     boolean endRecords = false;
     int offset = 0;
     while (!endRecords) {
-      PagingResponse<Collection> response = syncCall(api.listCollections(1000, offset));
+      PagingResponse<Collection> response = syncCall(api.listCollections(null, 1000, offset));
       endRecords = response.isEndOfRecords();
       offset += response.getLimit();
       result.addAll(response.getResults());
@@ -235,10 +268,22 @@ public class GrSciCollHttpClient {
     return syncCall(api.getPerson(key));
   }
 
+  public void addMasterSourceMetadataToInstitution(
+      UUID institutionKey, MasterSourceMetadata metadata) {
+    syncCall(api.addMasterSourceMetadataToInstitution(institutionKey, metadata));
+  }
+
+  public void addMasterSourceMetadataToCollection(
+      UUID collectionKey, MasterSourceMetadata metadata) {
+    syncCall(api.addMasterSourceMetadataToCollection(collectionKey, metadata));
+  }
+
   private interface API {
     @GET("institution")
     Call<PagingResponse<Institution>> listInstitutions(
-        @Query("limit") int limit, @Query("offset") int offset);
+        @Query("masterSourceType") MasterSourceType masterSourceType,
+        @Query("limit") int limit,
+        @Query("offset") int offset);
 
     @GET("institution/{key}")
     Call<Institution> getInstitution(@Path("key") UUID key);
@@ -259,7 +304,9 @@ public class GrSciCollHttpClient {
 
     @GET("collection")
     Call<PagingResponse<Collection>> listCollections(
-        @Query("limit") int limit, @Query("offset") int offset);
+        @Query("masterSourceType") MasterSourceType masterSourceType,
+        @Query("limit") int limit,
+        @Query("offset") int offset);
 
     @GET("collection/{key}")
     Call<Collection> getCollection(@Path("key") UUID key);
@@ -340,6 +387,15 @@ public class GrSciCollHttpClient {
     @DELETE("collection/{collectionKey}/contactPerson/{contactKey}")
     Call<Void> removeContactFromCollection(
         @Path("collectionKey") UUID collectionKey, @Path("contactKey") int contactKey);
+
+    @POST("institution/{institutionKey}/masterSourceMetadata")
+    Call<Void> addMasterSourceMetadataToInstitution(
+        @Path("institutionKey") UUID institutionKey,
+        @Body MasterSourceMetadata masterSourceMetadata);
+
+    @POST("collection/{collectionKey}/masterSourceMetadata")
+    Call<Void> addMasterSourceMetadataToCollection(
+        @Path("collectionKey") UUID collectionKey, @Body MasterSourceMetadata masterSourceMetadata);
   }
 
   /** Adapter necessary for retrofit due to versioning. */

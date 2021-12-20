@@ -1,6 +1,8 @@
 package org.gbif.collections.sync.common.handler;
 
 import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.MasterSourceMetadata;
+import org.gbif.api.model.collections.PrimaryCollectionEntity;
 import org.gbif.api.model.registry.*;
 import org.gbif.collections.sync.SyncResult.FailedAction;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
@@ -29,7 +31,7 @@ public abstract class BaseEntityHandler<
         callExecutor.executeOrAddFail(
             () -> updateCall(newEntity), exceptionHandler(newEntity, "Failed to update entity"));
       }
-      // create identifiers and machine tags if needed
+      // create subentities if needed
       callExecutor.executeOrAddFail(
           () -> addSubEntities(newEntity),
           exceptionHandler(newEntity, "Failed to add identifiers and machine tags of entity"));
@@ -50,7 +52,7 @@ public abstract class BaseEntityHandler<
             exceptionHandler(newEntity, "Failed to create entity"),
             newEntity);
 
-    // create identifiers and machine tags if needed
+    // create subentities if needed
     if (entity.getKey() != null) {
       newEntity.setKey(entity.getKey());
       callExecutor.executeOrAddFail(

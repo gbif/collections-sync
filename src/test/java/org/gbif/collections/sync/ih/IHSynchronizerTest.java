@@ -1,7 +1,9 @@
 package org.gbif.collections.sync.ih;
 
 import org.gbif.api.model.collections.*;
-import org.gbif.api.model.registry.MachineTag;
+import org.gbif.api.vocabulary.collections.IdType;
+import org.gbif.api.vocabulary.collections.MasterSourceType;
+import org.gbif.api.vocabulary.collections.Source;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.*;
 import org.gbif.collections.sync.common.DataLoader;
@@ -16,8 +18,6 @@ import java.util.UUID;
 import org.junit.Test;
 
 import static org.gbif.collections.sync.TestUtils.assertEmptyContactMatch;
-import static org.gbif.collections.sync.common.Utils.IH_NAMESPACE;
-import static org.gbif.collections.sync.common.Utils.IRN_TAG;
 
 import static org.junit.Assert.assertEquals;
 
@@ -120,14 +120,16 @@ public class IHSynchronizerTest extends BaseIHTest {
     i1.setKey(UUID.randomUUID());
     i1.setCode("c11");
     i1.setName("Inst 1");
-    i1.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, ih1.getIrn()));
+    i1.setMasterSource(MasterSourceType.IH);
+    i1.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, ih1.getIrn()));
 
     Collection c1 = new Collection();
     c1.setKey(UUID.randomUUID());
     c1.setInstitutionKey(i1.getKey());
     c1.setCode("c1");
     c1.setName("Coll 1");
-    c1.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, ih1.getIrn()));
+    c1.setMasterSource(MasterSourceType.IH);
+    c1.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, ih1.getIrn()));
 
     Contact cNoChange = new Contact();
     cNoChange.setKey(1);
@@ -153,13 +155,15 @@ public class IHSynchronizerTest extends BaseIHTest {
     i2.setKey(UUID.randomUUID());
     i2.setCode("c2");
     i2.setName("Inst 2");
-    i2.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, ih2.getIrn()));
+    i2.setMasterSource(MasterSourceType.IH);
+    i2.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, ih2.getIrn()));
 
     Collection c2 = new Collection();
     c2.setKey(UUID.randomUUID());
     c2.setCode("c2");
     c2.setName("Coll 2");
-    c2.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, ih3.getIrn()));
+    c2.setMasterSource(MasterSourceType.IH);
+    c2.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, ih3.getIrn()));
 
     List<Institution> institutions = Arrays.asList(i1, i2);
     List<Collection> collections = Arrays.asList(c1, c2);

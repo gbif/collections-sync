@@ -17,7 +17,6 @@ import com.google.common.annotations.VisibleForTesting;
 import lombok.AllArgsConstructor;
 
 import static org.gbif.collections.sync.common.Utils.containsIrnIdentifier;
-import static org.gbif.collections.sync.common.Utils.encodeIRN;
 import static org.gbif.collections.sync.common.Utils.isPersonInContacts;
 import static org.gbif.collections.sync.common.staff.StaffUtils.compareFullNamePartially;
 import static org.gbif.collections.sync.common.staff.StaffUtils.compareLists;
@@ -58,8 +57,6 @@ public class Matcher {
                 .getOrDefault(ihInstitution.getCode(), Collections.emptyList()))
         .institutions(institutionsMatched)
         .collections(collectionsMatched)
-        .staffMatcher(
-            createStaffMatcher(getMatchKey(institutionsMatched), getMatchKey(collectionsMatched)))
         .build();
   }
 

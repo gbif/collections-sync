@@ -46,7 +46,6 @@ public class IHProxyClient extends BaseProxyClient {
     ihInstitutions = data.getIhInstitutions();
     institutionsMapByIrn = mapByIrn(data.getInstitutions());
     collectionsMapByIrn = mapByIrn(data.getCollections());
-    grSciCollPersonsByIrn = mapByIrn(data.getPersons());
     this.allGrSciCollPersons = new HashSet<>(data.getPersons());
     ihStaffMapByCode = data.getIhStaff().stream().collect(Collectors.groupingBy(IHStaff::getCode));
     countries = data.getCountries();

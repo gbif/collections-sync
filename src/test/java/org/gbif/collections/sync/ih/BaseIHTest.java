@@ -4,11 +4,13 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.*;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.LenientEquals;
-import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.util.IsoDateParsingUtils;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
+import org.gbif.api.vocabulary.collections.IdType;
 import org.gbif.api.vocabulary.collections.InstitutionType;
+import org.gbif.api.vocabulary.collections.MasterSourceType;
+import org.gbif.api.vocabulary.collections.Source;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.common.parsers.CountryParser;
 import org.gbif.collections.sync.config.IHConfig;
@@ -23,8 +25,6 @@ import lombok.Builder;
 import lombok.Data;
 
 import static org.gbif.collections.sync.TestUtils.createTestSyncConfig;
-import static org.gbif.collections.sync.common.Utils.IH_NAMESPACE;
-import static org.gbif.collections.sync.common.Utils.IRN_TAG;
 import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
 
 import static org.junit.Assert.assertEquals;
@@ -46,9 +46,8 @@ public class BaseIHTest {
           .ihConfig(ihConfig)
           .build();
 
-  protected <T extends CollectionEntity & LenientEquals<T>, R extends IHEntity>
-      void assertEntityMatch(
-          SyncResult.EntityMatch<T> entityMatch, TestEntity<T, R> testEntity, boolean update) {
+  protected <T extends LenientEquals<T>, R extends IHEntity> void assertEntityMatch(
+      SyncResult.EntityMatch<T> entityMatch, TestEntity<T, R> testEntity, boolean update) {
     assertEquals(update, entityMatch.isUpdate());
     assertTrue(entityMatch.getMatched().lenientEquals(testEntity.entity));
     if (update) {
@@ -65,7 +64,8 @@ public class BaseIHTest {
     i.setName("bar");
     i.setIndexHerbariorumRecord(true);
     i.setNumberSpecimens(1000);
-    i.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST));
+    i.setMasterSource(MasterSourceType.IH);
+    i.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
     i.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, IRN_TEST));
 
     IHInstitution ih = new IHInstitution();
@@ -122,6 +122,8 @@ public class BaseIHTest {
     i.setType(InstitutionType.HERBARIUM);
     i.setLatitude(TO_BIGDECIMAL.apply(36.0424));
     i.setLongitude(TO_BIGDECIMAL.apply(-94.1624));
+    i.setMasterSource(MasterSourceType.IH);
+    i.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
 
     Address address = new Address();
     address.setCity("FAYETTEVILLE");
@@ -146,6 +148,8 @@ public class BaseIHTest {
             IsoDateParsingUtils.parseDate(ih.getDateFounded())
                 .atStartOfDay(ZoneId.systemDefault())
                 .toInstant()));
+    expected.setMasterSource(MasterSourceType.IH);
+    expected.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
 
     Address expectedMailingAddress = new Address();
     expectedMailingAddress.setCity(ih.getAddress().getPostalCity());
@@ -157,9 +161,8 @@ public class BaseIHTest {
     physicalAddress.setCountry(Country.UNITED_STATES);
     expected.setAddress(physicalAddress);
 
-    MachineTag newMachineTag = new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST);
-    newMachineTag.setCreatedBy(TEST_USER);
-    expected.getMachineTags().add(newMachineTag);
+    expected.setMasterSource(MasterSourceType.IH);
+    expected.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
 
     return TestEntity.<Institution, IHInstitution>builder()
         .entity(i)
@@ -175,7 +178,8 @@ public class BaseIHTest {
     c.setCode("A");
     c.setIndexHerbariorumRecord(true);
     c.setEmail(Collections.singletonList("aa@aa.com"));
-    c.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST));
+    c.setMasterSource(MasterSourceType.IH);
+    c.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
     c.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, IRN_TEST));
 
     IHInstitution ih = new IHInstitution();
@@ -194,7 +198,8 @@ public class BaseIHTest {
     c.setName("collName");
     c.setCode("B");
     c.setEmail(Collections.singletonList("bb@bb.com"));
-    c.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST));
+    c.setMasterSource(MasterSourceType.IH);
+    c.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
 
     IHInstitution ih = createIHInstitution();
 
@@ -213,6 +218,8 @@ public class BaseIHTest {
     expected.setIncorporatedCollections(ih.getIncorporatedHerbaria());
     expected.setImportantCollectors(ih.getImportantCollectors());
     expected.setCollectionSummary(convertCollectionSummary(ih.getCollectionsSummary()));
+    expected.setMasterSource(MasterSourceType.IH);
+    expected.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
 
     Address expectedMailingAddress = new Address();
     expectedMailingAddress.setCity(ih.getAddress().getPostalCity());
@@ -224,9 +231,8 @@ public class BaseIHTest {
     physicalAddress.setCountry(Country.UNITED_STATES);
     expected.setAddress(physicalAddress);
 
-    MachineTag newMachineTag = new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST);
-    newMachineTag.setCreatedBy(TEST_USER);
-    expected.getMachineTags().add(newMachineTag);
+    expected.setMasterSource(MasterSourceType.IH);
+    expected.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
 
     return TestEntity.<Collection, IHInstitution>builder()
         .entity(c)
@@ -278,9 +284,6 @@ public class BaseIHTest {
     expectedAddress.setProvince(address.getState());
     expectedAddress.setCountry(Country.UNITED_STATES);
     expected.setMailingAddress(expectedAddress);
-    MachineTag newMachineTag = new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST);
-    newMachineTag.setCreatedBy(TEST_USER);
-    expected.getMachineTags().add(newMachineTag);
 
     return TestEntity.<Person, IHStaff>builder().entity(p).ih(s).expected(expected).build();
   }
@@ -290,7 +293,6 @@ public class BaseIHTest {
     p.setFirstName("foo");
     p.setKey(UUID.randomUUID());
     p.setEmail("foo@foo.com");
-    p.getMachineTags().add(new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST));
     p.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, IRN_TEST));
 
     IHStaff s = new IHStaff();
@@ -347,11 +349,117 @@ public class BaseIHTest {
     expectedAddress.setProvince(address.getState());
     expectedAddress.setCountry(Country.UNITED_STATES);
     expected.setMailingAddress(expectedAddress);
-    MachineTag newMachineTag = new MachineTag(IH_NAMESPACE, IRN_TAG, IRN_TEST);
-    newMachineTag.setCreatedBy(TEST_USER);
-    expected.getMachineTags().add(newMachineTag);
 
     return TestEntity.<Person, IHStaff>builder().ih(s).expected(expected).build();
+  }
+
+  protected TestEntity<Contact, IHStaff> createTestContactToUpdate() {
+    Contact contact = new Contact();
+    contact.setKey(1);
+    contact.setFirstName("First M. Last");
+    contact.setPosition(Collections.singletonList("Director"));
+    contact.setPhone(Collections.singletonList("[1] 479/575-4372"));
+    contact.setEmail(Collections.singletonList("b@b.com"));
+    contact.setCity("FAYETTEVILLE");
+    contact.setProvince("Arkansas");
+    contact.setCountry(Country.UNITED_STATES);
+    contact.getUserIds().add(new UserId(IdType.IH_IRN, IRN_TEST));
+
+    IHStaff s = new IHStaff();
+    s.setIrn(IRN_TEST);
+    s.setCode("CODE");
+    s.setLastName("Last");
+    s.setMiddleName("M.");
+    s.setFirstName("First");
+    s.setPosition("Professor Emeritus");
+
+    IHStaff.Address address = new IHStaff.Address();
+    address.setStreet("");
+    address.setCity("Fayetteville");
+    address.setState("Arkansas");
+    address.setCountry("U.S.A.");
+    s.setAddress(address);
+
+    IHStaff.Contact ihContact = new IHStaff.Contact();
+    ihContact.setEmail("a@a.com");
+    s.setContact(ihContact);
+
+    Contact expected = new Contact();
+    expected.setKey(contact.getKey());
+    expected.setFirstName(s.getFirstName() + " " + s.getMiddleName());
+    expected.setLastName(s.getLastName());
+    expected.setPosition(Collections.singletonList(s.getPosition()));
+    expected.setEmail(Collections.singletonList(s.getContact().getEmail()));
+    expected.setCity(address.getCity());
+    expected.setProvince(address.getState());
+    expected.setCountry(Country.UNITED_STATES);
+    expected.getUserIds().add(new UserId(IdType.IH_IRN, IRN_TEST));
+
+    return TestEntity.<Contact, IHStaff>builder().entity(contact).ih(s).expected(expected).build();
+  }
+
+  protected TestEntity<Contact, IHStaff> createTestContactNoChange() {
+    Contact contact = new Contact();
+    contact.setFirstName("foo");
+    contact.setKey(1);
+    contact.setEmail(Collections.singletonList("foo@foo.com"));
+    contact.getUserIds().add(new UserId(IdType.IH_IRN, IRN_TEST));
+
+    IHStaff s = new IHStaff();
+    s.setFirstName("foo");
+    s.setIrn(IRN_TEST);
+    IHStaff.Contact ihContact = new IHStaff.Contact();
+    ihContact.setEmail("foo@foo.com");
+    s.setContact(ihContact);
+
+    return TestEntity.<Contact, IHStaff>builder().entity(contact).ih(s).build();
+  }
+
+  protected TestEntity<Contact, IHStaff> createTestContactToRemove() {
+    Contact contact = new Contact();
+    contact.setKey(1);
+    contact.setFirstName("extra person");
+
+    IHStaff ihStaff = new IHStaff();
+    ihStaff.setIrn(IRN_TEST);
+
+    return TestEntity.<Contact, IHStaff>builder().entity(contact).ih(ihStaff).build();
+  }
+
+  protected TestEntity<Contact, IHStaff> createTestContactToCreate() {
+    IHStaff s = new IHStaff();
+    s.setCode("CODE");
+    s.setLastName("Last");
+    s.setMiddleName("M.");
+    s.setFirstName("First");
+    s.setPosition("Collections Manager");
+
+    IHStaff.Address address = new IHStaff.Address();
+    address.setStreet("");
+    address.setCity("Fayetteville");
+    address.setState("AR");
+    address.setCountry("U.S.A.");
+    address.setZipCode("72701");
+    s.setAddress(address);
+
+    IHStaff.Contact contact = new IHStaff.Contact();
+    contact.setPhone("[1] 479 575 4372");
+    contact.setEmail("a@a.com");
+    s.setContact(contact);
+
+    Contact expected = new Contact();
+    expected.setFirstName(s.getFirstName() + " " + s.getMiddleName());
+    expected.setLastName(s.getLastName());
+    expected.setPosition(Collections.singletonList(s.getPosition()));
+    expected.setEmail(Collections.singletonList(s.getContact().getEmail()));
+    expected.setPhone(Collections.singletonList(s.getContact().getPhone()));
+    expected.setAddress(Collections.singletonList(address.getStreet()));
+    expected.setCity(address.getCity());
+    expected.setProvince(address.getState());
+    expected.setCountry(Country.UNITED_STATES);
+    expected.getUserIds().add(new UserId(IdType.IH_IRN, IRN_TEST));
+
+    return TestEntity.<Contact, IHStaff>builder().ih(s).expected(expected).build();
   }
 
   protected Map<String, Integer> convertCollectionSummary(IHInstitution.CollectionSummary summary) {
@@ -383,7 +491,7 @@ public class BaseIHTest {
 
   @Builder
   @Data
-  protected static class TestEntity<T extends CollectionEntity, R extends IHEntity> {
+  protected static class TestEntity<T, R extends IHEntity> {
     T entity;
     T expected;
     R ih;

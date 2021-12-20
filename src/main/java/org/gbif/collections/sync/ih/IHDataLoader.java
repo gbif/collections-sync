@@ -45,11 +45,11 @@ public class IHDataLoader implements DataLoader<IHData> {
     CompletableFuture<List<String>> countriesFuture =
         CompletableFuture.supplyAsync(ihHttpClient::getCountries);
     CompletableFuture<List<Institution>> institutionsFuture =
-        CompletableFuture.supplyAsync(grSciCollHttpClient::getInstitutions);
+        CompletableFuture.supplyAsync(grSciCollHttpClient::getIhInstitutions);
     CompletableFuture<List<Collection>> collectionsFuture =
-        CompletableFuture.supplyAsync(grSciCollHttpClient::getCollections);
+        CompletableFuture.supplyAsync(grSciCollHttpClient::getIhCollections);
     CompletableFuture<List<Person>> personsFuture =
-        CompletableFuture.supplyAsync(grSciCollHttpClient::getPersons);
+      CompletableFuture.supplyAsync(grSciCollHttpClient::getPersons);
 
     log.info("Loading data from WSs");
     CompletableFuture.allOf(
@@ -57,7 +57,6 @@ public class IHDataLoader implements DataLoader<IHData> {
             ihStaffFuture,
             institutionsFuture,
             collectionsFuture,
-            personsFuture,
             countriesFuture)
         .join();
 
