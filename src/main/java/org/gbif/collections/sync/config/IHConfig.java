@@ -3,6 +3,8 @@ package org.gbif.collections.sync.config;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import org.gbif.collections.sync.CliSyncArgs;
@@ -32,6 +34,7 @@ public class IHConfig {
   private SyncConfig syncConfig;
   private String ihWsUrl;
   private String ihPortalUrl;
+  private List<String> ihSkippedEntries = new ArrayList<>();
 
   public static IHConfig fromFileName(String configFileName) {
     Preconditions.checkArgument(

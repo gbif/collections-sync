@@ -13,6 +13,8 @@ import org.gbif.collections.sync.ih.match.Matcher;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 
+import java.util.List;
+
 import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,7 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
 
   private final IHIssueNotifier issueNotifier;
   private final IHProxyClient ihProxyClient;
+  private final List<String> skippedEntries;
 
   private IHSynchronizer(
       IHProxyClient proxyClient,
@@ -30,6 +33,7 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
     super(proxyClient, staffResultHandler, entityConverter);
     this.ihProxyClient = proxyClient;
     this.issueNotifier = IHIssueNotifier.getInstance(proxyClient.getIhConfig());
+    skippedEntries = proxyClient.getIhConfig().getIhSkippedEntries();
   }
 
   @Builder
@@ -54,8 +58,8 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
 
     // do the sync
     log.info("Starting the sync");
-    ihProxyClient
-        .getIhInstitutions()
+    ihProxyClient.getIhInstitutions().stream()
+        .filter(i -> !skippedEntries.contains(i.getIrn()))
         .forEach(
             ihInstitution -> {
               if (!isValidIhInstitution(ihInstitution, issueNotifier)) {
