@@ -1,11 +1,5 @@
 package org.gbif.collections.sync.clients.proxy;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.Person;
@@ -14,6 +8,12 @@ import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.ih.IHDataLoader.IHData;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -47,7 +47,10 @@ public class IHProxyClient extends BaseProxyClient {
     institutionsMapByIrn = mapByIrn(data.getInstitutions());
     collectionsMapByIrn = mapByIrn(data.getCollections());
     this.allGrSciCollPersons = new HashSet<>(data.getPersons());
-    ihStaffMapByCode = data.getIhStaff().stream().collect(Collectors.groupingBy(IHStaff::getCode));
+    ihStaffMapByCode =
+        data.getIhStaff().stream()
+            .filter(s -> "Yes".equalsIgnoreCase(s.getCorrespondent()))
+            .collect(Collectors.groupingBy(IHStaff::getCode));
     countries = data.getCountries();
   }
 }

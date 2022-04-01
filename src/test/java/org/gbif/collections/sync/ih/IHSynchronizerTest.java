@@ -77,12 +77,14 @@ public class IHSynchronizerTest extends BaseIHTest {
     is1.setContact(contact1);
     is1.setIrn("11");
     is1.setCode(ih1.getCode());
+    is1.setCorrespondent("Yes");
 
     IHStaff is2 = new IHStaff();
     is2.setFirstName("first2");
     is2.setLastName("last2");
     is2.setIrn("12");
     is2.setCode(ih1.getCode());
+    is2.setCorrespondent("Yes");
 
     IHStaff is3 = new IHStaff();
     is3.setFirstName("first3");
@@ -93,6 +95,7 @@ public class IHSynchronizerTest extends BaseIHTest {
     is3.setContact(contact3);
     is3.setCode(ih1.getCode());
     is3.setPosition("pos3");
+    is3.setCorrespondent("Yes");
 
     IHInstitution ih2 = new IHInstitution();
     ih2.setCode("c2");
@@ -115,6 +118,7 @@ public class IHSynchronizerTest extends BaseIHTest {
     is4.setFirstName("first4");
     is4.setIrn("14");
     is4.setCode(ih4.getCode());
+    is4.setCorrespondent("Yes");
 
     Institution i1 = new Institution();
     i1.setKey(UUID.randomUUID());
