@@ -33,6 +33,7 @@ import static org.junit.Assert.assertTrue;
 public class BaseIHTest {
 
   protected static final String IRN_TEST = "1";
+  protected static final String CITES_TEST = "DK 123";
   protected static final String TEST_USER = "test-user";
   protected static final List<String> COUNTRIES =
       Arrays.asList("UK", "U.K.", "U.S.A.", "United Kingdom", "United States");
@@ -67,6 +68,7 @@ public class BaseIHTest {
     i.setMasterSource(MasterSourceType.IH);
     i.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
     i.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, IRN_TEST));
+    i.getIdentifiers().add(new Identifier(IdentifierType.CITES, CITES_TEST));
 
     IHInstitution ih = new IHInstitution();
     ih.setIrn(IRN_TEST);
@@ -94,6 +96,7 @@ public class BaseIHTest {
     summary.setNumBryos(10);
     ih.setCollectionsSummary(summary);
     ih.setDateFounded("2000");
+    ih.setCites(CITES_TEST);
 
     IHInstitution.Address ihAddress = new IHInstitution.Address();
     ihAddress.setPhysicalCity("city1");
@@ -150,6 +153,7 @@ public class BaseIHTest {
                 .toInstant()));
     expected.setMasterSource(MasterSourceType.IH);
     expected.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
+    expected.getIdentifiers().add(new Identifier(IdentifierType.CITES, CITES_TEST));
 
     Address expectedMailingAddress = new Address();
     expectedMailingAddress.setCity(ih.getAddress().getPostalCity());
@@ -181,6 +185,7 @@ public class BaseIHTest {
     c.setMasterSource(MasterSourceType.IH);
     c.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
     c.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, IRN_TEST));
+    c.getIdentifiers().add(new Identifier(IdentifierType.CITES, IRN_TEST));
 
     IHInstitution ih = new IHInstitution();
     ih.setIrn(IRN_TEST);

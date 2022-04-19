@@ -3,6 +3,7 @@ package org.gbif.collections.sync.common;
 import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.collections.PrimaryCollectionEntity;
 import org.gbif.api.model.registry.Identifiable;
+import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTaggable;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.api.vocabulary.collections.Source;
@@ -33,6 +34,15 @@ public class Utils {
   public static boolean containsIrnIdentifier(Identifiable entity) {
     return entity.getIdentifiers() != null
         && entity.getIdentifiers().stream().anyMatch(i -> i.getType() == IdentifierType.IH_IRN);
+  }
+
+  public static boolean containsIdentifier(Identifiable entity, Identifier identifier) {
+    return entity.getIdentifiers() != null
+        && entity.getIdentifiers().stream()
+            .anyMatch(
+                i ->
+                    i.getType() == identifier.getType()
+                        && i.getIdentifier().equals(identifier.getIdentifier()));
   }
 
   public static <T extends PrimaryCollectionEntity & MachineTaggable> Map<String, Set<T>> mapByIrn(

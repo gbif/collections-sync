@@ -26,6 +26,7 @@ public class IHInstitution implements IHEntity {
   private List<String> incorporatedHerbaria;
   private List<String> importantCollectors;
   private CollectionSummary collectionsSummary;
+  private String cites;
 
   @Data
   public static class Address {

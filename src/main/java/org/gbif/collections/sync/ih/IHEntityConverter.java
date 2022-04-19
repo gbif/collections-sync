@@ -5,11 +5,13 @@ import org.gbif.api.model.collections.*;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTaggable;
+import org.gbif.api.util.IdentifierUtils;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.api.vocabulary.collections.IdType;
 import org.gbif.api.vocabulary.collections.Source;
 import org.gbif.collections.sync.clients.http.IHHttpClient;
+import org.gbif.collections.sync.common.Utils;
 import org.gbif.collections.sync.common.converter.EntityConverter;
 import org.gbif.collections.sync.common.parsers.CountryParser;
 import org.gbif.collections.sync.common.parsers.DataParser;
@@ -85,6 +87,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
             "Invalid date for institution " + ihInstitution.getIrn()));
 
     addIrnIfNotExists(institution, ihInstitution.getIrn());
+    addCitesIfNotExists(institution, ihInstitution.getCites());
 
     return institution;
   }
@@ -449,6 +452,15 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
 
     if (entity.getMasterSourceMetadata() == null) {
       entity.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, irn));
+    }
+  }
+
+  private static void addCitesIfNotExists(Institution institution, String cites) {
+    if (cites != null && !cites.isEmpty() && IdentifierUtils.isValidCitesIdentifier(cites)) {
+      Identifier identifier = new Identifier(IdentifierType.CITES, cites);
+      if (!Utils.containsIdentifier(institution, identifier)) {
+        institution.getIdentifiers().add(identifier);
+      }
     }
   }
 
