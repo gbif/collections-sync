@@ -70,7 +70,8 @@ public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstituti
 
     for (IHStaff ihStaff : ihStaffList) {
       if (isInvalidIhStaff(ihStaff)) {
-        issueNotifier.createInvalidEntity(ihStaff, "Not valid person - first name is required");
+        issueNotifier.createInvalidEntity(
+            ihStaff, "Not valid person - first name is required and emails have to be valid");
         continue;
       }
 
@@ -137,7 +138,8 @@ public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstituti
             : new HashSet<>();
     for (IHStaff ihStaff : ihStaffList) {
       if (isInvalidIhStaff(ihStaff)) {
-        issueNotifier.createInvalidEntity(ihStaff, "Not valid person - first name is required");
+        issueNotifier.createInvalidEntity(
+            ihStaff, "Not valid person - first name is required and emails have to be valid");
         continue;
       }
 
