@@ -1,7 +1,6 @@
 package org.gbif.collections.sync.ih.match;
 
 import org.gbif.api.model.collections.*;
-import org.gbif.api.util.ValidationUtils;
 import org.gbif.api.vocabulary.collections.IdType;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.Conflict;
@@ -20,7 +19,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -29,12 +27,11 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.SyncResult.ContactMatch;
+import static org.gbif.collections.sync.common.parsers.DataParser.isValidEmail;
 import static org.gbif.collections.sync.common.parsers.DataParser.parseStringList;
 
 @Slf4j
 public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstitution, IHStaff> {
-
-  private static final Pattern EMAIL_PATTERN = Pattern.compile(ValidationUtils.EMAIL_PATTERN);
   private final IHIssueNotifier issueNotifier;
   private final IHEntityConverter entityConverter;
   private final IHProxyClient proxyClient;
@@ -232,7 +229,7 @@ public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstituti
 
     if (ihStaff.getContact() != null && !Strings.isNullOrEmpty(ihStaff.getContact().getEmail())) {
       return parseStringList(ihStaff.getContact().getEmail()).stream()
-          .anyMatch(e -> !EMAIL_PATTERN.matcher(e).matches());
+          .anyMatch(e -> !isValidEmail(e));
     }
 
     return false;

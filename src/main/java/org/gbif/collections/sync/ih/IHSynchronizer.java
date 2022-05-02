@@ -19,6 +19,9 @@ import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
+import static org.gbif.collections.sync.common.parsers.DataParser.isValidEmail;
+import static org.gbif.collections.sync.common.parsers.DataParser.parseStringList;
+
 @Slf4j
 public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
 
@@ -104,6 +107,16 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
           ihInstitution, "Not valid institution - name and code are required");
       return false;
     }
+
+    if (ihInstitution.getContact() != null
+        && !Strings.isNullOrEmpty(ihInstitution.getContact().getEmail())
+        && parseStringList(ihInstitution.getContact().getEmail()).stream()
+            .anyMatch(e -> !isValidEmail(e))) {
+      issueNotifier.createInvalidEntity(
+        ihInstitution, "Not valid institution - emails are not valid");
+      return false;
+    }
+
     return true;
   }
 }
