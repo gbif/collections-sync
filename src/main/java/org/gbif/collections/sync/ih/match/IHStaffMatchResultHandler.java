@@ -1,6 +1,7 @@
 package org.gbif.collections.sync.ih.match;
 
 import org.gbif.api.model.collections.*;
+import org.gbif.api.util.ValidationUtils;
 import org.gbif.api.vocabulary.collections.IdType;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.Conflict;
@@ -19,17 +20,21 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.SyncResult.ContactMatch;
+import static org.gbif.collections.sync.common.parsers.DataParser.parseStringList;
 
 @Slf4j
 public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstitution, IHStaff> {
 
+  private static final Pattern EMAIL_PATTERN = Pattern.compile(ValidationUtils.EMAIL_PATTERN);
   private final IHIssueNotifier issueNotifier;
   private final IHEntityConverter entityConverter;
   private final IHProxyClient proxyClient;
@@ -64,7 +69,7 @@ public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstituti
     ihStaffList.sort(IHStaff.COMPARATOR_BY_COMPLETENESS.reversed());
 
     for (IHStaff ihStaff : ihStaffList) {
-      if (!isValidIhStaff(ihStaff)) {
+      if (isInvalidIhStaff(ihStaff)) {
         issueNotifier.createInvalidEntity(ihStaff, "Not valid person - first name is required");
         continue;
       }
@@ -131,7 +136,7 @@ public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstituti
             ? new HashSet<>(entity.getContactPersons())
             : new HashSet<>();
     for (IHStaff ihStaff : ihStaffList) {
-      if (!isValidIhStaff(ihStaff)) {
+      if (isInvalidIhStaff(ihStaff)) {
         issueNotifier.createInvalidEntity(ihStaff, "Not valid person - first name is required");
         continue;
       }
@@ -216,8 +221,18 @@ public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstituti
     }
   }
 
-  private static boolean isValidIhStaff(IHStaff ihStaff) {
-    return !Strings.isNullOrEmpty(ihStaff.getFirstName())
-        || !Strings.isNullOrEmpty(ihStaff.getMiddleName());
+  @VisibleForTesting
+  static boolean isInvalidIhStaff(IHStaff ihStaff) {
+    if (Strings.isNullOrEmpty(ihStaff.getFirstName())
+        && Strings.isNullOrEmpty(ihStaff.getMiddleName())) {
+      return true;
+    }
+
+    if (ihStaff.getContact() != null && !Strings.isNullOrEmpty(ihStaff.getContact().getEmail())) {
+      return parseStringList(ihStaff.getContact().getEmail()).stream()
+          .anyMatch(e -> !EMAIL_PATTERN.matcher(e).matches());
+    }
+
+    return false;
   }
 }

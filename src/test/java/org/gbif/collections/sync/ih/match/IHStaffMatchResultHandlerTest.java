@@ -22,7 +22,9 @@ import java.util.UUID;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class IHStaffMatchResultHandlerTest extends BaseIHTest {
 
@@ -238,5 +240,25 @@ public class IHStaffMatchResultHandlerTest extends BaseIHTest {
     assertEquals(2, contactMatch.getConflicts().iterator().next().getGrSciCollEntities().size());
   }
 
-  // TODO: fix tests
+  @Test
+  public void invalidStaffTest() {
+    IHStaff ihStaff = new IHStaff();
+    ihStaff.setFirstName("first");
+    IHStaff.Contact contact = new IHStaff.Contact();
+    contact.setEmail("asfsf");
+    ihStaff.setContact(contact);
+
+    assertTrue(IHStaffMatchResultHandler.isInvalidIhStaff(ihStaff));
+    contact.setEmail(null);
+    assertFalse(IHStaffMatchResultHandler.isInvalidIhStaff(ihStaff));
+    ihStaff.setFirstName(null);
+    assertTrue(IHStaffMatchResultHandler.isInvalidIhStaff(ihStaff));
+
+    ihStaff.setFirstName("aasdsa");
+    contact.setEmail("aa@aa.com;bb@bb.es");
+    assertFalse(IHStaffMatchResultHandler.isInvalidIhStaff(ihStaff));
+
+    contact.setEmail("aa@aa.com;bb@bb.es;aaa");
+    assertTrue(IHStaffMatchResultHandler.isInvalidIhStaff(ihStaff));
+  }
 }
