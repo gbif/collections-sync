@@ -17,7 +17,7 @@ public class DataParserTest {
 
   @Test
   public void emailValidityTest() {
-    assertTrue(isValidEmail("a@a.c"));
+    assertTrue(isValidEmail("a@ac.co"));
     assertFalse(isValidEmail("aa.c"));
     assertFalse(isValidEmail("N/A"));
     assertFalse(isValidEmail("@a.c"));
