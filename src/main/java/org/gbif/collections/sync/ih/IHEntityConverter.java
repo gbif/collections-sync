@@ -172,6 +172,8 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     collection.setCollectionSummary(getCollectionSummary(ihInstitution.getCollectionsSummary()));
     collection.setIncorporatedCollections(getListValue(ihInstitution.getIncorporatedHerbaria()));
     collection.setImportantCollectors(getListValue(ihInstitution.getImportantCollectors()));
+    collection.setDivision(ihInstitution.getDivision());
+    collection.setDepartment(ihInstitution.getDepartment());
 
     setAddress(collection, ihInstitution);
     collection.setEmail(getIhEmails(ihInstitution));

@@ -68,6 +68,8 @@ public class IHSynchronizerTest extends BaseIHTest {
     ih1.setCode("c1");
     ih1.setOrganization("o1");
     ih1.setIrn("1");
+    ih1.setDivision("division");
+    ih1.setDepartment("department");
 
     IHStaff is1 = new IHStaff();
     is1.setFirstName("first");
@@ -132,6 +134,8 @@ public class IHSynchronizerTest extends BaseIHTest {
     c1.setInstitutionKey(i1.getKey());
     c1.setCode("c1");
     c1.setName("Coll 1");
+    c1.setDivision(ih1.getDivision());
+    c1.setDepartment(ih1.getDepartment());
     c1.setMasterSource(MasterSourceType.IH);
     c1.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, ih1.getIrn()));
 
