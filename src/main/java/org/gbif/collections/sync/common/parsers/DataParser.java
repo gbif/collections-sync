@@ -1,7 +1,5 @@
 package org.gbif.collections.sync.common.parsers;
 
-import org.gbif.api.util.ValidationUtils;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -19,6 +17,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.validator.routines.EmailValidator;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
@@ -30,8 +29,7 @@ public class DataParser {
   public static final Function<Date, LocalDateTime> TO_LOCAL_DATE_TIME_UTC =
       d -> d.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime();
 
-  private static final Pattern EMAIL_PATTERN = Pattern.compile(ValidationUtils.EMAIL_PATTERN);
-
+  private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
   private static final Pattern WHITESPACE_PATTERN = Pattern.compile("[\\h\\s+]");
   private static final Pattern CONTAINS_NUMBER = Pattern.compile(".*[0-9].*");
   private static final List<SimpleDateFormat> DATE_FORMATS = new ArrayList<>();
@@ -81,7 +79,7 @@ public class DataParser {
   }
 
   public static boolean isValidEmail(String email) {
-    return !Strings.isNullOrEmpty(email) && EMAIL_PATTERN.matcher(email).matches();
+    return !Strings.isNullOrEmpty(email) && EMAIL_VALIDATOR.isValid(email);
   }
 
   public static boolean isValidFax(String fax) {
