@@ -2,7 +2,6 @@ package org.gbif.collections.sync.common.parsers;
 
 import java.net.URI;
 import java.util.Calendar;
-import java.util.Date;
 
 import org.junit.Test;
 
@@ -39,54 +38,14 @@ public class DataParserTest {
 
   @Test
   public void parseDateTest() {
-    Date date = parseDate("2019");
-    Calendar cal = Calendar.getInstance();
-    cal.setTime(date);
-    assertEquals(2019, cal.get(Calendar.YEAR));
-    assertEquals(0, cal.get(Calendar.MONTH));
-    assertEquals(1, cal.get(Calendar.DAY_OF_MONTH));
-
-    date = parseDate("2019.");
-    cal.setTime(date);
-    assertEquals(2019, cal.get(Calendar.YEAR));
-    assertEquals(0, cal.get(Calendar.MONTH));
-    assertEquals(1, cal.get(Calendar.DAY_OF_MONTH));
-
-    date = parseDate("2019-08");
-    cal.setTime(date);
-    assertEquals(2019, cal.get(Calendar.YEAR));
-    assertEquals(7, cal.get(Calendar.MONTH));
-    assertEquals(1, cal.get(Calendar.DAY_OF_MONTH));
-
-    date = parseDate("2019-08-08");
-    cal.setTime(date);
-    assertEquals(2019, cal.get(Calendar.YEAR));
-    assertEquals(7, cal.get(Calendar.MONTH));
-    assertEquals(8, cal.get(Calendar.DAY_OF_MONTH));
-
-    date = parseDate("08/08/2019");
-    cal.setTime(date);
-    assertEquals(2019, cal.get(Calendar.YEAR));
-    assertEquals(7, cal.get(Calendar.MONTH));
-    assertEquals(8, cal.get(Calendar.DAY_OF_MONTH));
-
-    date = parseDate("June 2019");
-    cal.setTime(date);
-    assertEquals(2019, cal.get(Calendar.YEAR));
-    assertEquals(5, cal.get(Calendar.MONTH));
-    assertEquals(1, cal.get(Calendar.DAY_OF_MONTH));
-
-    date = parseDate("Junio 2019");
-    cal.setTime(date);
-    assertEquals(2019, cal.get(Calendar.YEAR));
-    assertEquals(5, cal.get(Calendar.MONTH));
-    assertEquals(1, cal.get(Calendar.DAY_OF_MONTH));
-
-    date = parseDate("1 January 2019");
-    cal.setTime(date);
-    assertEquals(2019, cal.get(Calendar.YEAR));
-    assertEquals(0, cal.get(Calendar.MONTH));
-    assertEquals(1, cal.get(Calendar.DAY_OF_MONTH));
+    assertEquals(2019, parseDateYear("2019").intValue());
+    assertEquals(2019, parseDateYear("2019.").intValue());
+    assertEquals(2019, parseDateYear("2019-08").intValue());
+    assertEquals(2019, parseDateYear("2019-08-08").intValue());
+    assertEquals(2019, parseDateYear("08/08/2019").intValue());
+    assertEquals(2019, parseDateYear("June 2019").intValue());
+    assertEquals(2019, parseDateYear("Junio 2019").intValue());
+    assertEquals(2019, parseDateYear("1 January 2019").intValue());
   }
 
   @Test

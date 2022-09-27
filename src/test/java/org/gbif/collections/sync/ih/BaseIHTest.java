@@ -147,10 +147,9 @@ public class BaseIHTest {
     expected.setEmail(Collections.singletonList(ih.getContact().getEmail()));
     expected.setActive(true);
     expected.setFoundingDate(
-        Date.from(
-            IsoDateParsingUtils.parseDate(ih.getDateFounded())
-                .atStartOfDay(ZoneId.systemDefault())
-                .toInstant()));
+        IsoDateParsingUtils.parseDate(ih.getDateFounded())
+            .atStartOfDay(ZoneId.systemDefault())
+            .getYear());
     expected.setMasterSource(MasterSourceType.IH);
     expected.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
     expected.getIdentifiers().add(new Identifier(IdentifierType.CITES, CITES_TEST));

@@ -118,11 +118,11 @@ public class DataParser {
     }
   }
 
-  public static Date parseDate(String dateAsString) {
-    return parseDate(dateAsString, "Invalid date");
+  public static Integer parseDateYear(String dateAsString) {
+    return parseDateYear(dateAsString, "Invalid date");
   }
 
-  public static Date parseDate(String dateAsString, String errorMsg) {
+  public static Integer parseDateYear(String dateAsString, String errorMsg) {
     if (!hasValue(dateAsString)) {
       return null;
     }
@@ -134,7 +134,10 @@ public class DataParser {
 
     for (SimpleDateFormat dateFormat : DATE_FORMATS) {
       try {
-        return dateFormat.parse(dateAsString);
+        Date date = dateFormat.parse(dateAsString);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return calendar.get(Calendar.YEAR);
       } catch (Exception e) {
         log.debug("Failed parsing date {}: ", dateAsString, e);
       }

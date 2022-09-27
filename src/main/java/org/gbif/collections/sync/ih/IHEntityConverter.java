@@ -82,7 +82,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     institution.setPhone(getIhPhones(ihInstitution));
     institution.setHomepage(getIhHomepage(ihInstitution));
     institution.setFoundingDate(
-        parseDate(
+        parseDateYear(
             ihInstitution.getDateFounded(),
             "Invalid date for institution " + ihInstitution.getIrn()));
 
