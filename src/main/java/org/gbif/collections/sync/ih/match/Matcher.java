@@ -51,13 +51,6 @@ public class Matcher {
         .build();
   }
 
-  private <T extends CollectionEntity> UUID getMatchKey(Set<T> matches) {
-    if (matches.iterator().hasNext()) {
-      return matches.iterator().next().getKey();
-    }
-    return null;
-  }
-
   @AllArgsConstructor
   static class IHStaffToMatch {
     IHStaff ihStaff;
