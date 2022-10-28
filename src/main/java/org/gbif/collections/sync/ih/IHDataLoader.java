@@ -1,12 +1,7 @@
 package org.gbif.collections.sync.ih;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
 import org.gbif.collections.sync.clients.http.IHHttpClient;
 import org.gbif.collections.sync.common.DataLoader;
@@ -14,6 +9,10 @@ import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.ih.IHDataLoader.IHData;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -48,8 +47,6 @@ public class IHDataLoader implements DataLoader<IHData> {
         CompletableFuture.supplyAsync(grSciCollHttpClient::getIhInstitutions);
     CompletableFuture<List<Collection>> collectionsFuture =
         CompletableFuture.supplyAsync(grSciCollHttpClient::getIhCollections);
-    CompletableFuture<List<Person>> personsFuture =
-      CompletableFuture.supplyAsync(grSciCollHttpClient::getPersons);
 
     log.info("Loading data from WSs");
     CompletableFuture.allOf(
@@ -63,7 +60,6 @@ public class IHDataLoader implements DataLoader<IHData> {
     return new IHData(
         institutionsFuture.join(),
         collectionsFuture.join(),
-        personsFuture.join(),
         ihInstitutionsFuture.join(),
         ihStaffFuture.join(),
         countriesFuture.join());
@@ -74,7 +70,6 @@ public class IHDataLoader implements DataLoader<IHData> {
   public static class IHData {
     List<Institution> institutions;
     List<Collection> collections;
-    List<Person> persons;
     List<IHInstitution> ihInstitutions;
     List<IHStaff> ihStaff;
     List<String> countries;

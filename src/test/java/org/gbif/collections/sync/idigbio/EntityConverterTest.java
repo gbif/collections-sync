@@ -1,6 +1,9 @@
 package org.gbif.collections.sync.idigbio;
 
-import org.gbif.api.model.collections.*;
+import org.gbif.api.model.collections.Address;
+import org.gbif.api.model.collections.AlternativeCode;
+import org.gbif.api.model.collections.Collection;
+import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
 import org.gbif.api.vocabulary.Country;
@@ -205,61 +208,6 @@ public class EntityConverterTest {
     assertEquals(existing.getAddress(), collectionConverted.getAddress());
     assertEquals(existing.getMailingAddress(), collectionConverted.getMailingAddress());
     assertIdentifiersAndTagsCollection(iDigBioRecord, collectionConverted, true);
-  }
-
-  @Test
-  public void convertPersonTest() {
-    IDigBioRecord iDigBioRecord = new IDigBioRecord();
-    iDigBioRecord.setContact("name");
-    iDigBioRecord.setContactEmail("aa@aa.com");
-    iDigBioRecord.setContactRole("role");
-
-    Person personConverted = entityConverter.convertToPerson(iDigBioRecord);
-
-    assertEquals(iDigBioRecord.getContact(), personConverted.getFirstName());
-    assertEquals(iDigBioRecord.getContactEmail(), personConverted.getEmail());
-    assertEquals(iDigBioRecord.getContactRole(), personConverted.getPosition());
-  }
-
-  @Test
-  public void convertPersonFromExistingTest() {
-    IDigBioRecord iDigBioRecord = new IDigBioRecord();
-    iDigBioRecord.setContact("name");
-    iDigBioRecord.setContactEmail("aa@aa.com");
-    iDigBioRecord.setContactRole("role");
-
-    Person existing = new Person();
-    existing.setFirstName("first");
-    existing.setLastName("last");
-    existing.setPosition("pos");
-    existing.setPhone("123456");
-
-    Person personConverted = entityConverter.convertToPerson(iDigBioRecord, existing);
-
-    assertEquals(iDigBioRecord.getContact(), personConverted.getFirstName());
-    assertEquals(iDigBioRecord.getContactEmail(), personConverted.getEmail());
-    assertEquals(iDigBioRecord.getContactRole(), personConverted.getPosition());
-    assertEquals(existing.getLastName(), personConverted.getLastName());
-    assertEquals(existing.getPhone(), personConverted.getPhone());
-  }
-
-  @Test
-  public void convertPersonFromExistingIHTest() {
-    IDigBioRecord iDigBioRecord = new IDigBioRecord();
-    iDigBioRecord.setContact("name");
-    iDigBioRecord.setContactEmail("aa@aa.com");
-    iDigBioRecord.setContactRole("role");
-
-    Person existing = new Person();
-    existing.setFirstName("first");
-    existing.setLastName("last");
-    existing.setPosition("pos");
-    existing.setPhone("123456");
-    existing.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, "1234"));
-
-    Person personConverted = entityConverter.convertToPerson(iDigBioRecord, existing);
-
-    assertEquals(existing, personConverted);
   }
 
   private void assertAddress(IDigBioRecord.Address iDigBioAddress, Address address) {

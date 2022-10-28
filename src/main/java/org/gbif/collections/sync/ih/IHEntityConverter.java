@@ -34,7 +34,6 @@ import lombok.extern.slf4j.Slf4j;
 import static org.gbif.collections.sync.common.CloneUtils.cloneCollection;
 import static org.gbif.collections.sync.common.CloneUtils.cloneContact;
 import static org.gbif.collections.sync.common.CloneUtils.cloneInstitution;
-import static org.gbif.collections.sync.common.CloneUtils.clonePerson;
 import static org.gbif.collections.sync.common.Utils.containsIrnIdentifier;
 import static org.gbif.collections.sync.common.Utils.encodeIRN;
 import static org.gbif.collections.sync.common.parsers.DataParser.*;
@@ -216,70 +215,6 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
   }
 
   @Override
-  public Person convertToPerson(IHStaff ihStaff) {
-    return convertToPerson(ihStaff, null);
-  }
-
-  @Override
-  public Person convertToPerson(IHStaff ihStaff, Person existing) {
-    Person person = clonePerson(existing);
-
-    buildFirstName(ihStaff).ifPresent(person::setFirstName);
-    person.setLastName(getStringValue(ihStaff.getLastName()));
-    person.setPosition(getStringValue(ihStaff.getPosition()));
-
-    if (ihStaff.getContact() != null) {
-      setFirstValue(
-          ihStaff.getContact().getEmail(),
-          DataParser::isValidEmail,
-          person::setEmail,
-          "Invalid email of IH Staff " + ihStaff.getIrn());
-      setFirstValue(
-          ihStaff.getContact().getPhone(),
-          DataParser::isValidPhone,
-          person::setPhone,
-          "Invalid phone of IH Staff " + ihStaff.getIrn());
-      setFirstValue(
-          ihStaff.getContact().getFax(),
-          DataParser::isValidFax,
-          person::setFax,
-          "Invalid fax of IH Staff " + ihStaff.getIrn());
-    } else {
-      person.setEmail(null);
-      person.setPhone(null);
-      person.setFax(null);
-    }
-
-    if (ihStaff.getAddress() != null) {
-      if (person.getMailingAddress() == null) {
-        person.setMailingAddress(new Address());
-      }
-
-      person.getMailingAddress().setAddress(getStringValue(ihStaff.getAddress().getStreet()));
-      person.getMailingAddress().setCity(getStringValue(ihStaff.getAddress().getCity()));
-      person.getMailingAddress().setProvince(getStringValue(ihStaff.getAddress().getState()));
-      person.getMailingAddress().setPostalCode(getStringValue(ihStaff.getAddress().getZipCode()));
-
-      Country mailingAddressCountry = null;
-      if (!Strings.isNullOrEmpty(ihStaff.getAddress().getCountry())) {
-        mailingAddressCountry = countryParser.parse(ihStaff.getAddress().getCountry());
-        if (mailingAddressCountry == null) {
-          log.warn(
-              "Country not found for {} and IH staff {}",
-              ihStaff.getAddress().getCountry(),
-              ihStaff.getIrn());
-        }
-      }
-      person.getMailingAddress().setCountry(mailingAddressCountry);
-    }
-
-    // removed because the new method is only for primary entities
-    //    addIrnIfNotExists(person, ihStaff.getIrn());
-
-    return person;
-  }
-
-  @Override
   public Contact convertToContact(IHStaff ihStaff) {
     return convertToContact(ihStaff, new Contact());
   }
@@ -445,7 +380,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
         .orElse(null);
   }
 
-  private static <T extends PrimaryCollectionEntity & Identifiable & MachineTaggable>
+  private static <T extends CollectionEntity & Identifiable & MachineTaggable>
       void addIrnIfNotExists(T entity, String irn) {
     if (!containsIrnIdentifier(entity)) {
       // add identifier

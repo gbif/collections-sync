@@ -1,7 +1,9 @@
 package org.gbif.collections.sync.clients.http;
 
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.*;
+import org.gbif.api.model.collections.Contact;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.MasterSourceMetadata;
 import org.gbif.api.model.common.paging.PagingResponse;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
@@ -192,30 +194,6 @@ public class GrSciCollHttpClient {
     syncCall(api.addMachineTagToCollection(collectionKey, machineTag));
   }
 
-  /** Returns all persons in GrSciCol. */
-  public List<Person> getPersons() {
-    List<Person> result = new ArrayList<>();
-
-    boolean endRecords = false;
-    int offset = 0;
-    while (!endRecords) {
-      PagingResponse<Person> response = syncCall(api.listPersons(1000, offset));
-      endRecords = response.isEndOfRecords();
-      offset += response.getLimit();
-      result.addAll(response.getResults());
-    }
-
-    return result;
-  }
-
-  public UUID createPerson(Person person) {
-    return syncCall(api.createPerson(person));
-  }
-
-  public void updatePerson(Person person) {
-    syncCall(api.updatePerson(person.getKey(), person));
-  }
-
   public void deletePerson(UUID personKey) {
     syncCall(api.deletePerson(personKey));
   }
@@ -262,10 +240,6 @@ public class GrSciCollHttpClient {
 
   public void removeContactFromCollection(UUID institutionKey, int contactKey) {
     syncCall(api.removeContactFromCollection(institutionKey, contactKey));
-  }
-
-  public Person getPerson(UUID key) {
-    return syncCall(api.getPerson(key));
   }
 
   public void addMasterSourceMetadataToInstitution(
@@ -324,19 +298,6 @@ public class GrSciCollHttpClient {
     @POST("collection/{key}/machineTag")
     Call<Void> addMachineTagToCollection(
         @Path("key") UUID collectionKey, @Body MachineTag machineTag);
-
-    @GET("person")
-    Call<PagingResponse<Person>> listPersons(
-        @Query("limit") int limit, @Query("offset") int offset);
-
-    @GET("person/{key}")
-    Call<Person> getPerson(@Path("key") UUID key);
-
-    @POST("person")
-    Call<UUID> createPerson(@Body Person person);
-
-    @PUT("person/{key}")
-    Call<Void> updatePerson(@Path("key") UUID key, @Body Person person);
 
     @DELETE("person/{key}")
     Call<Void> deletePerson(@Path("key") UUID key);

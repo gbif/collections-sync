@@ -1,7 +1,6 @@
 package org.gbif.collections.sync.common;
 
-import org.gbif.api.model.collections.Person;
-import org.gbif.api.model.collections.PrimaryCollectionEntity;
+import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTaggable;
@@ -45,7 +44,7 @@ public class Utils {
                         && i.getIdentifier().equals(identifier.getIdentifier()));
   }
 
-  public static <T extends PrimaryCollectionEntity & MachineTaggable> Map<String, Set<T>> mapByIrn(
+  public static <T extends CollectionEntity & MachineTaggable> Map<String, Set<T>> mapByIrn(
       java.util.Collection<T> entities) {
     Map<String, Set<T>> mapByIrn = new HashMap<>();
     if (entities == null) {
@@ -65,10 +64,6 @@ public class Utils {
                         e.getMasterSourceMetadata().getSourceId(), s -> new HashSet<>())
                     .add(e));
     return mapByIrn;
-  }
-
-  public static boolean isPersonInContacts(UUID personKey, java.util.Collection<Person> contacts) {
-    return contacts != null && contacts.stream().anyMatch(c -> c.getKey().equals(personKey));
   }
 
   public static String removeUuidNamespace(String identifier) {

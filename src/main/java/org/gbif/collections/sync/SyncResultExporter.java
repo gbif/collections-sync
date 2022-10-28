@@ -2,7 +2,6 @@ package org.gbif.collections.sync;
 
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contact;
-import org.gbif.api.model.collections.Person;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -200,24 +199,6 @@ public class SyncResultExporter {
     }
   }
 
-  @Deprecated
-  private static void printStaffMatch(BufferedWriter writer, SyncResult.StaffMatch staffMatch) {
-    try {
-      writer.newLine();
-      printWithNewLineAfter(writer, SMALL_INDENT + ">>> Associated Staff");
-      printSubsection(writer, "New Persons", staffMatch.getNewPersons());
-      printSubsectionTitle(writer, "Matched Persons: " + staffMatch.getMatchedPersons().size());
-      staffMatch.getMatchedPersons().stream()
-          .sorted(Comparator.comparing(SyncResult.EntityMatch::isUpdate))
-          .forEach(m -> printStaffEntityMatch(writer, m));
-      printSubsection(writer, "Removed Persons", staffMatch.getRemovedPersons());
-      printSubsection(writer, "Staff Conflicts", staffMatch.getConflicts());
-      writer.newLine();
-    } catch (IOException e) {
-      log.warn("Couldn't print staff match {}", staffMatch, e);
-    }
-  }
-
   private static void printContactMatch(
       BufferedWriter writer, SyncResult.ContactMatch contactMatch) {
     try {
@@ -309,22 +290,6 @@ public class SyncResultExporter {
   private static Counts getSummaryCounts(SyncResult result) {
     Counts counts = new Counts();
 
-    Consumer<SyncResult.StaffMatch> countStaff =
-        staffMatch -> {
-          if (staffMatch != null) {
-            counts.countStaffMatch.personsCreated += staffMatch.getNewPersons().size();
-            counts.countStaffMatch.personsRemoved += staffMatch.getRemovedPersons().size();
-            counts.countStaffMatch.staffConflicts += staffMatch.getConflicts().size();
-            for (SyncResult.EntityMatch<Person> p : staffMatch.getMatchedPersons()) {
-              if (p.isUpdate()) {
-                counts.countStaffMatch.personsUpdated++;
-              } else {
-                counts.countStaffMatch.personsNoChange++;
-              }
-            }
-          }
-        };
-
     Consumer<SyncResult.ContactMatch> countContacts =
         contactMatch -> {
           if (contactMatch != null) {
@@ -347,7 +312,6 @@ public class SyncResultExporter {
       } else {
         counts.collectionsNoChange++;
       }
-      countStaff.accept(m.getStaffMatch());
       countContacts.accept(m.getContactMatch());
     }
 
@@ -361,7 +325,6 @@ public class SyncResultExporter {
       if (m.getNewCollection() != null) {
         counts.collectionsCreated++;
       }
-      countStaff.accept(m.getStaffMatch());
       countContacts.accept(m.getContactMatch());
     }
 
@@ -377,7 +340,6 @@ public class SyncResultExporter {
       } else {
         counts.collectionsNoChange++;
       }
-      countStaff.accept(m.getStaffMatch());
       countContacts.accept(m.getContactMatch());
     }
 
@@ -388,7 +350,6 @@ public class SyncResultExporter {
       if (m.getNewCollection() != null) {
         counts.collectionsCreated++;
       }
-      countStaff.accept(m.getStaffMatch());
       countContacts.accept(m.getContactMatch());
     }
 

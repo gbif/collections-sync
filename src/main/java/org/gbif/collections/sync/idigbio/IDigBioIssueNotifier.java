@@ -1,17 +1,14 @@
 package org.gbif.collections.sync.idigbio;
 
 import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.common.notification.Issue;
 import org.gbif.collections.sync.common.notification.IssueNotifier;
 import org.gbif.collections.sync.config.IDigBioConfig;
 import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.UnaryOperator;
@@ -62,10 +59,6 @@ public class IDigBioIssueNotifier extends IssueNotifier {
 
   public void createConflict(List<CollectionEntity> entities, IDigBioRecord iDigBioRecord) {
     createConflict(entities, iDigBioRecord, "iDigBio collection");
-  }
-
-  public void createStaffConflict(Set<Person> persons, IDigBioRecord iDigBioRecord) {
-    createConflict(new ArrayList<>(persons), iDigBioRecord, "iDigBio contact");
   }
 
   protected <T extends CollectionEntity> void createConflict(

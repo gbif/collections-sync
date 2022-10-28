@@ -1,19 +1,18 @@
 package org.gbif.collections.sync.idigbio;
 
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
 import org.gbif.collections.sync.common.DataLoader;
 import org.gbif.collections.sync.config.IDigBioConfig;
 import org.gbif.collections.sync.idigbio.IDigBioDataLoader.IDigBioData;
 import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
+
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
@@ -47,21 +46,14 @@ public class IDigBioDataLoader implements DataLoader<IDigBioData> {
         CompletableFuture.supplyAsync(grSciCollHttpClient::getInstitutions);
     CompletableFuture<List<Collection>> collectionsFuture =
         CompletableFuture.supplyAsync(grSciCollHttpClient::getCollections);
-    CompletableFuture<List<Person>> personsFuture =
-        CompletableFuture.supplyAsync(grSciCollHttpClient::getPersons);
     CompletableFuture<List<IDigBioRecord>> iDigBioRecordsFuture =
         CompletableFuture.supplyAsync(() -> readIDigBioRecords(iDigBioConfig));
 
     log.info("Loading data from WSs");
-    CompletableFuture.allOf(
-            institutionsFuture, collectionsFuture, personsFuture, iDigBioRecordsFuture)
-        .join();
+    CompletableFuture.allOf(institutionsFuture, collectionsFuture, iDigBioRecordsFuture).join();
 
     return new IDigBioData(
-        institutionsFuture.join(),
-        collectionsFuture.join(),
-        personsFuture.join(),
-        iDigBioRecordsFuture.join());
+        institutionsFuture.join(), collectionsFuture.join(), iDigBioRecordsFuture.join());
   }
 
   private List<IDigBioRecord> readIDigBioRecords(IDigBioConfig config) {
@@ -88,7 +80,6 @@ public class IDigBioDataLoader implements DataLoader<IDigBioData> {
   public static class IDigBioData {
     List<Institution> institutions;
     List<Collection> collections;
-    List<Person> persons;
     List<IDigBioRecord> iDigBioRecords;
   }
 }

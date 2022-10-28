@@ -2,14 +2,12 @@ package org.gbif.collections.sync.clients.proxy;
 
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.common.DataLoader;
 import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.ih.IHDataLoader.IHData;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,8 +26,6 @@ public class IHProxyClient extends BaseProxyClient {
   private List<IHInstitution> ihInstitutions;
   private Map<String, Set<Institution>> institutionsMapByIrn;
   private Map<String, Set<Collection>> collectionsMapByIrn;
-  private Map<String, Set<Person>> grSciCollPersonsByIrn;
-  private Set<Person> allGrSciCollPersons;
   private Map<String, List<IHStaff>> ihStaffMapByCode;
   private List<String> countries;
 
@@ -46,7 +42,6 @@ public class IHProxyClient extends BaseProxyClient {
     ihInstitutions = data.getIhInstitutions();
     institutionsMapByIrn = mapByIrn(data.getInstitutions());
     collectionsMapByIrn = mapByIrn(data.getCollections());
-    this.allGrSciCollPersons = new HashSet<>(data.getPersons());
     ihStaffMapByCode =
         data.getIhStaff().stream()
             .filter(s -> "Yes".equalsIgnoreCase(s.getCorrespondent()))

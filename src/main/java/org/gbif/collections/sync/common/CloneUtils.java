@@ -60,9 +60,6 @@ public class CloneUtils {
         if (clone.getMailingAddress() != null) {
           clone.setMailingAddress((Address) BeanUtils.cloneBean(clone.getMailingAddress()));
         }
-        if (clone.getContacts() != null) {
-          clone.setContacts(new ArrayList<>(clone.getContacts()));
-        }
         if (clone.getComments() != null) {
           clone.setComments(new ArrayList<>(clone.getComments()));
         }
@@ -71,33 +68,6 @@ public class CloneUtils {
         }
       } catch (Exception e) {
         log.warn("Couldn't copy collection entity properties from bean: {}", entity);
-      }
-    }
-
-    return clone;
-  }
-
-  public static Person clonePerson(Person person) {
-    Person clone = new Person();
-    if (person != null) {
-      // copy fields
-      try {
-        BeanUtils.copyProperties(clone, person);
-
-        if (clone.getIdentifiers() != null) {
-          clone.setIdentifiers(new ArrayList<>(clone.getIdentifiers()));
-        }
-        if (clone.getMachineTags() != null) {
-          clone.setMachineTags(new ArrayList<>(clone.getMachineTags()));
-        }
-        if (clone.getTags() != null) {
-          clone.setTags(new ArrayList<>(clone.getTags()));
-        }
-        if (clone.getMailingAddress() != null) {
-          clone.setMailingAddress((Address) BeanUtils.cloneBean(clone.getMailingAddress()));
-        }
-      } catch (Exception e) {
-        log.warn("Couldn't copy person properties from bean: {}", person);
       }
     }
 

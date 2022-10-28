@@ -1,33 +1,21 @@
 package org.gbif.collections.sync.idigbio.match;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.collections.sync.clients.proxy.IDigBioProxyClient;
 import org.gbif.collections.sync.common.Utils;
-import org.gbif.collections.sync.common.staff.StaffNormalized;
 import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
-import org.apache.commons.lang3.StringUtils;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
-import static org.gbif.collections.sync.common.Utils.countNonNullValues;
-import static org.gbif.collections.sync.common.staff.StaffUtils.compareLists;
-import static org.gbif.collections.sync.common.staff.StaffUtils.compareStrings;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NO_CODE;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.IS_IDIGBIO_COLLECTION_UUID_MT;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
@@ -58,8 +46,6 @@ public class Matcher {
       matchCollection(institutionMatch.getKey(), iDigBioRecord)
           .ifPresent(result::collectionMatched);
     }
-
-    result.staffMatcher(this::matchContact);
 
     return result.build();
   }
@@ -176,69 +162,12 @@ public class Matcher {
     return matches.isEmpty() ? Optional.empty() : Optional.of(matches.get(0));
   }
 
-  Set<Person> matchContact(IDigBioRecord record, Set<Person> contacts) {
-    if (proxyClient.getPersons() == null) {
-      return Collections.emptySet();
-    }
-
-    StaffNormalized idigbioContact = StaffNormalized.fromIDigBioContact(record);
-    Person bestMatch = null;
-    int maxScore = 0;
-    for (Person person : proxyClient.getPersons()) {
-      StaffNormalized personNormalized = StaffNormalized.fromGrSciCollPerson(person);
-
-      boolean emailMatch = compareLists(personNormalized.getEmails(), idigbioContact.getEmails());
-      boolean nameMatch =
-          compareStrings(personNormalized.getFullName(), idigbioContact.getFullName());
-      boolean positionMatch =
-          Objects.equals(personNormalized.getPosition(), idigbioContact.getPosition());
-      boolean isContact = Utils.isPersonInContacts(person.getKey(), contacts);
-      boolean primaryInstMatch =
-          Objects.equals(
-              idigbioContact.getPrimaryInstitutionKey(),
-              personNormalized.getPrimaryInstitutionKey());
-
-      if (!emailMatch && !nameMatch) {
-        continue;
-      }
-
-      int score = 0;
-      if (positionMatch) {
-        score += 2;
-      } else if (person.getPosition() == null) {
-        score += 1;
-      } else {
-        // the position has to match
-        continue;
-      }
-
-      score += isContact ? 2 : 0;
-      score += primaryInstMatch ? 1 : 0;
-
-      if (score > maxScore) {
-        maxScore = score;
-        bestMatch = person;
-      } else if (score == maxScore) {
-        bestMatch = comparePersonFieldCompleteness(bestMatch, person);
-      }
-    }
-
-    return bestMatch == null ? Collections.emptySet() : Collections.singleton(bestMatch);
-  }
-
   private void fixNullCodes(IDigBioRecord iDigBioRecord) {
     if (Strings.isNullOrEmpty(iDigBioRecord.getInstitutionCode())
         && Strings.isNullOrEmpty(iDigBioRecord.getCollectionCode())) {
       iDigBioRecord.setInstitutionCode(IDIGBIO_NO_CODE);
       iDigBioRecord.setCollectionCode(IDIGBIO_NO_CODE);
     }
-  }
-
-  private static Person comparePersonFieldCompleteness(Person p1, Person p2) {
-    long count1 = countNonNullValues(Person.class, p1);
-    long count2 = countNonNullValues(Person.class, p2);
-
-    return count1 > count2 ? p1 : p2;
   }
 
   @VisibleForTesting

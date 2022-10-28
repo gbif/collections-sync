@@ -1,15 +1,14 @@
 package org.gbif.collections.sync.ih;
 
-import java.util.List;
-
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.common.DataLoader;
 import org.gbif.collections.sync.ih.IHDataLoader.IHData;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
+
+import java.util.List;
 
 import lombok.Builder;
 import lombok.Singular;
@@ -22,9 +21,6 @@ public class TestDataLoader implements DataLoader<IHData> {
 
   @Singular(value = "collection")
   private final List<Collection> collections;
-
-  @Singular(value = "person")
-  private final List<Person> persons;
 
   @Singular(value = "contact")
   private final List<Contact> contacts;
@@ -40,6 +36,6 @@ public class TestDataLoader implements DataLoader<IHData> {
 
   @Override
   public IHData loadData() {
-    return new IHData(institutions, collections, persons, ihInstitutions, ihStaff, countries);
+    return new IHData(institutions, collections, ihInstitutions, ihStaff, countries);
   }
 }

@@ -1,15 +1,13 @@
 package org.gbif.collections.sync.idigbio.match;
 
-import java.util.Collections;
-import java.util.Set;
-import java.util.function.BiFunction;
-
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.clients.proxy.IDigBioProxyClient;
 import org.gbif.collections.sync.common.match.MatchResult;
 import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
+
+import java.util.Collections;
+import java.util.Set;
 
 import lombok.Builder;
 
@@ -19,7 +17,6 @@ public class IDigBioMatchResult implements MatchResult<IDigBioRecord, IDigBioRec
   IDigBioRecord iDigBioRecord;
   Institution institutionMatched;
   Collection collectionMatched;
-  BiFunction<IDigBioRecord, Set<Person>, Set<Person>> staffMatcher;
   IDigBioProxyClient proxyClient;
 
   @Override
@@ -62,10 +59,5 @@ public class IDigBioMatchResult implements MatchResult<IDigBioRecord, IDigBioRec
         proxyClient
             .getCollectionsByKey()
             .getOrDefault(collectionMatched.getKey(), collectionMatched));
-  }
-
-  @Override
-  public BiFunction<IDigBioRecord, Set<Person>, Set<Person>> getStaffMatcher() {
-    return staffMatcher;
   }
 }

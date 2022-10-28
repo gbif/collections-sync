@@ -1,16 +1,10 @@
 package org.gbif.collections.sync.common.match;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.BiFunction;
-
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
+
+import java.util.*;
 
 public interface MatchResult<S, R> {
 
@@ -21,8 +15,6 @@ public interface MatchResult<S, R> {
   Set<Institution> getInstitutionMatches();
 
   Set<Collection> getCollectionMatches();
-
-  BiFunction<R, Set<Person>, Set<Person>> getStaffMatcher();
 
   default List<CollectionEntity> getAllMatches() {
     List<CollectionEntity> all = new ArrayList<>();

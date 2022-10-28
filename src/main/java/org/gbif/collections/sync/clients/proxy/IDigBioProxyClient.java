@@ -1,23 +1,14 @@
 package org.gbif.collections.sync.clients.proxy;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Contactable;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.common.DataLoader;
 import org.gbif.collections.sync.config.IDigBioConfig;
 import org.gbif.collections.sync.idigbio.IDigBioDataLoader.IDigBioData;
 import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -32,13 +23,11 @@ public class IDigBioProxyClient extends BaseProxyClient {
   private List<IDigBioRecord> iDigBioRecords = new ArrayList<>();
   private Map<UUID, Institution> institutionsByKey = new HashMap<>();
   private Map<UUID, Collection> collectionsByKey = new HashMap<>();
-  private Map<UUID, Person> personsByKey = new HashMap<>();
   private Map<UUID, Set<Collection>> collectionsByInstitution = new HashMap<>();
   // institutions created when an IDigBio record has no match. We need to store them in order not to
   // duplicate them. For example, the institution with code CCBER has no match and it's present
   // multiple times because it has multiple collections.
   private final Set<Institution> newlyCreatedIDigBioInstitutions = new HashSet<>();
-  private Set<Person> persons = new HashSet<>();
   private final Map<String, Collection> collectionsByIDigBioUuid = new HashMap<>();
 
   @Builder
@@ -55,14 +44,12 @@ public class IDigBioProxyClient extends BaseProxyClient {
         data.getInstitutions().stream().collect(Collectors.toMap(Institution::getKey, i -> i));
     collectionsByKey =
         data.getCollections().stream().collect(Collectors.toMap(Collection::getKey, c -> c));
-    personsByKey = data.getPersons().stream().collect(Collectors.toMap(Person::getKey, p -> p));
     collectionsByInstitution =
         data.getCollections().stream()
             .filter(c -> c.getInstitutionKey() != null)
             .collect(
                 Collectors.groupingBy(
                     Collection::getInstitutionKey, HashMap::new, Collectors.toSet()));
-    this.persons = new HashSet<>(data.getPersons());
     this.iDigBioRecords = data.getIDigBioRecords();
 
     // map collections by the iDigBio UUID machine tag
@@ -108,39 +95,6 @@ public class IDigBioProxyClient extends BaseProxyClient {
     return updated;
   }
 
-  @Override
-  public Person createPerson(Person person) {
-    Person createdPerson = personHandler.create(person);
-    addNewPersonInMemory(createdPerson);
-    return createdPerson;
-  }
-
-  @Override
-  public boolean updatePerson(Person oldPerson, Person newPerson) {
-    boolean updated = personHandler.update(oldPerson, newPerson);
-    if (updated) {
-      updatePersonInMemory(oldPerson, newPerson);
-    }
-    return updated;
-  }
-
-  @Override
-  public <T extends CollectionEntity & Contactable> void linkPersonToEntity(
-      Person person, List<T> entities) {
-    super.linkPersonToEntity(person, entities);
-
-    // update entities with the contacts list updates
-    entities.forEach(
-        e -> {
-          if (e instanceof Institution) {
-            updateInstitutionInMemory((Institution) e);
-          } else if (e instanceof Collection) {
-            Collection c = (Collection) e;
-            updateCollectionInMemory(c, c);
-          }
-        });
-  }
-
   private void updateCollectionInMemory(Collection oldCollection, Collection newCollection) {
     Collection updatedCollection = collectionHandler.get(newCollection);
     if (updatedCollection != null && updatedCollection.getKey() != null) {
@@ -160,31 +114,6 @@ public class IDigBioProxyClient extends BaseProxyClient {
     Institution institution = institutionHandler.get(newInstitution);
     if (institution != null && institution.getKey() != null) {
       institutionsByKey.put(institution.getKey(), institution);
-    }
-  }
-
-  public void addNewPersonInMemory(Person person) {
-    if (person != null) {
-      persons.add(person);
-      if (person.getKey() != null) {
-        personsByKey.put(person.getKey(), person);
-      }
-    }
-  }
-
-  public void updatePersonInMemory(Person oldPerson, Person updatedPerson) {
-    if (oldPerson != null) {
-      persons.remove(oldPerson);
-      if (oldPerson.getKey() != null) {
-        personsByKey.remove(oldPerson.getKey());
-      }
-    }
-    if (updatedPerson != null) {
-      updatedPerson = personHandler.get(updatedPerson);
-      persons.add(updatedPerson);
-      if (updatedPerson.getKey() != null) {
-        personsByKey.put(updatedPerson.getKey(), updatedPerson);
-      }
     }
   }
 

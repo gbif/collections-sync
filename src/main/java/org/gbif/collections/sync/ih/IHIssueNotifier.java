@@ -2,7 +2,6 @@ package org.gbif.collections.sync.ih;
 
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contact;
-import org.gbif.api.model.collections.Person;
 import org.gbif.collections.sync.common.notification.Issue;
 import org.gbif.collections.sync.common.notification.IssueNotifier;
 import org.gbif.collections.sync.config.IHConfig;
@@ -66,10 +65,6 @@ public class IHIssueNotifier extends IssueNotifier {
 
   public void createConflict(List<CollectionEntity> entities, IHInstitution ihInstitution) {
     createConflict(entities, ihInstitution, "institution", e -> e.getKey().toString());
-  }
-
-  public void createStaffConflict(Set<Person> persons, IHStaff ihStaff) {
-    createConflict(new ArrayList<>(persons), ihStaff, "staff", e -> e.getKey().toString());
   }
 
   public void createContactConflict(Set<Contact> contacts, IHStaff ihStaff) {

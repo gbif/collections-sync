@@ -1,9 +1,10 @@
 package org.gbif.collections.sync;
 
-import org.gbif.api.model.collections.*;
+import org.gbif.api.model.collections.Collection;
+import org.gbif.api.model.collections.Contact;
+import org.gbif.api.model.collections.Institution;
 
 import java.util.List;
-import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,7 +47,6 @@ public class SyncResult {
   @Builder
   public static class CollectionOnlyMatch {
     private EntityMatch<Collection> matchedCollection;
-    private StaffMatch staffMatch;
     private ContactMatch contactMatch;
   }
 
@@ -55,7 +55,6 @@ public class SyncResult {
   public static class InstitutionOnlyMatch {
     private EntityMatch<Institution> matchedInstitution;
     private Collection newCollection;
-    private StaffMatch staffMatch;
     private ContactMatch contactMatch;
   }
 
@@ -64,7 +63,6 @@ public class SyncResult {
   public static class InstitutionAndCollectionMatch {
     private EntityMatch<Institution> matchedInstitution;
     private EntityMatch<Collection> matchedCollection;
-    private StaffMatch staffMatch;
     private ContactMatch contactMatch;
   }
 
@@ -73,25 +71,7 @@ public class SyncResult {
   public static class NoEntityMatch {
     private Institution newInstitution;
     private Collection newCollection;
-    private StaffMatch staffMatch;
     private ContactMatch contactMatch;
-  }
-
-  @Deprecated
-  @Data
-  @Builder
-  public static class StaffMatch {
-    @Singular(value = "newPerson")
-    private Set<Person> newPersons;
-
-    @Singular(value = "matchedPerson")
-    private Set<EntityMatch<Person>> matchedPersons;
-
-    @Singular(value = "removedPerson")
-    private Set<Person> removedPersons;
-
-    @Singular(value = "conflict")
-    private Set<Conflict> conflicts;
   }
 
   @Data

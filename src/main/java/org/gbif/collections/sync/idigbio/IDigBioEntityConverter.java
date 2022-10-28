@@ -1,11 +1,5 @@
 package org.gbif.collections.sync.idigbio;
 
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
-
 import org.gbif.api.model.collections.*;
 import org.gbif.api.model.registry.Identifiable;
 import org.gbif.api.model.registry.Identifier;
@@ -17,21 +11,22 @@ import org.gbif.collections.sync.common.converter.EntityConverter;
 import org.gbif.collections.sync.common.parsers.DataParser;
 import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
+
 import com.google.common.base.Strings;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.common.CloneUtils.cloneCollection;
 import static org.gbif.collections.sync.common.CloneUtils.cloneInstitution;
-import static org.gbif.collections.sync.common.CloneUtils.clonePerson;
 import static org.gbif.collections.sync.common.Utils.containsIrnIdentifier;
-import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
-import static org.gbif.collections.sync.common.parsers.DataParser.TO_LOCAL_DATE_TIME_UTC;
-import static org.gbif.collections.sync.common.parsers.DataParser.cleanString;
-import static org.gbif.collections.sync.common.parsers.DataParser.getStringValue;
-import static org.gbif.collections.sync.common.parsers.DataParser.getStringValueOpt;
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
+import static org.gbif.collections.sync.common.parsers.DataParser.*;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_COLLECTION_UUID;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
 
 @NoArgsConstructor(staticName = "create")
@@ -274,25 +269,6 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
     address.setCountry(Country.UNITED_STATES);
 
     return address;
-  }
-
-  @Override
-  public Person convertToPerson(IDigBioRecord iDigBioRecord) {
-    return convertToPerson(iDigBioRecord, null);
-  }
-
-  @Override
-  public Person convertToPerson(IDigBioRecord iDigBioRecord, Person existing) {
-    if (existing != null && containsIrnIdentifier(existing)) {
-      return existing;
-    }
-
-    Person person = clonePerson(existing);
-    person.setFirstName(cleanString(iDigBioRecord.getContact()));
-    person.setEmail(cleanString(iDigBioRecord.getContactEmail()));
-    person.setPosition(cleanString(iDigBioRecord.getContactRole()));
-
-    return person;
   }
 
   @Override

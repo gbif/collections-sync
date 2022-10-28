@@ -8,25 +8,11 @@ import static org.junit.Assert.assertEquals;
 
 public class TestUtils {
 
-  public static void assertEmptyStaffMatch(SyncResult.StaffMatch staffMatch) {
-    assertEquals(0, staffMatch.getMatchedPersons().size());
-    assertEquals(0, staffMatch.getNewPersons().size());
-    assertEquals(0, staffMatch.getRemovedPersons().size());
-    assertEquals(0, staffMatch.getConflicts().size());
-  }
-
   public static void assertEmptyContactMatch(SyncResult.ContactMatch contactMatch) {
     assertEquals(0, contactMatch.getMatchedContacts().size());
     assertEquals(0, contactMatch.getNewContacts().size());
     assertEquals(0, contactMatch.getRemovedContacts().size());
     assertEquals(0, contactMatch.getConflicts().size());
-  }
-
-  public static boolean isEmptyStaffMatch(SyncResult.StaffMatch staffMatch) {
-    return staffMatch.getMatchedPersons().isEmpty()
-        && staffMatch.getNewPersons().isEmpty()
-        && staffMatch.getRemovedPersons().isEmpty()
-        && staffMatch.getConflicts().isEmpty();
   }
 
   public static SyncConfig createTestSyncConfig() {
