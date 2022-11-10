@@ -17,7 +17,7 @@ import org.junit.Test;
 
 import static org.gbif.collections.sync.TestUtils.assertEmptyContactMatch;
 import static org.gbif.collections.sync.common.Utils.encodeIRN;
-import static org.gbif.collections.sync.ih.IHEntityConverter.DEFAULT_COLLECTION_NAME;
+import static org.gbif.collections.sync.ih.IHEntityConverter.DEFAULT_COLLECTION_NAME_FORMAT;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -102,7 +102,8 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
     // Expected collection
     Collection expectedCollection = new Collection();
     expectedCollection.setCode(ih.getCode());
-    expectedCollection.setName(DEFAULT_COLLECTION_NAME);
+    expectedCollection.setName(
+        String.format(DEFAULT_COLLECTION_NAME_FORMAT, expectedInstitution.getName()));
     expectedCollection.setNumberSpecimens(1000);
     expectedCollection.setIndexHerbariorumRecord(true);
     expectedCollection.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
