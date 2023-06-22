@@ -22,6 +22,7 @@ public class IHStaff implements IHEntity {
   private Address address;
   private Contact contact;
   private String dateModified;
+  private String currentStatus;
 
   @Data
   public static class Address {

@@ -105,6 +105,7 @@ public class IHStaffMatchResultHandlerTest extends BaseIHTest {
     IHStaff ihStaff = new IHStaff();
     ihStaff.setIrn(IRN_TEST);
     ihStaff.setFirstName("foo");
+    ihStaff.setCurrentStatus("Active");
 
     Contact c1 = new Contact();
     c1.setKey(1);

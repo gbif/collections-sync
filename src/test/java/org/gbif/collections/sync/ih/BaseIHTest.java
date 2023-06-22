@@ -264,6 +264,7 @@ public class BaseIHTest {
     s.setMiddleName("M.");
     s.setFirstName("First");
     s.setPosition("Professor Emeritus");
+    s.setCurrentStatus("Active");
 
     IHStaff.Address address = new IHStaff.Address();
     address.setStreet("");
@@ -300,6 +301,7 @@ public class BaseIHTest {
     IHStaff s = new IHStaff();
     s.setFirstName("foo");
     s.setIrn(IRN_TEST);
+    s.setCurrentStatus("Active");
     IHStaff.Contact ihContact = new IHStaff.Contact();
     ihContact.setEmail("foo@foo.com");
     s.setContact(ihContact);
@@ -325,6 +327,7 @@ public class BaseIHTest {
     s.setMiddleName("M.");
     s.setFirstName("First");
     s.setPosition("Collections Manager");
+    s.setCurrentStatus("Active");
 
     IHStaff.Address address = new IHStaff.Address();
     address.setStreet("");

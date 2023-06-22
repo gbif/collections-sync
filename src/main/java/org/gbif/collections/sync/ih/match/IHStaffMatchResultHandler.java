@@ -1,6 +1,10 @@
 package org.gbif.collections.sync.ih.match;
 
-import org.gbif.api.model.collections.*;
+import org.gbif.api.model.collections.Collection;
+import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Contact;
+import org.gbif.api.model.collections.Contactable;
+import org.gbif.api.model.collections.Institution;
 import org.gbif.api.vocabulary.collections.IdType;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.Conflict;
@@ -21,6 +25,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,7 +52,13 @@ public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstituti
       MatchResult<IHInstitution, IHStaff> matchResult, T entity) {
 
     ContactMatch.ContactMatchBuilder contactSyncBuilder = ContactMatch.builder();
-    Set<IHStaff> ihStaffList = matchResult.getStaff();
+    Set<IHStaff> ihStaffList =
+        matchResult.getStaff().stream()
+            .filter(
+                s ->
+                    Strings.isNullOrEmpty(s.getCurrentStatus())
+                        || "Active".equals(s.getCurrentStatus()))
+            .collect(Collectors.toSet());
     Set<Contact> contactsCopy =
         entity.getContactPersons() != null
             ? new HashSet<>(entity.getContactPersons())
