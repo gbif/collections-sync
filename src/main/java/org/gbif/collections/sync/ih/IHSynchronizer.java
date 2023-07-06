@@ -1,5 +1,6 @@
 package org.gbif.collections.sync.ih;
 
+import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.clients.proxy.IHProxyClient;
 import org.gbif.collections.sync.common.BaseSynchronizer;
@@ -13,9 +14,14 @@ import org.gbif.collections.sync.ih.match.Matcher;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.google.common.base.Strings;
+
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -81,7 +87,34 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
       issueNotifier.createFailsNotification(result.getFailedActions());
     }
 
+    detectDeletedIHInstitutions();
+
     return result;
+  }
+
+  private void detectDeletedIHInstitutions() {
+    Map<String, Set<CollectionEntity>> deletedEntities = new HashMap<>();
+
+    ihProxyClient
+        .getInstitutionsMapByIrn()
+        .forEach(
+            (k, v) -> {
+              if (!ihProxyClient.getIhInstitutionsMapByIrn().containsKey(k)) {
+                deletedEntities.computeIfAbsent(k, val -> new HashSet<>()).addAll(v);
+              }
+            });
+
+    ihProxyClient
+        .getCollectionsMapByIrn()
+        .forEach(
+            (k, v) -> {
+              if (!ihProxyClient.getIhInstitutionsMapByIrn().containsKey(k)) {
+                // IH institution has been deleted
+                deletedEntities.computeIfAbsent(k, val -> new HashSet<>()).addAll(v);
+              }
+            });
+
+    deletedEntities.forEach((k, v) -> issueNotifier.createIHDeletedEntityIssue(v, k));
   }
 
   private void handleResult(
@@ -113,7 +146,7 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
         && parseStringList(ihInstitution.getContact().getEmail()).stream()
             .anyMatch(e -> !isValidEmail(e))) {
       issueNotifier.createInvalidEntity(
-        ihInstitution, "Not valid institution - emails are not valid");
+          ihInstitution, "Not valid institution - emails are not valid");
       return false;
     }
 

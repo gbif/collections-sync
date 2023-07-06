@@ -24,6 +24,7 @@ public class IHProxyClient extends BaseProxyClient {
   private final DataLoader<IHData> dataLoader;
   private final IHConfig ihConfig;
   private List<IHInstitution> ihInstitutions;
+  private Map<String, List<IHInstitution>> ihInstitutionsMapByIrn;
   private Map<String, Set<Institution>> institutionsMapByIrn;
   private Map<String, Set<Collection>> collectionsMapByIrn;
   private Map<String, List<IHStaff>> ihStaffMapByCode;
@@ -47,5 +48,7 @@ public class IHProxyClient extends BaseProxyClient {
             .filter(s -> "Yes".equalsIgnoreCase(s.getCorrespondent()))
             .collect(Collectors.groupingBy(IHStaff::getCode));
     countries = data.getCountries();
+    ihInstitutionsMapByIrn =
+        ihInstitutions.stream().collect(Collectors.groupingBy(IHInstitution::getIrn));
   }
 }

@@ -11,12 +11,17 @@ import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
 import com.google.common.collect.Sets;
+
 import lombok.extern.slf4j.Slf4j;
 
 /** Factory to create {@link Issue}. */
@@ -27,6 +32,8 @@ public class IHIssueNotifier extends IssueNotifier {
   private static final String INVALID_ENTITY_TITLE = "Invalid IH entity with IRN %s";
   private static final String ENTITY_CONFLICT_TITLE =
       "IH %s with IRN %s matches with multiple GrSciColl entities";
+
+  private static final String DELETED_ENTITY_TITLE = "Deleted IH entity with IRN %s";
 
   private static final ConcurrentMap<IHConfig, IHIssueNotifier> notifiersMap =
       new ConcurrentHashMap<>();
@@ -105,6 +112,31 @@ public class IHIssueNotifier extends IssueNotifier {
         Issue.builder()
             .title(String.format(INVALID_ENTITY_TITLE, entity.getIrn()))
             .body(body)
+            .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
+            .labels(Sets.newHashSet(IH_SYNC_LABEL, syncTimestampLabel))
+            .build();
+
+    notificationProxyClient.sendNotification(issue);
+  }
+
+  public <T extends CollectionEntity> void createIHDeletedEntityIssue(Set<T> entities, String irn) {
+    StringBuilder body = new StringBuilder();
+    body.append("The IH master source with irn ");
+    body.append(irn);
+    body.append(" could not be found in IH and it's assigned to these entities:");
+    body.append(NEW_LINE);
+
+    entities.forEach(
+        e -> {
+          body.append("- ");
+          body.append(createRegistryLink(e.getKey().toString(), e));
+          body.append(NEW_LINE);
+        });
+
+    Issue issue =
+        Issue.builder()
+            .title(String.format(DELETED_ENTITY_TITLE, irn))
+            .body(body.toString())
             .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
             .labels(Sets.newHashSet(IH_SYNC_LABEL, syncTimestampLabel))
             .build();

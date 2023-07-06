@@ -122,7 +122,7 @@ public abstract class IssueNotifier {
     return sb.toString();
   }
 
-  private <T> String createRegistryLink(String id, T entity) {
+  protected <T> String createRegistryLink(String id, T entity) {
     String linkTemplate;
     if (entity instanceof Institution) {
       linkTemplate = registryInstitutionLink;
