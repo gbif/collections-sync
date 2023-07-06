@@ -121,7 +121,7 @@ public class IHIssueNotifier extends IssueNotifier {
 
   public <T extends CollectionEntity> void createIHDeletedEntityIssue(Set<T> entities, String irn) {
     StringBuilder body = new StringBuilder();
-    body.append("The IH master source with irn ");
+    body.append("The IH master source with IRN ");
     body.append(irn);
     body.append(" could not be found in IH and it's assigned to these entities:");
     body.append(NEW_LINE);

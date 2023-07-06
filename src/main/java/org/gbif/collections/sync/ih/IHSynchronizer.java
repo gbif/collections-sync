@@ -65,6 +65,8 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
     Matcher matcher = Matcher.create(ihProxyClient);
     SyncResult.SyncResultBuilder resultBuilder = SyncResult.builder();
 
+    detectDeletedIHInstitutions();
+
     // do the sync
     log.info("Starting the sync");
     ihProxyClient.getIhInstitutions().stream()
@@ -87,8 +89,6 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
       issueNotifier.createFailsNotification(result.getFailedActions());
     }
 
-    detectDeletedIHInstitutions();
-
     return result;
   }
 
@@ -100,6 +100,7 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
         .forEach(
             (k, v) -> {
               if (!ihProxyClient.getIhInstitutionsMapByIrn().containsKey(k)) {
+                // IH institution not found
                 deletedEntities.computeIfAbsent(k, val -> new HashSet<>()).addAll(v);
               }
             });
@@ -109,7 +110,7 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
         .forEach(
             (k, v) -> {
               if (!ihProxyClient.getIhInstitutionsMapByIrn().containsKey(k)) {
-                // IH institution has been deleted
+                // IH institution not found
                 deletedEntities.computeIfAbsent(k, val -> new HashSet<>()).addAll(v);
               }
             });
