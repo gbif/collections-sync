@@ -28,7 +28,7 @@
     <jackson.version>2.14.1</jackson.version>
     <retrofit.version>2.7.1</retrofit.version>
     <okhttp.version>4.3.1</okhttp.version>
-    <okio.version>2.4.3</okio.version>
+    <okio.version>3.4.0</okio.version>
     <lombok.version>1.18.12</lombok.version>
     <jcommander.version>1.78</jcommander.version>
     <gbif-api.version>1.0.0</gbif-api.version>
