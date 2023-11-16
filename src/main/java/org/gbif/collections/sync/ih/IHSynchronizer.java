@@ -84,6 +84,8 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
 
     SyncResult result = resultBuilder.build();
 
+    log.info("Failed actions: {}", result.getFailedActions().size());
+
     // create a notification with all the fails
     if (!result.getFailedActions().isEmpty()) {
       log.info("Creating fails notifications");
