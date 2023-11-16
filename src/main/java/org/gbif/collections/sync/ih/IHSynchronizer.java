@@ -1,6 +1,7 @@
 package org.gbif.collections.sync.ih;
 
 import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Institution;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.clients.proxy.IHProxyClient;
 import org.gbif.collections.sync.common.BaseSynchronizer;
@@ -84,6 +85,7 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
 
     SyncResult result = resultBuilder.build();
 
+    result.getFailedActions().add(new SyncResult.FailedAction(new Institution(), "test"));
     log.info("Failed actions: {}", result.getFailedActions().size());
 
     // create a notification with all the fails
