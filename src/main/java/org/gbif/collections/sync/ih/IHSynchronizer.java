@@ -88,6 +88,11 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
     if (!result.getFailedActions().isEmpty()) {
       log.info("Creating fails notifications");
       issueNotifier.createFailsNotification(result.getFailedActions());
+      try {
+        Thread.sleep(3000);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
       log.info("Finish creating fails notifications");
     }
 
