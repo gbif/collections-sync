@@ -15,6 +15,7 @@ import org.gbif.collections.sync.ih.match.Matcher;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -85,8 +86,12 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
 
     SyncResult result = resultBuilder.build();
 
-    result.getFailedActions().add(new SyncResult.FailedAction(new Institution(), "test"));
-    log.info("Failed actions: {}", result.getFailedActions().size());
+//    result.getFailedActions().add(new SyncResult.FailedAction(new Institution(), "test"));
+//    log.info("Failed actions: {}", result.getFailedActions().size());
+
+    List<SyncResult.FailedAction> actions = new ArrayList<>();
+    actions.add(new SyncResult.FailedAction(new Institution(), "test"));
+    result.setFailedActions(actions);
 
     // create a notification with all the fails
     if (!result.getFailedActions().isEmpty()) {
