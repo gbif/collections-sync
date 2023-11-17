@@ -155,7 +155,7 @@ public class IHIssueNotifier extends IssueNotifier {
             .title(title)
             .body(body.toString())
             .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
-            .labels(Sets.newHashSet(syncTimestampLabel))
+            .labels(Sets.newHashSet(IH_SYNC_LABEL, syncTimestampLabel))
             .build();
 
     notificationProxyClient.sendNotification(issue);
