@@ -6,18 +6,28 @@ import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.DoubleFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.validator.routines.EmailValidator;
+
 import com.google.common.base.Strings;
+
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.validator.routines.EmailValidator;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
@@ -95,10 +105,10 @@ public class DataParser {
   }
 
   public static Optional<URI> parseUri(String uri) {
-    return parseUri(uri, "Invalid URI");
+    return parseUri(uri, ex -> {});
   }
 
-  public static Optional<URI> parseUri(String uri, String errorMsg) {
+  public static Optional<URI> parseUri(String uri, Consumer<Exception> errorHandler) {
     // we try to clean the URL first
     String webUrl = WHITESPACE_PATTERN.matcher(uri.trim()).replaceAll("");
 
@@ -113,16 +123,17 @@ public class DataParser {
     try {
       return Optional.of(URI.create(webUrl));
     } catch (Exception ex) {
-      log.warn("{}: {}", errorMsg, webUrl, ex);
+      log.warn("{}: {}", "Invalid URI", webUrl, ex);
+      errorHandler.accept(ex);
       return Optional.empty();
     }
   }
 
   public static Integer parseDateYear(String dateAsString) {
-    return parseDateYear(dateAsString, "Invalid date");
+    return parseDateYear(dateAsString, () -> {});
   }
 
-  public static Integer parseDateYear(String dateAsString, String errorMsg) {
+  public static Integer parseDateYear(String dateAsString, Runnable errorHandler) {
     if (!hasValue(dateAsString)) {
       return null;
     }
@@ -143,7 +154,8 @@ public class DataParser {
       }
     }
 
-    log.warn("{}: {}", errorMsg, dateAsString);
+    log.warn("{}: {}", "Invalid date", dateAsString);
+    errorHandler.run();
     return null;
   }
 

@@ -1,7 +1,6 @@
 package org.gbif.collections.sync.ih;
 
 import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Institution;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.clients.proxy.IHProxyClient;
 import org.gbif.collections.sync.common.BaseSynchronizer;
@@ -15,7 +14,6 @@ import org.gbif.collections.sync.ih.match.Matcher;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -56,7 +54,8 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
     IHProxyClient proxyClient =
         IHProxyClient.builder().dataLoader(dataLoader).ihConfig(ihConfig).build();
     IHEntityConverter entityConverter =
-        IHEntityConverter.create(CountryParser.from(proxyClient.getCountries()));
+        IHEntityConverter.create(
+            CountryParser.from(proxyClient.getCountries()), IHIssueNotifier.getInstance(ihConfig));
     IHStaffMatchResultHandler staffMatchResultHandler =
         new IHStaffMatchResultHandler(ihConfig, proxyClient, entityConverter);
 
@@ -86,23 +85,10 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
 
     SyncResult result = resultBuilder.build();
 
-//    result.getFailedActions().add(new SyncResult.FailedAction(new Institution(), "test"));
-//    log.info("Failed actions: {}", result.getFailedActions().size());
-
-    List<SyncResult.FailedAction> actions = new ArrayList<>();
-    actions.add(new SyncResult.FailedAction(new Institution(), "test"));
-    result.setFailedActions(actions);
-
     // create a notification with all the fails
     if (!result.getFailedActions().isEmpty()) {
       log.info("Creating fails notifications");
       issueNotifier.createFailsNotification(result.getFailedActions());
-      try {
-        Thread.sleep(3000);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-      log.info("Finish creating fails notifications");
     }
 
     return result;

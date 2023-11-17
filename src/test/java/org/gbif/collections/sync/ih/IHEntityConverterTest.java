@@ -1,6 +1,9 @@
 package org.gbif.collections.sync.ih;
 
-import org.gbif.api.model.collections.*;
+import org.gbif.api.model.collections.Address;
+import org.gbif.api.model.collections.Contact;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.UserId;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.collections.IdType;
 import org.gbif.collections.sync.common.converter.EntityConverter;
@@ -16,7 +19,6 @@ import java.util.List;
 import org.junit.Test;
 
 import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -32,7 +34,7 @@ public class IHEntityConverterTest {
   private static final String TEST_USER = "test-user";
   private static final CountryParser COUNTRY_PARSER =
       CountryParser.from(Arrays.asList("US", "U.K.", "U.S.A.", "United Kingdom", "United States"));
-  private final IHEntityConverter entityConverter = IHEntityConverter.create(COUNTRY_PARSER);
+  private final IHEntityConverter entityConverter = IHEntityConverter.create(COUNTRY_PARSER, null);
 
   @Test
   public void getIHEmailsTest() {
@@ -41,7 +43,7 @@ public class IHEntityConverterTest {
     contact.setEmail("a@a.com\nb.com;c@c.com,d@d.com");
     ih.setContact(contact);
 
-    List<String> emails = IHEntityConverter.getIhEmails(ih);
+    List<String> emails = entityConverter.getIhEmails(ih);
     assertEquals(3, emails.size());
     assertTrue(emails.contains("a@a.com"));
     assertTrue(emails.contains("c@c.com"));
@@ -55,7 +57,7 @@ public class IHEntityConverterTest {
     contact.setPhone("1;12345\n98765,34567");
     ih.setContact(contact);
 
-    List<String> emails = IHEntityConverter.getIhPhones(ih);
+    List<String> emails = entityConverter.getIhPhones(ih);
     assertEquals(3, emails.size());
     assertTrue(emails.contains("12345"));
     assertTrue(emails.contains("98765"));
@@ -69,7 +71,7 @@ public class IHEntityConverterTest {
     contact.setWebUrl("a  .com;b.com");
     ih.setContact(contact);
 
-    URI uri = IHEntityConverter.getIhHomepage(ih);
+    URI uri = entityConverter.getIhHomepage(ih);
     assertEquals(URI.create("http://a.com"), uri);
   }
 
@@ -87,7 +89,7 @@ public class IHEntityConverterTest {
     institution.setLongitude(BigDecimal.valueOf(100.2));
 
     // When
-    IHEntityConverter.setLocation(ihInstitution, institution);
+    entityConverter.setLocation(ihInstitution, institution);
 
     // Expect
     assertEquals(institution.getLatitude(), institution.getLatitude());
@@ -95,7 +97,7 @@ public class IHEntityConverterTest {
 
     // When
     location.setLat(20.2);
-    IHEntityConverter.setLocation(ihInstitution, institution);
+    entityConverter.setLocation(ihInstitution, institution);
 
     // Expect
     assertEquals(TO_BIGDECIMAL.apply(20.2), institution.getLatitude());
@@ -103,7 +105,7 @@ public class IHEntityConverterTest {
 
     // When
     location.setLat(null);
-    IHEntityConverter.setLocation(ihInstitution, institution);
+    entityConverter.setLocation(ihInstitution, institution);
 
     // Expect
     assertNull(institution.getLatitude());
@@ -111,7 +113,7 @@ public class IHEntityConverterTest {
 
     // When
     ihInstitution.setLocation(null);
-    IHEntityConverter.setLocation(ihInstitution, institution);
+    entityConverter.setLocation(ihInstitution, institution);
 
     // Expect
     assertNull(institution.getLatitude());

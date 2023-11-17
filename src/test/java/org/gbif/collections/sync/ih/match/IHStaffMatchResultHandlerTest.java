@@ -32,7 +32,7 @@ public class IHStaffMatchResultHandlerTest extends BaseIHTest {
   private final IHStaffMatchResultHandler staffMatchResultHandler =
       IHStaffMatchResultHandler.builder()
           .proxyClient(proxyClient)
-          .entityConverter(IHEntityConverter.create(countryParser))
+          .entityConverter(IHEntityConverter.create(countryParser, null))
           .ihConfig(ihConfig)
           .build();
 

@@ -144,6 +144,23 @@ public class IHIssueNotifier extends IssueNotifier {
     notificationProxyClient.sendNotification(issue);
   }
 
+  public <T extends IHEntity> void createFailedIssueNotification(String title, String description, T ihEntity) {
+    StringBuilder body = new StringBuilder();
+    body.append(description);
+    body.append(NEW_LINE);
+    body.append(createIHLink(ihEntity));
+
+    Issue issue =
+        Issue.builder()
+            .title(title)
+            .body(body.toString())
+            .assignees(new HashSet<>(notificationConfig.getGhIssuesAssignees()))
+            .labels(Sets.newHashSet(syncTimestampLabel))
+            .build();
+
+    notificationProxyClient.sendNotification(issue);
+  }
+
   protected <T extends IHEntity> String createIHLink(T entity) {
     String linkTemplate;
     String text;
