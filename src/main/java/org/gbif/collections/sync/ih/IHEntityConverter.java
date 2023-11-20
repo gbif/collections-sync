@@ -69,6 +69,12 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
 
   public static final String DEFAULT_COLLECTION_NAME_FORMAT = "Herbarium - %s";
 
+  private static final String INVALID_EMAIL_MSG = "`%s` is an invalid email.";
+  private static final String INVALID_PHONE_MSG = "`%s` is an invalid phone.";
+  private static final String INVALID_FAX_MSG = "`%s` is an invalid fax.";
+  private static final String INVALID_COUNTRY_MSG =
+      "The country `%s` couldn't be found in the IH countries API.";
+
   private final CountryParser countryParser;
   private final IHIssueNotifier issueNotifier;
 
@@ -113,7 +119,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
             () ->
                 notifyIssue(
                     "Invalid founding date for institution " + ihInstitution.getIrn(),
-                    ihInstitution.getDateFounded() + " is an invalid founding date",
+                    "`" + ihInstitution.getDateFounded() + "` is an invalid founding date",
                     ihInstitution)));
 
     addIrnIfNotExists(institution, ihInstitution.getIrn());
@@ -145,7 +151,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
       } else {
         notifyIssue(
             "Invalid latitude for institution " + ihInstitution.getIrn(),
-            lat + " is outside the valid range for a latitude coordinate",
+            "`" + lat + "` is outside the valid range for a latitude coordinate",
             ihInstitution);
         log.warn(
             "Invalid lat coordinate {} for institution with IRN {}",
@@ -164,7 +170,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
       } else {
         notifyIssue(
             "Invalid longitude for institution " + ihInstitution.getIrn(),
-            lon + " is outside the valid range for a longitude coordinate",
+            "`" + lon + "` is outside the valid range for a longitude coordinate",
             ihInstitution);
         log.warn(
             "Invalid lon coordinate {} for institution with IRN {}",
@@ -274,7 +280,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
           v ->
               notifyIssue(
                   "Invalid email of IH Staff " + ihStaff.getIrn(),
-                  v + " is not a valid email",
+                  String.format(INVALID_EMAIL_MSG, v),
                   ihStaff));
       setListValue(
           ihStaff.getContact().getPhone(),
@@ -283,7 +289,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
           v ->
               notifyIssue(
                   "Invalid phone of IH Staff " + ihStaff.getIrn(),
-                  v + " is not a valid phone",
+                  String.format(INVALID_PHONE_MSG, v),
                   ihStaff));
       setListValue(
           ihStaff.getContact().getFax(),
@@ -292,7 +298,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
           v ->
               notifyIssue(
                   "Invalid fax of IH Staff " + ihStaff.getIrn(),
-                  v + " is not a valid fax",
+                  String.format(INVALID_FAX_MSG, v),
                   ihStaff));
     } else {
       contact.setEmail(null);
@@ -314,9 +320,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
         if (addressCountry == null) {
           notifyIssue(
               "Invalid address country in staff " + ihStaff.getIrn(),
-              "The country "
-                  + ihStaff.getAddress().getCountry()
-                  + " couldn't be found in the IH countries API.",
+              String.format(INVALID_COUNTRY_MSG, ihStaff.getAddress().getCountry()),
               ihStaff);
           log.warn(
               "Country not found for {} and IH staff {}",
@@ -374,9 +378,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
       if (physicalAddressCountry == null) {
         notifyIssue(
             "Invalid physical address country in institution " + ih.getIrn(),
-            "The country "
-                + ih.getAddress().getPhysicalCountry()
-                + " couldn't be found in the IH countries API.",
+            String.format(INVALID_COUNTRY_MSG, ih.getAddress().getPhysicalCountry()),
             ih);
         log.warn(
             "Country not found for {} and IH institution {}",
@@ -403,9 +405,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
       if (mailingAddressCountry == null) {
         notifyIssue(
             "Invalid postal address country in institution " + ih.getIrn(),
-            "The country "
-                + ih.getAddress().getPostalCountry()
-                + " couldn't be found in the IH countries API.",
+            String.format(INVALID_COUNTRY_MSG, ih.getAddress().getPostalCountry()),
             ih);
         log.warn(
             "Country not found for {} and IH institution {}",
@@ -426,7 +426,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
         } else {
           notifyIssue(
               "Invalid email for institution " + ih.getIrn(),
-              parsedEmail + " is an invalid email.",
+              String.format(INVALID_EMAIL_MSG, parsedEmail),
               ih);
         }
       }
@@ -446,7 +446,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
         } else {
           notifyIssue(
               "Invalid phone for institution " + ih.getIrn(),
-              parsedPhone + " is an invalid phone.",
+              String.format(INVALID_PHONE_MSG, parsedPhone),
               ih);
         }
       }
@@ -471,7 +471,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
                     ex ->
                         notifyIssue(
                             "Invalid homepage URL for institution " + ih.getIrn(),
-                            v + " is an invalid URL.",
+                            "`" + v + "` is an invalid URL.",
                             ih)))
         .orElse(null);
   }
