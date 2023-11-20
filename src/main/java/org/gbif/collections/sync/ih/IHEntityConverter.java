@@ -151,7 +151,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
       } else {
         notifyIssue(
             "Invalid latitude for institution " + ihInstitution.getIrn(),
-            "`" + lat + "` is outside the valid range for a latitude coordinate",
+            "`" + lat + "` is outside the valid range for a latitude coordinate.",
             ihInstitution);
         log.warn(
             "Invalid lat coordinate {} for institution with IRN {}",
@@ -170,7 +170,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
       } else {
         notifyIssue(
             "Invalid longitude for institution " + ihInstitution.getIrn(),
-            "`" + lon + "` is outside the valid range for a longitude coordinate",
+            "`" + lon + "` is outside the valid range for a longitude coordinate.",
             ihInstitution);
         log.warn(
             "Invalid lon coordinate {} for institution with IRN {}",
