@@ -217,7 +217,7 @@ public class BaseIHTest {
     expected.setActive(true);
     expected.setNumberSpecimens(ih.getSpecimenTotal());
     expected.setTaxonomicCoverage(ih.getTaxonomicCoverage());
-    expected.setGeography(ih.getGeography());
+    expected.setGeographicCoverage(ih.getGeography());
     expected.setNotes(ih.getNotes());
     expected.setIncorporatedCollections(ih.getIncorporatedHerbaria());
     expected.setImportantCollectors(ih.getImportantCollectors());

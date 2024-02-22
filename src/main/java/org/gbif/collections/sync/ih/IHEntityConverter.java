@@ -210,7 +210,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     collection.setIndexHerbariorumRecord(true);
     collection.setActive(isActive(ihInstitution.getCurrentStatus()));
     collection.setTaxonomicCoverage(getStringValue(ihInstitution.getTaxonomicCoverage()));
-    collection.setGeography(getStringValue(ihInstitution.getGeography()));
+    collection.setGeographicCoverage(getStringValue(ihInstitution.getGeography()));
     collection.setNotes(getStringValue(ihInstitution.getNotes()));
     collection.setNumberSpecimens(ihInstitution.getSpecimenTotal());
     collection.setCollectionSummary(getCollectionSummary(ihInstitution.getCollectionsSummary()));

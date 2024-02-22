@@ -124,7 +124,7 @@ public class EntityConverterTest {
         Integer.valueOf(iDigBioRecord.getCollectionExtent()),
         collectionConverted.getNumberSpecimens());
     assertEquals(iDigBioRecord.getTaxonCoverage(), collectionConverted.getTaxonomicCoverage());
-    assertEquals(iDigBioRecord.getGeographicRange(), collectionConverted.getGeography());
+    assertEquals(iDigBioRecord.getGeographicRange(), collectionConverted.getGeographicCoverage());
     assertAddress(iDigBioRecord.getMailingAddress(), collectionConverted.getMailingAddress());
     assertAddress(iDigBioRecord.getPhysicalAddress(), collectionConverted.getAddress());
     assertIdentifiersAndTagsCollection(iDigBioRecord, collectionConverted, false);
@@ -155,7 +155,7 @@ public class EntityConverterTest {
         Integer.valueOf(iDigBioRecord.getCollectionExtent()),
         collectionConverted.getNumberSpecimens());
     assertEquals(iDigBioRecord.getTaxonCoverage(), collectionConverted.getTaxonomicCoverage());
-    assertEquals(iDigBioRecord.getGeographicRange(), collectionConverted.getGeography());
+    assertEquals(iDigBioRecord.getGeographicRange(), collectionConverted.getGeographicCoverage());
     assertAddress(iDigBioRecord.getMailingAddress(), collectionConverted.getMailingAddress());
     assertAddress(iDigBioRecord.getPhysicalAddress(), collectionConverted.getAddress());
     assertIdentifiersAndTagsCollection(iDigBioRecord, collectionConverted, false);
@@ -174,7 +174,7 @@ public class EntityConverterTest {
     assertEquals(existing.getHomepage(), collectionConverted.getHomepage());
     assertEquals(existing.getNumberSpecimens(), collectionConverted.getNumberSpecimens());
     assertEquals(existing.getTaxonomicCoverage(), collectionConverted.getTaxonomicCoverage());
-    assertEquals(existing.getGeography(), collectionConverted.getGeography());
+    assertEquals(existing.getGeographicCoverage(), collectionConverted.getGeographicCoverage());
     assertEquals(existing.getAddress(), collectionConverted.getAddress());
     assertEquals(existing.getMailingAddress(), collectionConverted.getMailingAddress());
     assertIdentifiersAndTagsCollection(iDigBioRecord, collectionConverted, false);
@@ -204,7 +204,7 @@ public class EntityConverterTest {
     assertEquals(existing.getHomepage(), collectionConverted.getHomepage());
     assertEquals(existing.getNumberSpecimens(), collectionConverted.getNumberSpecimens());
     assertEquals(existing.getTaxonomicCoverage(), collectionConverted.getTaxonomicCoverage());
-    assertEquals(existing.getGeography(), collectionConverted.getGeography());
+    assertEquals(existing.getGeographicCoverage(), collectionConverted.getGeographicCoverage());
     assertEquals(existing.getAddress(), collectionConverted.getAddress());
     assertEquals(existing.getMailingAddress(), collectionConverted.getMailingAddress());
     assertIdentifiersAndTagsCollection(iDigBioRecord, collectionConverted, true);

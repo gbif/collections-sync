@@ -206,7 +206,7 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
           }
         }
         getStringValueOpt(record.getTaxonCoverage()).ifPresent(collection::setTaxonomicCoverage);
-        getStringValueOpt(record.getGeographicRange()).ifPresent(collection::setGeography);
+        getStringValueOpt(record.getGeographicRange()).ifPresent(collection::setGeographicCoverage);
 
         // addresses
         collection.setAddress(convertAddress(record.getPhysicalAddress(), collection.getAddress()));
