@@ -24,7 +24,6 @@ import org.junit.Test;
 import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_COLLECTION_UUID;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
@@ -116,7 +115,8 @@ public class EntityConverterTest {
             .getDescription()
             .contains(iDigBioRecord.getDescriptionForSpecialists()));
     assertEquals(
-        URI.create(iDigBioRecord.getCollectionCatalogUrl()), collectionConverted.getCatalogUrl());
+        URI.create(iDigBioRecord.getCollectionCatalogUrl()),
+        collectionConverted.getCatalogUrls().get(0));
     assertEquals(iDigBioRecord.getCollectionCode(), collectionConverted.getCode());
     assertEquals(iDigBioRecord.getCollection(), collectionConverted.getName());
     assertEquals(URI.create(iDigBioRecord.getCollectionUrl()), collectionConverted.getHomepage());
@@ -147,7 +147,8 @@ public class EntityConverterTest {
             .getDescription()
             .contains(iDigBioRecord.getDescriptionForSpecialists()));
     assertEquals(
-        URI.create(iDigBioRecord.getCollectionCatalogUrl()), collectionConverted.getCatalogUrl());
+        URI.create(iDigBioRecord.getCollectionCatalogUrl()),
+        collectionConverted.getCatalogUrls().get(0));
     assertEquals(iDigBioRecord.getCollectionCode(), collectionConverted.getCode());
     assertEquals(iDigBioRecord.getCollection(), collectionConverted.getName());
     assertEquals(URI.create(iDigBioRecord.getCollectionUrl()), collectionConverted.getHomepage());
@@ -168,7 +169,7 @@ public class EntityConverterTest {
     collectionConverted = entityConverter.convertToCollection(iDigBioRecord, existing);
 
     assertEquals(existing.getDescription(), collectionConverted.getDescription());
-    assertEquals(existing.getCatalogUrl(), collectionConverted.getCatalogUrl());
+    assertEquals(existing.getCatalogUrls(), collectionConverted.getCatalogUrls());
     assertEquals(existing.getCode(), collectionConverted.getCode());
     assertEquals(existing.getName(), collectionConverted.getName());
     assertEquals(existing.getHomepage(), collectionConverted.getHomepage());
@@ -198,7 +199,7 @@ public class EntityConverterTest {
             .getDescription()
             .contains(iDigBioRecord.getDescriptionForSpecialists()));
     assertEquals(
-        URI.create(iDigBioRecord.getCollectionCatalogUrl()), collectionConverted.getCatalogUrl());
+        URI.create(iDigBioRecord.getCollectionCatalogUrl()), collectionConverted.getCatalogUrls().get(0));
     assertEquals(existing.getCode(), collectionConverted.getCode());
     assertEquals(existing.getName(), collectionConverted.getName());
     assertEquals(existing.getHomepage(), collectionConverted.getHomepage());
