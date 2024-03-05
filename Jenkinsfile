@@ -27,12 +27,17 @@ pipeline {
       }
     }
     stage('SonarQube analysis') {
+      tools {
+        jdk "OpenJDK11"
+      }
       when {
         not { expression { params.RELEASE } }
       }
       steps {
         withSonarQubeEnv('GBIF Sonarqube') {
-          sh 'mvn sonar:sonar'
+            withCredentials([usernamePassword(credentialsId: 'SONAR_CREDENTIALS', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_PWD')]) {
+                sh 'mvn sonar:sonar -Dsonar.login=${SONAR_USER} -Dsonar.password=${SONAR_PWD} -Dsonar.server=${SONAR_HOST_URL}'
+            }
         }
       }
     }
