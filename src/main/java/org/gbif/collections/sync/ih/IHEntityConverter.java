@@ -105,7 +105,6 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
 
     institution.setName(cleanString(ihInstitution.getOrganization()));
     institution.setCode(cleanString(ihInstitution.getCode()));
-    institution.setIndexHerbariorumRecord(true);
     institution.setActive(isActive(ihInstitution.getCurrentStatus()));
 
     setLocation(ihInstitution, institution);
@@ -207,7 +206,6 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     }
 
     collection.setCode(cleanString(ihInstitution.getCode()));
-    collection.setIndexHerbariorumRecord(true);
     collection.setActive(isActive(ihInstitution.getCurrentStatus()));
     collection.setTaxonomicCoverage(getStringValue(ihInstitution.getTaxonomicCoverage()));
     collection.setGeographicCoverage(getStringValue(ihInstitution.getGeography()));

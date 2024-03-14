@@ -96,7 +96,6 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
     Institution expectedInstitution = new Institution();
     expectedInstitution.setCode(ih.getCode());
     expectedInstitution.setName(ih.getOrganization());
-    expectedInstitution.setIndexHerbariorumRecord(true);
     expectedInstitution.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
 
     // Expected collection
@@ -105,7 +104,6 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
     expectedCollection.setName(
         String.format(DEFAULT_COLLECTION_NAME_FORMAT, expectedInstitution.getName()));
     expectedCollection.setNumberSpecimens(1000);
-    expectedCollection.setIndexHerbariorumRecord(true);
     expectedCollection.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
 
     // add identifier to expected entities
