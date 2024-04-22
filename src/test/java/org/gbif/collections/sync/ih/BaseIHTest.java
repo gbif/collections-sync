@@ -129,7 +129,7 @@ public class BaseIHTest {
     i.setKey(UUID.randomUUID());
     i.setCode("COD");
     i.setName("University OLD");
-    i.setTypes(Collections.singletonList(InstitutionType.HERBARIUM));
+    i.setTypes(Collections.singletonList("Herbarium"));
     i.setLatitude(TO_BIGDECIMAL.apply(36.0424));
     i.setLongitude(TO_BIGDECIMAL.apply(-94.1624));
     i.setMasterSource(MasterSourceType.IH);
