@@ -1,7 +1,11 @@
 package org.gbif.collections.sync.ih;
 
+import org.gbif.api.model.collections.Address;
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.*;
+import org.gbif.api.model.collections.Contact;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.MasterSourceMetadata;
+import org.gbif.api.model.collections.UserId;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.LenientEquals;
 import org.gbif.api.util.IsoDateParsingUtils;
@@ -19,14 +23,18 @@ import org.gbif.collections.sync.ih.model.IHInstitution;
 import org.gbif.collections.sync.ih.model.IHStaff;
 
 import java.time.ZoneId;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import lombok.Builder;
 import lombok.Data;
 
 import static org.gbif.collections.sync.TestUtils.createTestSyncConfig;
 import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -63,7 +71,6 @@ public class BaseIHTest {
     i.setKey(UUID.randomUUID());
     i.setCode("bar");
     i.setName("bar");
-    i.setIndexHerbariorumRecord(true);
     i.setNumberSpecimens(1000);
     i.setMasterSource(MasterSourceType.IH);
     i.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
@@ -122,7 +129,7 @@ public class BaseIHTest {
     i.setKey(UUID.randomUUID());
     i.setCode("COD");
     i.setName("University OLD");
-    i.setType(InstitutionType.HERBARIUM);
+    i.setTypes(Collections.singletonList("Herbarium"));
     i.setLatitude(TO_BIGDECIMAL.apply(36.0424));
     i.setLongitude(TO_BIGDECIMAL.apply(-94.1624));
     i.setMasterSource(MasterSourceType.IH);
@@ -140,8 +147,7 @@ public class BaseIHTest {
     expected.setKey(i.getKey());
     expected.setCode(ih.getCode());
     expected.setName(ih.getOrganization());
-    expected.setType(i.getType());
-    expected.setIndexHerbariorumRecord(true);
+    expected.setTypes(i.getTypes());
     expected.setLatitude(TO_BIGDECIMAL.apply(ih.getLocation().getLat()));
     expected.setLongitude(TO_BIGDECIMAL.apply(ih.getLocation().getLon()));
     expected.setEmail(Collections.singletonList(ih.getContact().getEmail()));
@@ -179,7 +185,6 @@ public class BaseIHTest {
     c.setKey(UUID.randomUUID());
     c.setName("name");
     c.setCode("A");
-    c.setIndexHerbariorumRecord(true);
     c.setEmail(Collections.singletonList("aa@aa.com"));
     c.setMasterSource(MasterSourceType.IH);
     c.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
@@ -211,13 +216,12 @@ public class BaseIHTest {
     expected.setKey(c.getKey());
     expected.setCode(ih.getCode());
     expected.setName(c.getName());
-    expected.setIndexHerbariorumRecord(true);
     expected.setNumberSpecimens(ih.getSpecimenTotal());
     expected.setEmail(Collections.singletonList(ih.getContact().getEmail()));
     expected.setActive(true);
     expected.setNumberSpecimens(ih.getSpecimenTotal());
     expected.setTaxonomicCoverage(ih.getTaxonomicCoverage());
-    expected.setGeography(ih.getGeography());
+    expected.setGeographicCoverage(ih.getGeography());
     expected.setNotes(ih.getNotes());
     expected.setIncorporatedCollections(ih.getIncorporatedHerbaria());
     expected.setImportantCollectors(ih.getImportantCollectors());

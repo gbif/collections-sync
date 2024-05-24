@@ -11,6 +11,7 @@ import org.gbif.collections.sync.common.converter.EntityConverter;
 import org.gbif.collections.sync.common.parsers.DataParser;
 import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -174,7 +175,8 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
           .ifPresent(v -> collection.setDescription(collection.getDescription() + "\n" + v));
       getStringValueOpt(record.getCollectionCatalogUrl())
           .flatMap(DataParser::parseUri)
-          .ifPresent(collection::setCatalogUrl);
+          .map(Collections::singletonList)
+          .ifPresent(collection::setCatalogUrls);
 
       if (!containsIrnIdentifier(collection)) {
         // only for non-IH
@@ -206,7 +208,7 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
           }
         }
         getStringValueOpt(record.getTaxonCoverage()).ifPresent(collection::setTaxonomicCoverage);
-        getStringValueOpt(record.getGeographicRange()).ifPresent(collection::setGeography);
+        getStringValueOpt(record.getGeographicRange()).ifPresent(collection::setGeographicCoverage);
 
         // addresses
         collection.setAddress(convertAddress(record.getPhysicalAddress(), collection.getAddress()));
