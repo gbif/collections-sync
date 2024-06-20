@@ -3,6 +3,7 @@ package org.gbif.collections.sync.common;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.suggestions.InstitutionChangeSuggestion;
 import org.gbif.collections.sync.SyncResult.*;
 import org.gbif.collections.sync.clients.proxy.GrSciCollProxyClient;
 import org.gbif.collections.sync.common.converter.EntityConverter;
@@ -126,25 +127,36 @@ public abstract class BaseSynchronizer<S, R> {
 
   @VisibleForTesting
   public NoEntityMatch handleNoMatch(MatchResult<S, R> matchResult) {
-    // create institution
+
     Institution newInstitution = entityConverter.convertToInstitution(matchResult.getSource());
+    if (proxyClient.findInstitutionByName(newInstitution.getName()).isEmpty()) {
+      // create institution
+      Institution createdInstitution = proxyClient.createInstitution(newInstitution);
+      // create collection
+      Collection createdCollection = createCollection(matchResult.getSource(), createdInstitution);
 
-    Institution createdInstitution = proxyClient.createInstitution(newInstitution);
+      // same staff for both entities
+      ContactMatch contactMatchInstitution =
+          staffResultHandler.handleStaff(matchResult, createdInstitution);
+      ContactMatch contactMatchCollection =
+          staffResultHandler.handleStaff(matchResult, createdCollection);
 
-    // create collection
-    Collection createdCollection = createCollection(matchResult.getSource(), createdInstitution);
+      return NoEntityMatch.builder()
+          .newCollection(createdCollection)
+          .newInstitution(createdInstitution)
+          .contactMatch(mergeContactMatches(contactMatchInstitution, contactMatchCollection))
+          .build();
+    }
+    else {
+      // create change suggestion
+      InstitutionChangeSuggestion institutionChangeSuggestion = new InstitutionChangeSuggestion();
+      institutionChangeSuggestion.setSuggestedEntity(newInstitution);
 
-    // same staff for both entities
-    ContactMatch contactMatchInstitution =
-        staffResultHandler.handleStaff(matchResult, createdInstitution);
-    ContactMatch contactMatchCollection =
-        staffResultHandler.handleStaff(matchResult, createdCollection);
-
-    return NoEntityMatch.builder()
-        .newCollection(createdCollection)
-        .newInstitution(createdInstitution)
-        .contactMatch(mergeContactMatches(contactMatchInstitution, contactMatchCollection))
-        .build();
+      int suggestionCreated = proxyClient.createChangeSuggestion(institutionChangeSuggestion);
+      return NoEntityMatch.builder()
+          .newChangeSuggestion(suggestionCreated)
+          .build();
+    }
   }
 
   @VisibleForTesting

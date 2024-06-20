@@ -72,6 +72,7 @@ public class SyncResult {
     private Institution newInstitution;
     private Collection newCollection;
     private ContactMatch contactMatch;
+    private int newChangeSuggestion;
   }
 
   @Data

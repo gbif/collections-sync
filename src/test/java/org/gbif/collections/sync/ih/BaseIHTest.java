@@ -12,7 +12,6 @@ import org.gbif.api.util.IsoDateParsingUtils;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.api.vocabulary.collections.IdType;
-import org.gbif.api.vocabulary.collections.InstitutionType;
 import org.gbif.api.vocabulary.collections.MasterSourceType;
 import org.gbif.api.vocabulary.collections.Source;
 import org.gbif.collections.sync.SyncResult;
@@ -380,6 +379,25 @@ public class BaseIHTest {
     map.put("numSeedPlImaged", summary.getNumSeedPlImaged());
 
     return map;
+  }
+
+  protected TestEntity<Institution,IHInstitution> createExistingInstitutionWithSameName() {
+    Institution i = new Institution();
+    i.setKey(UUID.randomUUID());
+    i.setCode("bar");
+    i.setName("bar");
+    i.setNumberSpecimens(1000);
+    i.setMasterSource(MasterSourceType.IH);
+    i.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
+    i.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, IRN_TEST));
+    i.getIdentifiers().add(new Identifier(IdentifierType.CITES, CITES_TEST));
+
+    IHInstitution ih = new IHInstitution();
+    ih.setCode("bar");
+    ih.setOrganization("bar");
+    ih.setSpecimenTotal(1000);
+
+    return TestEntity.<Institution, IHInstitution>builder().entity(i).ih(ih).build();
   }
 
   private static IHConfig createConfig() {

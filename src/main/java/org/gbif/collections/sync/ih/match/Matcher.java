@@ -1,7 +1,6 @@
 package org.gbif.collections.sync.ih.match;
 
 import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.collections.sync.clients.proxy.IHProxyClient;
 import org.gbif.collections.sync.common.parsers.CountryParser;

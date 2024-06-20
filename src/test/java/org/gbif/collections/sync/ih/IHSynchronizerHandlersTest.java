@@ -1,12 +1,16 @@
 package org.gbif.collections.sync.ih;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.MasterSourceMetadata;
+import org.gbif.api.model.collections.suggestions.InstitutionChangeSuggestion;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.api.vocabulary.collections.Source;
 import org.gbif.collections.sync.SyncResult;
+import org.gbif.collections.sync.clients.proxy.GrSciCollProxyClient;
 import org.gbif.collections.sync.ih.match.IHMatchResult;
 import org.gbif.collections.sync.ih.model.IHInstitution;
 
@@ -22,6 +26,10 @@ import static org.gbif.collections.sync.ih.IHEntityConverter.DEFAULT_COLLECTION_
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class IHSynchronizerHandlersTest extends BaseIHTest {
 
@@ -115,6 +123,53 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
     IHMatchResult match = IHMatchResult.builder().ihInstitution(ih).build();
     SyncResult.NoEntityMatch noEntityMatch = synchronizer.handleNoMatch(match);
     assertTrue(noEntityMatch.getNewCollection().lenientEquals(expectedCollection));
+    assertTrue(noEntityMatch.getNewInstitution().lenientEquals(expectedInstitution));
+    assertEmptyContactMatch(noEntityMatch.getContactMatch());
+  }
+
+  @Test
+  public void noMatchWithExistingInstitutionNameTest() {
+
+    GrSciCollProxyClient proxyClient = mock(GrSciCollProxyClient.class);
+    // IH institution
+    IHInstitution ih = new IHInstitution();
+    ih.setIrn(IRN_TEST);
+    ih.setCode("foo");
+    ih.setOrganization("foo");
+    ih.setSpecimenTotal(1000);
+
+    // Expected institution
+    Institution expectedInstitution = new Institution();
+    expectedInstitution.setCode(ih.getCode());
+    expectedInstitution.setName(ih.getOrganization());
+    expectedInstitution.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
+
+    // Expected collection
+    Collection expectedCollection = new Collection();
+    expectedCollection.setCode(ih.getCode());
+    expectedCollection.setName(String.format(DEFAULT_COLLECTION_NAME_FORMAT, expectedInstitution.getName()));
+    expectedCollection.setNumberSpecimens(1000);
+    expectedCollection.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
+
+    // add identifier to expected entities
+    Identifier newIdentifier = new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST));
+    newIdentifier.setCreatedBy(TEST_USER);
+    expectedInstitution.getIdentifiers().add(newIdentifier);
+    expectedCollection.getIdentifiers().add(newIdentifier);
+
+    IHMatchResult match = IHMatchResult.builder().ihInstitution(ih).build();
+
+    // Mock behavior for findInstitutionByName
+    List<Institution> institutionsWithSameName = new ArrayList<>();
+    institutionsWithSameName.add(expectedInstitution);
+
+    when(proxyClient.findInstitutionByName(anyString())).thenReturn(institutionsWithSameName);
+    when(proxyClient.createChangeSuggestion(any(InstitutionChangeSuggestion.class))).thenReturn(1);
+    // Call the method under test
+    SyncResult.NoEntityMatch noEntityMatch = synchronizer.handleNoMatch(match);
+
+    // Assertions
+    assertEquals(1, noEntityMatch.getNewChangeSuggestion());
     assertTrue(noEntityMatch.getNewInstitution().lenientEquals(expectedInstitution));
     assertEmptyContactMatch(noEntityMatch.getContactMatch());
   }
