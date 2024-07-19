@@ -4,8 +4,9 @@ import java.util.List;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.suggestions.ChangeSuggestion;
+import org.gbif.api.model.collections.suggestions.CollectionChangeSuggestion;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
+import org.gbif.collections.sync.common.handler.ChangeSugesstionHandler;
 import org.gbif.collections.sync.common.handler.CollectionHandler;
 import org.gbif.collections.sync.common.handler.InstitutionHandler;
 import org.gbif.collections.sync.config.SyncConfig;
@@ -18,6 +19,7 @@ public abstract class BaseProxyClient implements GrSciCollProxyClient {
   protected final CallExecutor callExecutor;
   protected CollectionHandler collectionHandler;
   protected InstitutionHandler institutionHandler;
+  protected ChangeSugesstionHandler changeSugesstionHandler;
 
   public BaseProxyClient(SyncConfig syncConfig) {
     this.callExecutor = CallExecutor.getInstance(syncConfig);
@@ -28,6 +30,7 @@ public abstract class BaseProxyClient implements GrSciCollProxyClient {
     }
     this.collectionHandler = CollectionHandler.create(callExecutor, grSciCollHttpClient);
     this.institutionHandler = InstitutionHandler.create(callExecutor, grSciCollHttpClient);
+    this.changeSugesstionHandler = ChangeSugesstionHandler.create(callExecutor,grSciCollHttpClient);
   }
 
   public Collection createCollection(Collection collection) {
@@ -65,8 +68,12 @@ public abstract class BaseProxyClient implements GrSciCollProxyClient {
   }
 
   @Override
-  public int createChangeSuggestion(ChangeSuggestion<Institution> createSuggestion) {
-    return institutionHandler.createChangeSuggestion(createSuggestion);
+  public int createCollectionChangeSuggestion(CollectionChangeSuggestion createSuggestion) {
+    return changeSugesstionHandler.createCollectionChangeSuggestion(createSuggestion);
+  }
+
+  public List<CollectionChangeSuggestion> getCollectionChangeSuggestion(String ihIdentifier){
+    return changeSugesstionHandler.getCall(ihIdentifier);
   }
 
   public Integer addContactToCollection(UUID entityKey, Contact contact) {

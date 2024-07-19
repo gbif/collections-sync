@@ -117,9 +117,7 @@ public class SyncResultExporter {
           .forEach(
               m -> {
                 printMatchTitle(writer, "No Match");
-                printEntity(writer, "New Institution", m.getNewInstitution());
-                printEntity(writer, "New Collection", m.getNewCollection());
-                printContactMatch(writer, m.getContactMatch());
+                printSuggestedEntity(writer, m.getNewChangeSuggestion());
               });
 
       // Conflicts
@@ -132,6 +130,16 @@ public class SyncResultExporter {
       printSection(writer, "Invalid entities", result.getInvalidEntities());
     } catch (Exception e) {
       log.warn("Couldn't save diff results", e);
+    }
+  }
+
+  private static void printSuggestedEntity(BufferedWriter writer, int key){
+    try {
+      writer.write(LINE_STARTER);
+      writer.write("New Suggestion: " + key);
+      writer.newLine();
+    } catch (IOException e) {
+      log.warn("Couldn't print suggestion key {}", key, e);
     }
   }
 

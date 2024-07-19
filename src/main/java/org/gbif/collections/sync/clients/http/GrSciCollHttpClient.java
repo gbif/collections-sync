@@ -4,7 +4,7 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.MasterSourceMetadata;
-import org.gbif.api.model.collections.suggestions.ChangeSuggestion;
+import org.gbif.api.model.collections.suggestions.CollectionChangeSuggestion;
 import org.gbif.api.model.common.paging.PagingResponse;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
@@ -138,8 +138,13 @@ public class GrSciCollHttpClient {
     return result;
   }
 
-  public int createChangeSuggestion(ChangeSuggestion<Institution> changeSuggestion) {
-    return syncCall(api.createChangeSuggestion(changeSuggestion));
+  public List<CollectionChangeSuggestion> getChangeSuggestionsByIhIdentifier(String ihIdentifier) {
+    PagingResponse<CollectionChangeSuggestion> response = syncCall(api.listChangeSuggestions(ihIdentifier));
+    return new ArrayList<>(response.getResults());
+  }
+
+  public int createCollectionChangeSuggestion(CollectionChangeSuggestion changeSuggestion) {
+    return syncCall(api.createCollectionChangeSuggestion(changeSuggestion));
   }
 
   public Institution getInstitution(UUID key) {
@@ -385,8 +390,12 @@ public class GrSciCollHttpClient {
     Call<Void> addMasterSourceMetadataToCollection(
         @Path("collectionKey") UUID collectionKey, @Body MasterSourceMetadata masterSourceMetadata);
 
-    @POST("changeSuggestion")
-    Call<Integer> createChangeSuggestion(@Body ChangeSuggestion<Institution> createSuggestion);
+    @POST("collection/changeSuggestion")
+    Call<Integer> createCollectionChangeSuggestion(@Body CollectionChangeSuggestion createSuggestion);
+
+    @GET("collection/changeSuggestion")
+    Call<PagingResponse<CollectionChangeSuggestion>> listChangeSuggestions(
+        @Query("ihIdentifier") String ihIdentifier);
   }
 
   /** Adapter necessary for retrofit due to versioning. */

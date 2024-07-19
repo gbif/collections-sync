@@ -4,7 +4,6 @@ import java.util.List;
 import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.MasterSourceMetadata;
-import org.gbif.api.model.collections.suggestions.ChangeSuggestion;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
@@ -80,9 +79,5 @@ public class InstitutionHandler extends BasePrimaryEntityHandler<Institution> {
 
   public List<Institution> listInstitutionsByName(String name) {
     return grSciCollHttpClient.getInstitutionsByName(name);
-  }
-
-  public int createChangeSuggestion(ChangeSuggestion<Institution> changeSuggestion) {
-    return grSciCollHttpClient.createChangeSuggestion(changeSuggestion);
   }
 }

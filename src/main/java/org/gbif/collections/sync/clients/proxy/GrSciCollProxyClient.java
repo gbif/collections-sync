@@ -3,7 +3,7 @@ package org.gbif.collections.sync.clients.proxy;
 import java.util.List;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.suggestions.ChangeSuggestion;
+import org.gbif.api.model.collections.suggestions.CollectionChangeSuggestion;
 
 public interface GrSciCollProxyClient {
 
@@ -17,5 +17,7 @@ public interface GrSciCollProxyClient {
 
   List<Institution> findInstitutionByName(String institutionName);
 
-  int createChangeSuggestion(ChangeSuggestion<Institution> createSuggestion);
+  int createCollectionChangeSuggestion(CollectionChangeSuggestion createSuggestion);
+
+  List<CollectionChangeSuggestion> getCollectionChangeSuggestion(String ihIdentifier);
 }

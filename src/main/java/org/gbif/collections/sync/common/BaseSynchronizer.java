@@ -1,25 +1,29 @@
 package org.gbif.collections.sync.common;
 
+import com.google.common.annotations.VisibleForTesting;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.suggestions.InstitutionChangeSuggestion;
+import org.gbif.api.model.collections.suggestions.CollectionChangeSuggestion;
+import org.gbif.api.model.collections.suggestions.Type;
+import org.gbif.api.model.registry.Identifier;
+import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.collections.sync.SyncResult.*;
 import org.gbif.collections.sync.clients.proxy.GrSciCollProxyClient;
 import org.gbif.collections.sync.common.converter.EntityConverter;
 import org.gbif.collections.sync.common.match.MatchResult;
 import org.gbif.collections.sync.common.match.StaffResultHandler;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.google.common.annotations.VisibleForTesting;
-
 public abstract class BaseSynchronizer<S, R> {
 
   protected final GrSciCollProxyClient proxyClient;
   protected final StaffResultHandler<S, R> staffResultHandler;
   protected final EntityConverter<S, R> entityConverter;
+  private final String COMMENT = "This suggestion was created as part of the weekly synchronisation"
+      + " of GRSciColl with Index Herbariorum (https://sweetgum.nybg.org/science/ih/)";
 
   protected BaseSynchronizer(
       GrSciCollProxyClient proxyClient,
@@ -127,41 +131,59 @@ public abstract class BaseSynchronizer<S, R> {
 
   @VisibleForTesting
   public NoEntityMatch handleNoMatch(MatchResult<S, R> matchResult) {
-
     Institution newInstitution = entityConverter.convertToInstitution(matchResult.getSource());
-    if (proxyClient.findInstitutionByName(newInstitution.getName()).isEmpty()) {
-      // create institution
-      Institution createdInstitution = proxyClient.createInstitution(newInstitution);
-      // create collection
-      Collection createdCollection = createCollection(matchResult.getSource(), createdInstitution);
+    List<String> ihIdentifiers = getIhIdentifiers(newInstitution);
 
-      // same staff for both entities
-      ContactMatch contactMatchInstitution =
-          staffResultHandler.handleStaff(matchResult, createdInstitution);
-      ContactMatch contactMatchCollection =
-          staffResultHandler.handleStaff(matchResult, createdCollection);
-
-      return NoEntityMatch.builder()
-          .newCollection(createdCollection)
-          .newInstitution(createdInstitution)
-          .contactMatch(mergeContactMatches(contactMatchInstitution, contactMatchCollection))
-          .build();
+    //If we already created a suggestion before we do nothing
+    if (!proxyClient.getCollectionChangeSuggestion(ihIdentifiers.get(0)).isEmpty()){
+      return NoEntityMatch.builder().build();
+    }
+    //Check if there is another institution with the same name
+    List<Institution> institutionWithSameName = proxyClient.findInstitutionByName(newInstitution.getName());
+    //If not, we should create a suggestion with the option of creating an institution suggestion
+    if (institutionWithSameName.isEmpty()) {
+      return createAndSuggestCollection(matchResult, newInstitution, ihIdentifiers, true);
     }
     else {
-      // create change suggestion
-      InstitutionChangeSuggestion institutionChangeSuggestion = new InstitutionChangeSuggestion();
-      institutionChangeSuggestion.setSuggestedEntity(newInstitution);
-
-      int suggestionCreated = proxyClient.createChangeSuggestion(institutionChangeSuggestion);
-      return NoEntityMatch.builder()
-          .newChangeSuggestion(suggestionCreated)
-          .build();
+      return createAndSuggestCollection(matchResult, institutionWithSameName.get(0), ihIdentifiers, false);
     }
   }
 
   @VisibleForTesting
   public Conflict handleConflict(MatchResult<S, R> matchResult) {
     return new Conflict(matchResult.getSource(), matchResult.getAllMatches());
+  }
+
+  private List<String> getIhIdentifiers(Institution institution) {
+    return institution.getIdentifiers().stream()
+        .filter(identifier -> identifier.getType().equals(IdentifierType.IH_IRN ))
+        .map(Identifier::getIdentifier)
+        .collect(Collectors.toList());
+  }
+
+  private NoEntityMatch createAndSuggestCollection(MatchResult<S, R> matchResult,
+      Institution institution, List<String> ihIdentifiers, boolean createInstitution) {
+    Collection newCollection = entityConverter.convertToCollection(matchResult.getSource(),
+        institution);
+    CollectionChangeSuggestion collectionChangeSuggestion = createCollectionChangeSuggestion(newCollection,
+        ihIdentifiers, createInstitution);
+    collectionChangeSuggestion = staffResultHandler.handleStaffForCollectionChangeSuggestion(matchResult,newCollection,collectionChangeSuggestion);
+    int suggestionCreated = proxyClient.createCollectionChangeSuggestion(collectionChangeSuggestion);
+    return NoEntityMatch.builder().newChangeSuggestion(suggestionCreated).build();
+  }
+
+  private CollectionChangeSuggestion createCollectionChangeSuggestion(Collection newCollection,
+      List<String> ihIdentifiers, Boolean createInstitution) {
+    CollectionChangeSuggestion collectionChangeSuggestion = new CollectionChangeSuggestion();
+    collectionChangeSuggestion.setType(Type.CREATE);
+    collectionChangeSuggestion.setProposerEmail("scientific-collections@gbif.org");
+    List<String> comments = new ArrayList<>();
+    comments.add(COMMENT);
+    collectionChangeSuggestion.setComments(comments);
+    collectionChangeSuggestion.setSuggestedEntity(newCollection);
+    collectionChangeSuggestion.setIhIdentifier(ihIdentifiers.get(0));
+    collectionChangeSuggestion.setCreateInstitution(createInstitution);
+    return collectionChangeSuggestion;
   }
 
   private ContactMatch mergeContactMatches(ContactMatch contactMatch1, ContactMatch contactMatch2) {
