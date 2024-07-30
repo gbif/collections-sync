@@ -22,7 +22,7 @@ public abstract class BaseSynchronizer<S, R> {
   protected final GrSciCollProxyClient proxyClient;
   protected final StaffResultHandler<S, R> staffResultHandler;
   protected final EntityConverter<S, R> entityConverter;
-  private final String COMMENT = "This suggestion was created as part of the weekly synchronisation"
+  private final static String COMMENT = "This suggestion was created as part of the weekly synchronisation"
       + " of GRSciColl with Index Herbariorum (https://sweetgum.nybg.org/science/ih/)";
 
   protected BaseSynchronizer(
@@ -168,8 +168,8 @@ public abstract class BaseSynchronizer<S, R> {
     CollectionChangeSuggestion collectionChangeSuggestion = createCollectionChangeSuggestion(newCollection,
         ihIdentifiers, createInstitution);
     collectionChangeSuggestion = staffResultHandler.handleStaffForCollectionChangeSuggestion(matchResult,newCollection,collectionChangeSuggestion);
-    int suggestionCreated = proxyClient.createCollectionChangeSuggestion(collectionChangeSuggestion);
-    return NoEntityMatch.builder().newChangeSuggestion(suggestionCreated).build();
+    proxyClient.createCollectionChangeSuggestion(collectionChangeSuggestion);
+    return NoEntityMatch.builder().newChangeSuggestion(collectionChangeSuggestion).build();
   }
 
   private CollectionChangeSuggestion createCollectionChangeSuggestion(Collection newCollection,

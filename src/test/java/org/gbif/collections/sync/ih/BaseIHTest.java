@@ -48,6 +48,8 @@ public class BaseIHTest {
   protected static final CountryParser countryParser =
       CountryParser.from(Arrays.asList("U.K.", "U.S.A.", "United Kingdom", "United States"));
   protected static final IHConfig ihConfig = createConfig();
+  protected static final String COMMENT =
+      "This suggestion was created as part of the weekly synchronisation of GRSciColl with Index Herbariorum (https://sweetgum.nybg.org/science/ih/)";
   protected final IHSynchronizer synchronizer =
       IHSynchronizer.builder()
           .dataLoader(TestDataLoader.builder().countries(COUNTRIES).build())
@@ -379,25 +381,6 @@ public class BaseIHTest {
     map.put("numSeedPlImaged", summary.getNumSeedPlImaged());
 
     return map;
-  }
-
-  protected TestEntity<Institution,IHInstitution> createExistingInstitutionWithSameName() {
-    Institution i = new Institution();
-    i.setKey(UUID.randomUUID());
-    i.setCode("bar");
-    i.setName("bar");
-    i.setNumberSpecimens(1000);
-    i.setMasterSource(MasterSourceType.IH);
-    i.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
-    i.getIdentifiers().add(new Identifier(IdentifierType.IH_IRN, IRN_TEST));
-    i.getIdentifiers().add(new Identifier(IdentifierType.CITES, CITES_TEST));
-
-    IHInstitution ih = new IHInstitution();
-    ih.setCode("bar");
-    ih.setOrganization("bar");
-    ih.setSpecimenTotal(1000);
-
-    return TestEntity.<Institution, IHInstitution>builder().entity(i).ih(ih).build();
   }
 
   private static IHConfig createConfig() {

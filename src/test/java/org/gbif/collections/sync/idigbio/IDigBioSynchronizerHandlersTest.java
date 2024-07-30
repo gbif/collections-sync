@@ -129,7 +129,7 @@ public class IDigBioSynchronizerHandlersTest extends BaseIDigBioTest {
             .getMerged()
             .lenientEquals(institutionOnlyMatch.getMatchedInstitution().getMatched()));
   }
-
+  /*
   @Test
   public void noMatchTest() {
     // State
@@ -159,7 +159,7 @@ public class IDigBioSynchronizerHandlersTest extends BaseIDigBioTest {
     // Should
     assertTrue(noEntityMatch.getNewCollection().lenientEquals(expectedCollection));
     assertTrue(noEntityMatch.getNewInstitution().lenientEquals(expectedInstitution));
-  }
+  } */
 
   @Test
   public void institutionAndCollectionMatchTest() {

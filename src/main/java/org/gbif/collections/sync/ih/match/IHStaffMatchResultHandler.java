@@ -1,6 +1,5 @@
 package org.gbif.collections.sync.ih.match;
 
-import java.util.Objects;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contact;
@@ -67,24 +66,11 @@ public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstituti
         continue;
       }
 
-      Set<Contact> contactsMatched =
-          Objects.requireNonNull(entity.getContactPersons()).stream()
-              .filter(
-                  cp ->
-                      cp.getUserIds().stream()
-                          .anyMatch(
-                              userId ->
-                                  userId.getType() == IdType.IH_IRN
-                                      && userId.getId().equals(ihStaff.getIrn())))
-              .collect(Collectors.toSet());
-
-      if (contactsMatched.isEmpty()) {
         // create
-        log.info("No contact match for IH Staff {}", ihStaff.getIrn());
         Contact newContact = entityConverter.convertToContact(ihStaff);
         contacts.add(newContact);
       }
-    }
+
     collectionChangeSuggestion.getSuggestedEntity().setContactPersons(contacts);
     return collectionChangeSuggestion;
   }

@@ -1,5 +1,6 @@
 package org.gbif.collections.sync;
 
+import org.gbif.api.model.collections.suggestions.CollectionChangeSuggestion;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contact;
 
@@ -58,6 +59,7 @@ public class SyncResultExporter {
       printWithNewLineAfter(writer, "Collections created: " + counts.collectionsCreated);
       printWithNewLineAfter(writer, "Collections updated: " + counts.collectionsUpdated);
       printWithNewLineAfter(writer, "Collections no change: " + counts.collectionsNoChange);
+      printWithNewLineAfter(writer, "Suggestions created: " + counts.suggestionsCreated);
       printWithNewLineAfter(
           writer, "Contacts created: " + counts.countContactMatch.contactsCreated);
       printWithNewLineAfter(
@@ -133,13 +135,13 @@ public class SyncResultExporter {
     }
   }
 
-  private static void printSuggestedEntity(BufferedWriter writer, int key){
+  private static void printSuggestedEntity(BufferedWriter writer, CollectionChangeSuggestion changeSuggestion){
     try {
       writer.write(LINE_STARTER);
-      writer.write("New Suggestion: " + key);
+      writer.write("New Suggestion: " + changeSuggestion.toString());
       writer.newLine();
     } catch (IOException e) {
-      log.warn("Couldn't print suggestion key {}", key, e);
+      log.warn("Couldn't print suggestion {}", changeSuggestion, e);
     }
   }
 
@@ -352,13 +354,9 @@ public class SyncResultExporter {
     }
 
     for (SyncResult.NoEntityMatch m : result.getNoMatches()) {
-      if (m.getNewInstitution() != null) {
-        counts.institutionsCreated++;
+      if (m.getNewChangeSuggestion() != null) {
+        counts.suggestionsCreated++;
       }
-      if (m.getNewCollection() != null) {
-        counts.collectionsCreated++;
-      }
-      countContacts.accept(m.getContactMatch());
     }
 
     return counts;
@@ -371,6 +369,7 @@ public class SyncResultExporter {
     int collectionsCreated = 0;
     int collectionsUpdated = 0;
     int collectionsNoChange = 0;
+    int suggestionsCreated = 0;
     CountStaffMatch countStaffMatch = new CountStaffMatch();
     CountContactMatch countContactMatch = new CountContactMatch();
 
