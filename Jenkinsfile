@@ -45,7 +45,7 @@ pipeline {
       when {
         allOf {
           not { expression { params.RELEASE } }
-          branch 'master';
+          branch '579-create-suggestion-instead-duplicate';
         }
       }
       steps {
