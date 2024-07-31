@@ -1,5 +1,6 @@
 package org.gbif.collections.sync;
 
+import org.gbif.api.model.collections.suggestions.CollectionChangeSuggestion;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contact;
 
@@ -58,6 +59,7 @@ public class SyncResultExporter {
       printWithNewLineAfter(writer, "Collections created: " + counts.collectionsCreated);
       printWithNewLineAfter(writer, "Collections updated: " + counts.collectionsUpdated);
       printWithNewLineAfter(writer, "Collections no change: " + counts.collectionsNoChange);
+      printWithNewLineAfter(writer, "Suggestions created: " + counts.suggestionsCreated);
       printWithNewLineAfter(
           writer, "Contacts created: " + counts.countContactMatch.contactsCreated);
       printWithNewLineAfter(
@@ -117,9 +119,7 @@ public class SyncResultExporter {
           .forEach(
               m -> {
                 printMatchTitle(writer, "No Match");
-                printEntity(writer, "New Institution", m.getNewInstitution());
-                printEntity(writer, "New Collection", m.getNewCollection());
-                printContactMatch(writer, m.getContactMatch());
+                printSuggestedEntity(writer, m.getNewChangeSuggestion());
               });
 
       // Conflicts
@@ -132,6 +132,16 @@ public class SyncResultExporter {
       printSection(writer, "Invalid entities", result.getInvalidEntities());
     } catch (Exception e) {
       log.warn("Couldn't save diff results", e);
+    }
+  }
+
+  private static void printSuggestedEntity(BufferedWriter writer, CollectionChangeSuggestion changeSuggestion){
+    try {
+      writer.write(LINE_STARTER);
+      writer.write("New Suggestion: " + changeSuggestion.toString());
+      writer.newLine();
+    } catch (IOException e) {
+      log.warn("Couldn't print suggestion {}", changeSuggestion, e);
     }
   }
 
@@ -344,13 +354,9 @@ public class SyncResultExporter {
     }
 
     for (SyncResult.NoEntityMatch m : result.getNoMatches()) {
-      if (m.getNewInstitution() != null) {
-        counts.institutionsCreated++;
+      if (m.getNewChangeSuggestion() != null) {
+        counts.suggestionsCreated++;
       }
-      if (m.getNewCollection() != null) {
-        counts.collectionsCreated++;
-      }
-      countContacts.accept(m.getContactMatch());
     }
 
     return counts;
@@ -363,6 +369,7 @@ public class SyncResultExporter {
     int collectionsCreated = 0;
     int collectionsUpdated = 0;
     int collectionsNoChange = 0;
+    int suggestionsCreated = 0;
     CountStaffMatch countStaffMatch = new CountStaffMatch();
     CountContactMatch countContactMatch = new CountContactMatch();
 

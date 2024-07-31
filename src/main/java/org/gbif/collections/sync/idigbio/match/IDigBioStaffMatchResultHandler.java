@@ -1,7 +1,9 @@
 package org.gbif.collections.sync.idigbio.match;
 
+import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contactable;
+import org.gbif.api.model.collections.suggestions.CollectionChangeSuggestion;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.clients.proxy.IDigBioProxyClient;
 import org.gbif.collections.sync.common.match.MatchResult;
@@ -28,6 +30,14 @@ public class IDigBioStaffMatchResultHandler
       MatchResult<IDigBioRecord, IDigBioRecord> matchResult, T entity) {
     // Not implemented since this was a one-time import and the contacts change was introduced after
     // it
+    return null;
+  }
+
+  @Override
+  public CollectionChangeSuggestion handleStaffForCollectionChangeSuggestion(
+      MatchResult<IDigBioRecord, IDigBioRecord> matchResult, Collection entity,
+      CollectionChangeSuggestion collectionChangeSuggestion) {
+    // Not implemented since this was a one-time import
     return null;
   }
 

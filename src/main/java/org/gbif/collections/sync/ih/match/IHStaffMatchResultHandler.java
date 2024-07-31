@@ -5,6 +5,7 @@ import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Contactable;
 import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.suggestions.CollectionChangeSuggestion;
 import org.gbif.api.vocabulary.collections.IdType;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.SyncResult.Conflict;
@@ -45,6 +46,33 @@ public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstituti
     issueNotifier = IHIssueNotifier.getInstance(ihConfig);
     this.entityConverter = entityConverter;
     this.proxyClient = proxyClient;
+  }
+
+  @Override
+  public CollectionChangeSuggestion handleStaffForCollectionChangeSuggestion(
+      MatchResult<IHInstitution, IHStaff> matchResult, Collection entity, CollectionChangeSuggestion collectionChangeSuggestion) {
+
+    ArrayList<Contact> contacts = new ArrayList<>();
+    Set<IHStaff> ihStaffList =
+        matchResult.getStaff().stream()
+            .filter(
+                s ->
+                    Strings.isNullOrEmpty(s.getCurrentStatus())
+                        || "Active".equals(s.getCurrentStatus()))
+            .collect(Collectors.toSet());
+    for (IHStaff ihStaff : ihStaffList) {
+      if (isInvalidIhStaff(ihStaff)) {
+        log.info("Not valid person - first name is required and emails have to be valid");
+        continue;
+      }
+
+        // create
+        Contact newContact = entityConverter.convertToContact(ihStaff);
+        contacts.add(newContact);
+      }
+
+    collectionChangeSuggestion.getSuggestedEntity().setContactPersons(contacts);
+    return collectionChangeSuggestion;
   }
 
   @Override

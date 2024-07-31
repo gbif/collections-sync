@@ -3,6 +3,7 @@ package org.gbif.collections.sync;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.suggestions.CollectionChangeSuggestion;
 
 import java.util.List;
 
@@ -69,9 +70,7 @@ public class SyncResult {
   @Data
   @Builder
   public static class NoEntityMatch {
-    private Institution newInstitution;
-    private Collection newCollection;
-    private ContactMatch contactMatch;
+    private CollectionChangeSuggestion newChangeSuggestion;
   }
 
   @Data
