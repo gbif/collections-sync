@@ -14,6 +14,11 @@ pipeline {
             description: 'Do a Maven release of the project')
   }
   stages {
+    stage('Clean Workspace') {
+      steps {
+         deleteDir()
+      }
+    }
     stage('Build') {
       when {
         not { expression { params.RELEASE } }
