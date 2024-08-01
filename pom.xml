@@ -22,7 +22,7 @@
   </scm>
 
   <properties>
-    <jdkLevel>1.8</jdkLevel>
+    <jdkLevel>11</jdkLevel>
 
     <slf4j.version>1.7.29</slf4j.version>
     <jackson.version>2.14.1</jackson.version>
