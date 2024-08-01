@@ -19,6 +19,11 @@ pipeline {
          deleteDir()
       }
     }
+    stage('Checkout Code') {
+      steps {
+         git branch: '579-create-suggestion-instead-duplicate', url: 'https://github.com/gbif/collections-sync.git'
+      }
+    }
     stage('Build') {
       when {
         not { expression { params.RELEASE } }
