@@ -22,7 +22,7 @@
   </scm>
 
   <properties>
-    <jdkLevel>11</jdkLevel>
+    <jdkLevel>1.8</jdkLevel>
 
     <slf4j.version>1.7.29</slf4j.version>
     <jackson.version>2.14.1</jackson.version>
@@ -219,18 +219,6 @@
         </executions>
       </plugin>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.2.0</version> <!-- Ensure you use a compatible version -->
-        <executions>
-          <execution>
-            <goals>
-              <goal>analyze</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
