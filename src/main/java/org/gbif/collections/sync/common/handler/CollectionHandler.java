@@ -1,5 +1,9 @@
 package org.gbif.collections.sync.common.handler;
 
+import static org.gbif.api.util.GrSciCollUtils.COLLECTORS_MT;
+import static org.gbif.api.util.GrSciCollUtils.COLL_SUMMARY_MT;
+import static org.gbif.api.util.GrSciCollUtils.IH_NS;
+
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,10 +19,6 @@ import org.gbif.collections.sync.clients.proxy.CallExecutor;
 import org.gbif.collections.sync.common.converter.ConvertedCollection;
 
 public class CollectionHandler extends BasePrimaryEntityHandler<Collection> {
-
-  private static final String IH_NS = "ih.gbif.org";
-  private static final String COLL_SUMMARY_MT = "collectionSummaryDescriptorGroupKey";
-  private static final String COLLECTORS_MT = "importantCollectorsDescriptorGroupKey";
 
   private CollectionHandler(CallExecutor callExecutor, GrSciCollHttpClient grSciCollHttpClient) {
     super(callExecutor, grSciCollHttpClient);
