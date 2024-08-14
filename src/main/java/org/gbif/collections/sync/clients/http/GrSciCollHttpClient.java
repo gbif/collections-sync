@@ -1,21 +1,6 @@
 package org.gbif.collections.sync.clients.http;
 
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.Contact;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.MasterSourceMetadata;
-import org.gbif.api.model.common.paging.PagingResponse;
-import org.gbif.api.model.registry.Identifier;
-import org.gbif.api.model.registry.MachineTag;
-import org.gbif.api.vocabulary.Country;
-import org.gbif.api.vocabulary.collections.MasterSourceType;
-import org.gbif.collections.sync.config.SyncConfig.RegistryConfig;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import static org.gbif.collections.sync.clients.http.SyncCall.syncCall;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
@@ -25,13 +10,31 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.DateDeserializers.DateDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import lombok.SneakyThrows;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
+import okhttp3.RequestBody;
+import org.gbif.api.model.collections.Collection;
+import org.gbif.api.model.collections.Contact;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.MasterSourceMetadata;
+import org.gbif.api.model.common.export.ExportFormat;
+import org.gbif.api.model.common.paging.PagingResponse;
+import org.gbif.api.model.registry.Identifier;
+import org.gbif.api.model.registry.MachineTag;
+import org.gbif.api.vocabulary.Country;
+import org.gbif.api.vocabulary.collections.MasterSourceType;
+import org.gbif.collections.sync.config.SyncConfig.RegistryConfig;
 import retrofit2.Call;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 import retrofit2.http.*;
-
-import static org.gbif.collections.sync.clients.http.SyncCall.syncCall;
 
 /** A lightweight GRSciColl client. */
 public class GrSciCollHttpClient {
@@ -252,6 +255,41 @@ public class GrSciCollHttpClient {
     syncCall(api.addMasterSourceMetadataToCollection(collectionKey, metadata));
   }
 
+  @SneakyThrows
+  public long createCollectionDescriptorGroup(
+      UUID collectionKey, String title, String description, java.nio.file.Path file) {
+    return syncCall(
+        api.createDescriptorGroup(
+            collectionKey,
+            ExportFormat.CSV,
+            title,
+            description,
+            MultipartBody.Part.createFormData(
+                "descriptorsFile",
+                file.getFileName().toString(),
+                RequestBody.create(Files.readAllBytes(file)))));
+  }
+
+  @SneakyThrows
+  public void updateCollectionDescriptorGroup(
+      UUID collectionKey,
+      long descriptorGroupKey,
+      String title,
+      String description,
+      java.nio.file.Path file) {
+    syncCall(
+        api.updateDescriptorGroup(
+            collectionKey,
+            descriptorGroupKey,
+            ExportFormat.CSV,
+            title,
+            description,
+          MultipartBody.Part.createFormData(
+            "descriptorsFile",
+            file.getFileName().toString(),
+            RequestBody.create(Files.readAllBytes(file)))));
+  }
+
   private interface API {
     @GET("institution")
     Call<PagingResponse<Institution>> listInstitutions(
@@ -357,6 +395,25 @@ public class GrSciCollHttpClient {
     @POST("collection/{collectionKey}/masterSourceMetadata")
     Call<Void> addMasterSourceMetadataToCollection(
         @Path("collectionKey") UUID collectionKey, @Body MasterSourceMetadata masterSourceMetadata);
+
+    @Multipart
+    @POST("collection/{collectionKey}/descriptorGroup")
+    Call<Long> createDescriptorGroup(
+        @Path("collectionKey") UUID collectionKey,
+        @Query("format") ExportFormat format,
+        @Query("title") String title,
+        @Query("description") String description,
+        @Part MultipartBody.Part descriptorsFile);
+
+    @Multipart
+    @PUT("collection/{collectionKey}/descriptorGroup/{key}")
+    Call<Long> updateDescriptorGroup(
+        @Path("collectionKey") UUID collectionKey,
+        @Path("key") long descriptorGroup,
+        @Query("format") ExportFormat format,
+        @Query("title") String title,
+        @Query("description") String description,
+        @Part MultipartBody.Part descriptorsFile);
   }
 
   /** Adapter necessary for retrofit due to versioning. */

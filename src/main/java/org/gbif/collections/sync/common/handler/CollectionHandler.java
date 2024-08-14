@@ -1,16 +1,24 @@
 package org.gbif.collections.sync.common.handler;
 
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Function;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.MasterSourceMetadata;
+import org.gbif.api.model.collections.descriptors.DescriptorGroup;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.model.registry.MachineTag;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
 import org.gbif.collections.sync.clients.proxy.CallExecutor;
-
-import java.util.UUID;
+import org.gbif.collections.sync.common.converter.ConvertedCollection;
 
 public class CollectionHandler extends BasePrimaryEntityHandler<Collection> {
+
+  private static final String IH_NS = "ih.gbif.org";
+  private static final String COLL_SUMMARY_MT = "collectionSummaryDescriptorGroupKey";
+  private static final String COLLECTORS_MT = "importantCollectorsDescriptorGroupKey";
 
   private CollectionHandler(CallExecutor callExecutor, GrSciCollHttpClient grSciCollHttpClient) {
     super(callExecutor, grSciCollHttpClient);
@@ -34,6 +42,124 @@ public class CollectionHandler extends BasePrimaryEntityHandler<Collection> {
   @Override
   protected UUID createCall(Collection entity) {
     return grSciCollHttpClient.createCollection(entity);
+  }
+
+  public Collection createConvertedCollection(ConvertedCollection convertedCollection) {
+    Collection createdCollection = super.create(convertedCollection.getCollection());
+
+    if (convertedCollection.getCollectionSummary() != null) {
+      createDescriptorGroup(
+          createdCollection.getKey(),
+          convertedCollection.getCollectionSummary(),
+          convertedCollection.getCollectionSummaryFile(),
+          COLL_SUMMARY_MT);
+    }
+
+    if (convertedCollection.getImportantCollectors() != null) {
+      createDescriptorGroup(
+          createdCollection.getKey(),
+          convertedCollection.getImportantCollectors(),
+          convertedCollection.getImportantCollectorsFile(),
+          COLLECTORS_MT);
+    }
+
+    return createdCollection;
+  }
+
+  public boolean updateConvertedCollection(
+      Collection oldCollection, ConvertedCollection convertedCollection) {
+    boolean result = super.update(oldCollection, convertedCollection.getCollection());
+
+    Function<String, Optional<MachineTag>> mtFinder =
+        name ->
+            convertedCollection.getCollection().getMachineTags().stream()
+                .filter(
+                    mt ->
+                        mt.getNamespace().equals(IH_NS)
+                            && mt.getName().equals(name)
+                            && mt.getValue() != null)
+                .findFirst();
+
+    if (convertedCollection.getCollectionSummary() != null) {
+      Optional<MachineTag> collectionSummaryMt = mtFinder.apply(COLL_SUMMARY_MT);
+      if (collectionSummaryMt.isPresent()) {
+        updateCollectionDescriptor(
+            convertedCollection, Long.parseLong(collectionSummaryMt.get().getValue()));
+      } else {
+        createDescriptorGroup(
+            oldCollection.getKey(),
+            convertedCollection.getCollectionSummary(),
+            convertedCollection.getCollectionSummaryFile(),
+            COLL_SUMMARY_MT);
+      }
+    }
+
+    if (convertedCollection.getImportantCollectors() != null) {
+      Optional<MachineTag> importantCollectorsMt = mtFinder.apply(COLLECTORS_MT);
+      if (importantCollectorsMt.isPresent()) {
+        updateCollectionDescriptor(
+            convertedCollection, Long.parseLong(importantCollectorsMt.get().getValue()));
+      } else {
+        createDescriptorGroup(
+            oldCollection.getKey(),
+            convertedCollection.getImportantCollectors(),
+            convertedCollection.getImportantCollectorsFile(),
+            COLLECTORS_MT);
+      }
+    }
+
+    return result;
+  }
+
+  private void updateCollectionDescriptor(
+      ConvertedCollection convertedCollection, long descriptorGroupKey) {
+    callExecutor.executeOrAddFail(
+        () ->
+            grSciCollHttpClient.updateCollectionDescriptorGroup(
+                convertedCollection.getCollection().getKey(),
+                descriptorGroupKey,
+                convertedCollection.getImportantCollectors().getTitle(),
+                convertedCollection.getImportantCollectors().getDescription(),
+                convertedCollection.getImportantCollectorsFile()),
+        exceptionHandler(
+            descriptorGroupKey,
+            "Couldn't update descriptor group key "
+                + descriptorGroupKey
+                + " and collection "
+                + convertedCollection.getCollection().getKey()));
+  }
+
+  private void createDescriptorGroup(
+      UUID collectionKey,
+      DescriptorGroup descriptorGroup,
+      Path descriptorFile,
+      String machineTagName) {
+    Long descriptorGroupKey =
+        callExecutor.executeAndReturnOrAddFail(
+            () ->
+                grSciCollHttpClient.createCollectionDescriptorGroup(
+                    collectionKey,
+                    descriptorGroup.getTitle(),
+                    descriptorGroup.getDescription(),
+                    descriptorFile),
+            exceptionHandler(
+                descriptorGroup,
+                "Couldn't create descriptor group for collection " + collectionKey),
+            null);
+
+    if (descriptorGroupKey != null) {
+      callExecutor.executeOrAddFail(
+          () ->
+              grSciCollHttpClient.addMachineTagToCollection(
+                  collectionKey,
+                  new MachineTag(IH_NS, machineTagName, String.valueOf(descriptorGroupKey))),
+          exceptionHandler(
+              descriptorGroupKey,
+              "Couldn't add machine tag for descriptor group "
+                  + descriptorGroupKey
+                  + " and collection "
+                  + collectionKey));
+    }
   }
 
   @Override

@@ -10,11 +10,11 @@ public interface EntityConverter<S, R> {
 
   Institution convertToInstitution(S source, Institution existing);
 
-  Collection convertToCollection(S source, Collection existing);
+  ConvertedCollection convertToCollection(S source, Collection existing);
 
-  Collection convertToCollection(S source, Institution institution);
+  ConvertedCollection convertToCollection(S source, Institution institution);
 
-  Collection convertToCollection(S source, Collection existing, Institution institution);
+  ConvertedCollection convertToCollection(S source, Collection existing, Institution institution);
 
   Contact convertToContact(R staffSource);
 

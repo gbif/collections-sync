@@ -5,6 +5,7 @@ import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.collections.sync.SyncResult.*;
 import org.gbif.collections.sync.clients.proxy.GrSciCollProxyClient;
+import org.gbif.collections.sync.common.converter.ConvertedCollection;
 import org.gbif.collections.sync.common.converter.EntityConverter;
 import org.gbif.collections.sync.common.match.MatchResult;
 import org.gbif.collections.sync.common.match.StaffResultHandler;
@@ -42,19 +43,19 @@ public abstract class BaseSynchronizer<S, R> {
   }
 
   protected EntityMatch<Collection> updateCollection(S source, Collection collMatched) {
-    Collection mergedCollection = entityConverter.convertToCollection(source, collMatched);
+    ConvertedCollection mergedCollection = entityConverter.convertToCollection(source, collMatched);
 
     boolean updated = proxyClient.updateCollection(collMatched, mergedCollection);
 
     return EntityMatch.<Collection>builder()
         .matched(collMatched)
-        .merged(mergedCollection)
+        .merged(mergedCollection.getCollection())
         .update(updated)
         .build();
   }
 
   protected Collection createCollection(S source, Institution instMatched) {
-    Collection newCollection = entityConverter.convertToCollection(source, instMatched);
+    ConvertedCollection newCollection = entityConverter.convertToCollection(source, instMatched);
 
     return proxyClient.createCollection(newCollection);
   }

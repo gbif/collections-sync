@@ -1,14 +1,14 @@
 package org.gbif.collections.sync.clients.proxy;
 
+import java.util.UUID;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
+import org.gbif.collections.sync.common.converter.ConvertedCollection;
 import org.gbif.collections.sync.common.handler.CollectionHandler;
 import org.gbif.collections.sync.common.handler.InstitutionHandler;
 import org.gbif.collections.sync.config.SyncConfig;
-
-import java.util.UUID;
 
 public abstract class BaseProxyClient implements GrSciCollProxyClient {
 
@@ -28,18 +28,22 @@ public abstract class BaseProxyClient implements GrSciCollProxyClient {
     this.institutionHandler = InstitutionHandler.create(callExecutor, grSciCollHttpClient);
   }
 
-  public Collection createCollection(Collection collection) {
-    return collectionHandler.create(collection);
+  @Override
+  public Collection createCollection(ConvertedCollection convertedCollection) {
+    return collectionHandler.createConvertedCollection(convertedCollection);
   }
 
-  public boolean updateCollection(Collection oldCollection, Collection newCollection) {
-    return collectionHandler.update(oldCollection, newCollection);
+  @Override
+  public boolean updateCollection(Collection oldCollection, ConvertedCollection newCollection) {
+    return collectionHandler.updateConvertedCollection(oldCollection, newCollection);
   }
 
+  @Override
   public Institution createInstitution(Institution institution) {
     return institutionHandler.create(institution);
   }
 
+  @Override
   public boolean updateInstitution(Institution oldInstitution, Institution newInstitution) {
     return institutionHandler.update(oldInstitution, newInstitution);
   }
