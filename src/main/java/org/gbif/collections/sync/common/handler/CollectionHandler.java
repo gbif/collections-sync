@@ -84,7 +84,10 @@ public class CollectionHandler extends BasePrimaryEntityHandler<Collection> {
       Optional<MachineTag> collectionSummaryMt = mtFinder.apply(COLL_SUMMARY_MT);
       if (collectionSummaryMt.isPresent()) {
         updateCollectionDescriptor(
-            convertedCollection, Long.parseLong(collectionSummaryMt.get().getValue()));
+            convertedCollection.getCollection().getKey(),
+            convertedCollection.getCollectionSummary(),
+            convertedCollection.getCollectionSummaryFile(),
+            Long.parseLong(collectionSummaryMt.get().getValue()));
       } else {
         createDescriptorGroup(
             oldCollection.getKey(),
@@ -98,7 +101,10 @@ public class CollectionHandler extends BasePrimaryEntityHandler<Collection> {
       Optional<MachineTag> importantCollectorsMt = mtFinder.apply(COLLECTORS_MT);
       if (importantCollectorsMt.isPresent()) {
         updateCollectionDescriptor(
-            convertedCollection, Long.parseLong(importantCollectorsMt.get().getValue()));
+            convertedCollection.getCollection().getKey(),
+            convertedCollection.getImportantCollectors(),
+            convertedCollection.getImportantCollectorsFile(),
+            Long.parseLong(importantCollectorsMt.get().getValue()));
       } else {
         createDescriptorGroup(
             oldCollection.getKey(),
@@ -112,21 +118,24 @@ public class CollectionHandler extends BasePrimaryEntityHandler<Collection> {
   }
 
   private void updateCollectionDescriptor(
-      ConvertedCollection convertedCollection, long descriptorGroupKey) {
+      UUID collectionKey,
+      DescriptorGroup descriptorGroup,
+      Path descriptorFile,
+      long descriptorGroupKey) {
     callExecutor.executeOrAddFail(
         () ->
             grSciCollHttpClient.updateCollectionDescriptorGroup(
-                convertedCollection.getCollection().getKey(),
+                collectionKey,
                 descriptorGroupKey,
-                convertedCollection.getImportantCollectors().getTitle(),
-                convertedCollection.getImportantCollectors().getDescription(),
-                convertedCollection.getImportantCollectorsFile()),
+                descriptorGroup.getTitle(),
+                descriptorGroup.getDescription(),
+                descriptorFile),
         exceptionHandler(
             descriptorGroupKey,
             "Couldn't update descriptor group key "
                 + descriptorGroupKey
                 + " and collection "
-                + convertedCollection.getCollection().getKey()));
+                + collectionKey));
   }
 
   private void createDescriptorGroup(

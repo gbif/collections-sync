@@ -261,50 +261,60 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
 
       writer.writeNext(headers);
 
-      String[] algae = {
-        "Algae",
-        null,
-        String.valueOf(collectionSummary.getNumAlgae()),
-        String.valueOf(collectionSummary.getNumAlgaeDatabased()),
-        String.valueOf(collectionSummary.getNumAlgaeImaged())
-      };
-      writer.writeNext(algae);
+      if (collectionSummary.getNumAlgae() > 0) {
+        String[] algae = {
+          "Algae",
+          null,
+          String.valueOf(collectionSummary.getNumAlgae()),
+          String.valueOf(collectionSummary.getNumAlgaeDatabased()),
+          String.valueOf(collectionSummary.getNumAlgaeImaged())
+        };
+        writer.writeNext(algae);
+      }
 
-      String[] bryos = {
-        "Bryophytes",
-        "Bryophyta",
-        String.valueOf(collectionSummary.getNumBryos()),
-        String.valueOf(collectionSummary.getNumBryosDatabased()),
-        String.valueOf(collectionSummary.getNumBryosImaged())
-      };
-      writer.writeNext(bryos);
+      if (collectionSummary.getNumBryos() > 0) {
+        String[] bryos = {
+          "Bryophytes",
+          "Bryophyta",
+          String.valueOf(collectionSummary.getNumBryos()),
+          String.valueOf(collectionSummary.getNumBryosDatabased()),
+          String.valueOf(collectionSummary.getNumBryosImaged())
+        };
+        writer.writeNext(bryos);
+      }
 
-      String[] fungi = {
-        "Fungi/Lichens",
-        "Fungi",
-        String.valueOf(collectionSummary.getNumFungi()),
-        String.valueOf(collectionSummary.getNumFungiDatabased()),
-        String.valueOf(collectionSummary.getNumFungiImaged())
-      };
-      writer.writeNext(fungi);
+      if (collectionSummary.getNumFungi() > 0) {
+        String[] fungi = {
+          "Fungi/Lichens",
+          "Fungi",
+          String.valueOf(collectionSummary.getNumFungi()),
+          String.valueOf(collectionSummary.getNumFungiDatabased()),
+          String.valueOf(collectionSummary.getNumFungiImaged())
+        };
+        writer.writeNext(fungi);
+      }
 
-      String[] pteridos = {
-        "Pteridophytes",
-        "Pteridophyta",
-        String.valueOf(collectionSummary.getNumPteridos()),
-        String.valueOf(collectionSummary.getNumPteridosDatabased()),
-        String.valueOf(collectionSummary.getNumPteridosImaged())
-      };
-      writer.writeNext(pteridos);
+      if (collectionSummary.getNumPteridos() > 0) {
+        String[] pteridos = {
+          "Pteridophytes",
+          "Pteridophyta",
+          String.valueOf(collectionSummary.getNumPteridos()),
+          String.valueOf(collectionSummary.getNumPteridosDatabased()),
+          String.valueOf(collectionSummary.getNumPteridosImaged())
+        };
+        writer.writeNext(pteridos);
+      }
 
-      String[] seedPl = {
-        "Seed Plants",
-        null,
-        String.valueOf(collectionSummary.getNumSeedPl()),
-        String.valueOf(collectionSummary.getNumSeedPlDatabased()),
-        String.valueOf(collectionSummary.getNumSeedPlImaged())
-      };
-      writer.writeNext(seedPl);
+      if (collectionSummary.getNumSeedPl() > 0) {
+        String[] seedPl = {
+          "Seed Plants",
+          null,
+          String.valueOf(collectionSummary.getNumSeedPl()),
+          String.valueOf(collectionSummary.getNumSeedPlDatabased()),
+          String.valueOf(collectionSummary.getNumSeedPlImaged())
+        };
+        writer.writeNext(seedPl);
+      }
     }
   }
 

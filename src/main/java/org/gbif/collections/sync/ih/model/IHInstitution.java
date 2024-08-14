@@ -73,21 +73,7 @@ public class IHInstitution implements IHEntity {
     private int numSeedPlImaged;
 
     public boolean isEmpty() {
-      return numAlgae == 0
-          && numAlgaeDatabased == 0
-          && numAlgaeImaged == 0
-          && numBryos == 0
-          && numBryosDatabased == 0
-          && numBryosImaged == 0
-          && numFungi == 0
-          && numFungiDatabased == 0
-          && numFungiImaged == 0
-          && numPteridos == 0
-          && numPteridosDatabased == 0
-          && numPteridosImaged == 0
-          && numSeedPl == 0
-          && numSeedPlDatabased == 0
-          && numSeedPlImaged == 0;
+      return numAlgae == 0 && numBryos == 0 && numFungi == 0 && numPteridos == 0 && numSeedPl == 0;
     }
   }
 }
