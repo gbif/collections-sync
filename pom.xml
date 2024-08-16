@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.gbif</groupId>
     <artifactId>motherpom</artifactId>
-    <version>37</version>
+    <version>58</version>
   </parent>
 
   <artifactId>collections-sync</artifactId>
@@ -22,7 +22,7 @@
   </scm>
 
   <properties>
-    <jdkLevel>1.8</jdkLevel>
+    <jdkLevel>11</jdkLevel>
 
     <slf4j.version>1.7.29</slf4j.version>
     <jackson.version>2.14.1</jackson.version>
