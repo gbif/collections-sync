@@ -1,50 +1,5 @@
 package org.gbif.collections.sync.ih;
 
-import org.gbif.api.model.collections.Address;
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.CollectionEntity;
-import org.gbif.api.model.collections.Contact;
-import org.gbif.api.model.collections.Contactable;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.collections.MasterSourceMetadata;
-import org.gbif.api.model.collections.UserId;
-import org.gbif.api.model.registry.Identifiable;
-import org.gbif.api.model.registry.Identifier;
-import org.gbif.api.model.registry.MachineTaggable;
-import org.gbif.api.util.IdentifierUtils;
-import org.gbif.api.vocabulary.Country;
-import org.gbif.api.vocabulary.IdentifierType;
-import org.gbif.api.vocabulary.collections.IdType;
-import org.gbif.api.vocabulary.collections.Source;
-import org.gbif.collections.sync.clients.http.IHHttpClient;
-import org.gbif.collections.sync.common.Utils;
-import org.gbif.collections.sync.common.converter.EntityConverter;
-import org.gbif.collections.sync.common.parsers.CountryParser;
-import org.gbif.collections.sync.common.parsers.DataParser;
-import org.gbif.collections.sync.config.IHConfig;
-import org.gbif.collections.sync.ih.model.IHEntity;
-import org.gbif.collections.sync.ih.model.IHInstitution;
-import org.gbif.collections.sync.ih.model.IHStaff;
-
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
-
-import lombok.extern.slf4j.Slf4j;
-
 import static org.gbif.collections.sync.common.CloneUtils.cloneCollection;
 import static org.gbif.collections.sync.common.CloneUtils.cloneContact;
 import static org.gbif.collections.sync.common.CloneUtils.cloneInstitution;
@@ -62,6 +17,52 @@ import static org.gbif.collections.sync.common.parsers.DataParser.parseStringLis
 import static org.gbif.collections.sync.common.parsers.DataParser.parseUri;
 import static org.gbif.collections.sync.ih.model.IHInstitution.CollectionSummary;
 import static org.gbif.collections.sync.ih.model.IHInstitution.Location;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
+import com.opencsv.CSVWriter;
+import java.io.FileWriter;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.gbif.api.model.collections.Address;
+import org.gbif.api.model.collections.Collection;
+import org.gbif.api.model.collections.CollectionEntity;
+import org.gbif.api.model.collections.Contact;
+import org.gbif.api.model.collections.Contactable;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.MasterSourceMetadata;
+import org.gbif.api.model.collections.UserId;
+import org.gbif.api.model.collections.descriptors.DescriptorGroup;
+import org.gbif.api.model.common.export.ExportFormat;
+import org.gbif.api.model.registry.Identifiable;
+import org.gbif.api.model.registry.Identifier;
+import org.gbif.api.model.registry.MachineTaggable;
+import org.gbif.api.util.IdentifierUtils;
+import org.gbif.api.vocabulary.Country;
+import org.gbif.api.vocabulary.IdentifierType;
+import org.gbif.api.vocabulary.collections.IdType;
+import org.gbif.api.vocabulary.collections.Source;
+import org.gbif.collections.sync.clients.http.IHHttpClient;
+import org.gbif.collections.sync.common.Utils;
+import org.gbif.collections.sync.common.converter.ConvertedCollection;
+import org.gbif.collections.sync.common.converter.EntityConverter;
+import org.gbif.collections.sync.common.parsers.CountryParser;
+import org.gbif.collections.sync.common.parsers.DataParser;
+import org.gbif.collections.sync.config.IHConfig;
+import org.gbif.collections.sync.ih.model.IHEntity;
+import org.gbif.collections.sync.ih.model.IHInstitution;
+import org.gbif.collections.sync.ih.model.IHStaff;
 
 /** Converts IH insitutions to the GrSciColl entities {@link Institution} and {@link Collection}. */
 @Slf4j
@@ -182,17 +183,18 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
   }
 
   @Override
-  public Collection convertToCollection(IHInstitution ihInstitution, Collection existing) {
+  public ConvertedCollection convertToCollection(IHInstitution ihInstitution, Collection existing) {
     return convertToCollection(ihInstitution, existing, null);
   }
 
   @Override
-  public Collection convertToCollection(IHInstitution ihInstitution, Institution institution) {
+  public ConvertedCollection convertToCollection(
+      IHInstitution ihInstitution, Institution institution) {
     return convertToCollection(ihInstitution, null, institution);
   }
 
   @Override
-  public Collection convertToCollection(
+  public ConvertedCollection convertToCollection(
       IHInstitution ihInstitution, Collection existing, Institution institution) {
     Collection collection = cloneCollection(existing);
 
@@ -211,9 +213,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     collection.setGeographicCoverage(getStringValue(ihInstitution.getGeography()));
     collection.setNotes(getStringValue(ihInstitution.getNotes()));
     collection.setNumberSpecimens(ihInstitution.getSpecimenTotal());
-    collection.setCollectionSummary(getCollectionSummary(ihInstitution.getCollectionsSummary()));
     collection.setIncorporatedCollections(getListValue(ihInstitution.getIncorporatedHerbaria()));
-    collection.setImportantCollectors(getListValue(ihInstitution.getImportantCollectors()));
     collection.setDivision(ihInstitution.getDivision());
     collection.setDepartment(ihInstitution.getDepartment());
 
@@ -224,37 +224,121 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
 
     addIrnIfNotExists(collection, ihInstitution.getIrn());
 
-    return collection;
+    ConvertedCollection convertedCollection =
+        ConvertedCollection.builder().collection(collection).build();
+    createCollectionSummaryDescriptorGroup(
+        ihInstitution.getCollectionsSummary(), convertedCollection);
+    createImportantCollectorsDescriptorGroup(
+        getListValue(ihInstitution.getImportantCollectors()), convertedCollection);
+
+    return convertedCollection;
   }
 
-  private static Map<String, Integer> getCollectionSummary(CollectionSummary collectionSummary) {
-    if (collectionSummary != null) {
-      return Arrays.stream(CollectionSummary.class.getDeclaredFields())
-          .filter(f -> f.getType().isAssignableFrom(int.class))
-          .collect(
-              Collectors.toMap(
-                  Field::getName,
-                  f -> {
-                    try {
-                      return (int)
-                          CollectionSummary.class
-                              .getMethod(
-                                  "get"
-                                      + f.getName().substring(0, 1).toUpperCase()
-                                      + f.getName().substring(1))
-                              .invoke(collectionSummary);
-                    } catch (Exception e) {
-                      log.warn(
-                          "Couldn't parse field {} in collectionSummary: {}",
-                          f,
-                          collectionSummary,
-                          e);
-                      return 0;
-                    }
-                  }));
+  @SneakyThrows
+  private static void createCollectionSummaryDescriptorGroup(
+      CollectionSummary collectionSummary, ConvertedCollection convertedCollection) {
+    if (collectionSummary == null || collectionSummary.isEmpty()) {
+      return;
     }
 
-    return Collections.emptyMap();
+    DescriptorGroup descriptorGroup = new DescriptorGroup();
+    descriptorGroup.setTitle("IH collection summary");
+    descriptorGroup.setDescription("Collection summary imported from IH as a descriptor group.");
+    convertedCollection.setCollectionSummary(descriptorGroup);
+
+    Path summaryPath =
+        Files.createTempFile("collection_summary", "." + ExportFormat.CSV.name().toLowerCase());
+    convertedCollection.setCollectionSummaryFile(summaryPath);
+
+    try (CSVWriter writer = new CSVWriter(new FileWriter(summaryPath.toFile()))) {
+      String[] headers = {
+        "ltc:objectClassificationName",
+        "dwc:scientificName",
+        "dwc:individualCount",
+        "Num. Databased",
+        "Num. Imaged"
+      };
+
+      writer.writeNext(headers);
+
+      if (collectionSummary.getNumAlgae() > 0) {
+        String[] algae = {
+          "Algae",
+          null,
+          String.valueOf(collectionSummary.getNumAlgae()),
+          String.valueOf(collectionSummary.getNumAlgaeDatabased()),
+          String.valueOf(collectionSummary.getNumAlgaeImaged())
+        };
+        writer.writeNext(algae);
+      }
+
+      if (collectionSummary.getNumBryos() > 0) {
+        String[] bryos = {
+          "Bryophytes",
+          "Bryophyta",
+          String.valueOf(collectionSummary.getNumBryos()),
+          String.valueOf(collectionSummary.getNumBryosDatabased()),
+          String.valueOf(collectionSummary.getNumBryosImaged())
+        };
+        writer.writeNext(bryos);
+      }
+
+      if (collectionSummary.getNumFungi() > 0) {
+        String[] fungi = {
+          "Fungi/Lichens",
+          "Fungi",
+          String.valueOf(collectionSummary.getNumFungi()),
+          String.valueOf(collectionSummary.getNumFungiDatabased()),
+          String.valueOf(collectionSummary.getNumFungiImaged())
+        };
+        writer.writeNext(fungi);
+      }
+
+      if (collectionSummary.getNumPteridos() > 0) {
+        String[] pteridos = {
+          "Pteridophytes",
+          "Pteridophyta",
+          String.valueOf(collectionSummary.getNumPteridos()),
+          String.valueOf(collectionSummary.getNumPteridosDatabased()),
+          String.valueOf(collectionSummary.getNumPteridosImaged())
+        };
+        writer.writeNext(pteridos);
+      }
+
+      if (collectionSummary.getNumSeedPl() > 0) {
+        String[] seedPl = {
+          "Seed Plants",
+          null,
+          String.valueOf(collectionSummary.getNumSeedPl()),
+          String.valueOf(collectionSummary.getNumSeedPlDatabased()),
+          String.valueOf(collectionSummary.getNumSeedPlImaged())
+        };
+        writer.writeNext(seedPl);
+      }
+    }
+  }
+
+  @SneakyThrows
+  private static void createImportantCollectorsDescriptorGroup(
+      List<String> importantCollectors, ConvertedCollection convertedCollection) {
+    if (importantCollectors == null || importantCollectors.isEmpty()) {
+      return;
+    }
+
+    DescriptorGroup descriptorGroup = new DescriptorGroup();
+    descriptorGroup.setTitle("IH important collectors");
+    descriptorGroup.setDescription("Important collectors imported from IH as a descriptor group.");
+    convertedCollection.setImportantCollectors(descriptorGroup);
+
+    Path collectorsPath =
+        Files.createTempFile("important_collectors", "." + ExportFormat.CSV.name().toLowerCase());
+    convertedCollection.setImportantCollectorsFile(collectorsPath);
+
+    try (CSVWriter writer = new CSVWriter(new FileWriter(collectorsPath.toFile()))) {
+      String[] headers = {"dwc:recordedBy"};
+      writer.writeNext(headers);
+      importantCollectors.forEach(c -> writer.writeNext(new String[] {c}));
+    }
   }
 
   @Override

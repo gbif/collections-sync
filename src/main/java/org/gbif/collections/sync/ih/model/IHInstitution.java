@@ -1,7 +1,6 @@
 package org.gbif.collections.sync.ih.model;
 
 import java.util.List;
-
 import lombok.Data;
 
 /** Models an Index Herbariorum institution. */
@@ -72,6 +71,9 @@ public class IHInstitution implements IHEntity {
     private int numSeedPl;
     private int numSeedPlDatabased;
     private int numSeedPlImaged;
-  }
 
+    public boolean isEmpty() {
+      return numAlgae == 0 && numBryos == 0 && numFungi == 0 && numPteridos == 0 && numSeedPl == 0;
+    }
+  }
 }

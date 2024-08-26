@@ -1,19 +1,18 @@
 package org.gbif.collections.sync.clients.proxy;
 
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.collections.sync.common.DataLoader;
-import org.gbif.collections.sync.config.IDigBioConfig;
-import org.gbif.collections.sync.idigbio.IDigBioDataLoader.IDigBioData;
-import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IS_IDIGBIO_COLLECTION_UUID_MT;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
 import lombok.Builder;
 import lombok.Getter;
-
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.IS_IDIGBIO_COLLECTION_UUID_MT;
+import org.gbif.api.model.collections.Collection;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.collections.sync.common.DataLoader;
+import org.gbif.collections.sync.common.converter.ConvertedCollection;
+import org.gbif.collections.sync.config.IDigBioConfig;
+import org.gbif.collections.sync.idigbio.IDigBioDataLoader.IDigBioData;
+import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 @Getter
 public class IDigBioProxyClient extends BaseProxyClient {
@@ -71,10 +70,10 @@ public class IDigBioProxyClient extends BaseProxyClient {
   }
 
   @Override
-  public boolean updateCollection(Collection oldCollection, Collection newCollection) {
+  public boolean updateCollection(Collection oldCollection, ConvertedCollection newCollection) {
     boolean updated = super.updateCollection(oldCollection, newCollection);
     if (updated) {
-      updateCollectionInMemory(oldCollection, newCollection);
+      updateCollectionInMemory(oldCollection, newCollection.getCollection());
     }
     return updated;
   }

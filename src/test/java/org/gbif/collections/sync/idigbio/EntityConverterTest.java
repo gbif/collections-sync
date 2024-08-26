@@ -1,14 +1,12 @@
 package org.gbif.collections.sync.idigbio;
 
-import org.gbif.api.model.collections.Address;
-import org.gbif.api.model.collections.AlternativeCode;
-import org.gbif.api.model.collections.Collection;
-import org.gbif.api.model.collections.Institution;
-import org.gbif.api.model.registry.Identifier;
-import org.gbif.api.model.registry.MachineTag;
-import org.gbif.api.vocabulary.Country;
-import org.gbif.api.vocabulary.IdentifierType;
-import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
+import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_COLLECTION_UUID;
+import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -18,16 +16,16 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
+import org.gbif.api.model.collections.Address;
+import org.gbif.api.model.collections.AlternativeCode;
+import org.gbif.api.model.collections.Collection;
+import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.registry.Identifier;
+import org.gbif.api.model.registry.MachineTag;
+import org.gbif.api.vocabulary.Country;
+import org.gbif.api.vocabulary.IdentifierType;
+import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 import org.junit.Test;
-
-import static org.gbif.collections.sync.common.parsers.DataParser.TO_BIGDECIMAL;
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_COLLECTION_UUID;
-import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 
 /** Tests the {@link IDigBioEntityConverter}. */
 public class EntityConverterTest {
@@ -106,7 +104,8 @@ public class EntityConverterTest {
 
     Institution inst = new Institution();
     inst.setKey(UUID.randomUUID());
-    Collection collectionConverted = entityConverter.convertToCollection(iDigBioRecord, inst);
+    Collection collectionConverted =
+        entityConverter.convertToCollection(iDigBioRecord, inst).getCollection();
 
     assertEquals(inst.getKey(), collectionConverted.getInstitutionKey());
     assertTrue(collectionConverted.getDescription().contains(iDigBioRecord.getDescription()));
@@ -138,7 +137,7 @@ public class EntityConverterTest {
     Institution inst = new Institution();
     inst.setKey(UUID.randomUUID());
     Collection collectionConverted =
-        entityConverter.convertToCollection(iDigBioRecord, existing, inst);
+        entityConverter.convertToCollection(iDigBioRecord, existing, inst).getCollection();
 
     assertEquals(inst.getKey(), collectionConverted.getInstitutionKey());
     assertTrue(collectionConverted.getDescription().contains(iDigBioRecord.getDescription()));
@@ -166,7 +165,8 @@ public class EntityConverterTest {
     existing.setModified(Date.from(LocalDateTime.now().toInstant(ZoneOffset.UTC)));
     iDigBioRecord = createIDigBioCollection();
     iDigBioRecord.setModifiedDate(LocalDateTime.now().minusDays(1));
-    collectionConverted = entityConverter.convertToCollection(iDigBioRecord, existing);
+    collectionConverted =
+        entityConverter.convertToCollection(iDigBioRecord, existing).getCollection();
 
     assertEquals(existing.getDescription(), collectionConverted.getDescription());
     assertEquals(existing.getCatalogUrls(), collectionConverted.getCatalogUrls());
@@ -190,7 +190,7 @@ public class EntityConverterTest {
     Institution inst = new Institution();
     inst.setKey(UUID.randomUUID());
     Collection collectionConverted =
-        entityConverter.convertToCollection(iDigBioRecord, existing, inst);
+        entityConverter.convertToCollection(iDigBioRecord, existing, inst).getCollection();
 
     assertEquals(inst.getKey(), collectionConverted.getInstitutionKey());
     assertTrue(collectionConverted.getDescription().contains(iDigBioRecord.getDescription()));
@@ -199,7 +199,8 @@ public class EntityConverterTest {
             .getDescription()
             .contains(iDigBioRecord.getDescriptionForSpecialists()));
     assertEquals(
-        URI.create(iDigBioRecord.getCollectionCatalogUrl()), collectionConverted.getCatalogUrls().get(0));
+        URI.create(iDigBioRecord.getCollectionCatalogUrl()),
+        collectionConverted.getCatalogUrls().get(0));
     assertEquals(existing.getCode(), collectionConverted.getCode());
     assertEquals(existing.getName(), collectionConverted.getName());
     assertEquals(existing.getHomepage(), collectionConverted.getHomepage());
@@ -411,7 +412,7 @@ public class EntityConverterTest {
     Institution i = new Institution();
     i.setKey(UUID.randomUUID());
 
-    Collection result = entityConverter.convertToCollection(r1, i);
+    Collection result = entityConverter.convertToCollection(r1, i).getCollection();
     assertEquals("A", result.getCode());
     assertEquals(2, result.getAlternativeCodes().size());
   }

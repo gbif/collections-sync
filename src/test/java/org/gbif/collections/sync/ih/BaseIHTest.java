@@ -24,9 +24,7 @@ import org.gbif.collections.sync.ih.model.IHStaff;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import lombok.Builder;
@@ -225,8 +223,6 @@ public class BaseIHTest {
     expected.setGeographicCoverage(ih.getGeography());
     expected.setNotes(ih.getNotes());
     expected.setIncorporatedCollections(ih.getIncorporatedHerbaria());
-    expected.setImportantCollectors(ih.getImportantCollectors());
-    expected.setCollectionSummary(convertCollectionSummary(ih.getCollectionsSummary()));
     expected.setMasterSource(MasterSourceType.IH);
     expected.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
 
@@ -360,27 +356,6 @@ public class BaseIHTest {
     expected.getUserIds().add(new UserId(IdType.IH_IRN, IRN_TEST));
 
     return TestEntity.<Contact, IHStaff>builder().ih(s).expected(expected).build();
-  }
-
-  protected Map<String, Integer> convertCollectionSummary(IHInstitution.CollectionSummary summary) {
-    Map<String, Integer> map = new HashMap<>();
-    map.put("numAlgae", summary.getNumAlgae());
-    map.put("numAlgaeDatabased", summary.getNumAlgaeDatabased());
-    map.put("numAlgaeImaged", summary.getNumAlgaeImaged());
-    map.put("numBryos", summary.getNumBryos());
-    map.put("numBryosDatabased", summary.getNumBryosDatabased());
-    map.put("numBryosImaged", summary.getNumBryosImaged());
-    map.put("numFungi", summary.getNumFungi());
-    map.put("numFungiDatabased", summary.getNumFungiDatabased());
-    map.put("numFungiImaged", summary.getNumFungiImaged());
-    map.put("numPteridos", summary.getNumPteridos());
-    map.put("numPteridosDatabased", summary.getNumPteridosDatabased());
-    map.put("numPteridosImaged", summary.getNumPteridosImaged());
-    map.put("numSeedPl", summary.getNumSeedPl());
-    map.put("numSeedPlDatabased", summary.getNumSeedPlDatabased());
-    map.put("numSeedPlImaged", summary.getNumSeedPlImaged());
-
-    return map;
   }
 
   private static IHConfig createConfig() {

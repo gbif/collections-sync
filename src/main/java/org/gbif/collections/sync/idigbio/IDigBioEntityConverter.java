@@ -1,27 +1,5 @@
 package org.gbif.collections.sync.idigbio;
 
-import org.gbif.api.model.collections.*;
-import org.gbif.api.model.registry.Identifiable;
-import org.gbif.api.model.registry.Identifier;
-import org.gbif.api.model.registry.MachineTag;
-import org.gbif.api.model.registry.MachineTaggable;
-import org.gbif.api.vocabulary.Country;
-import org.gbif.api.vocabulary.IdentifierType;
-import org.gbif.collections.sync.common.converter.EntityConverter;
-import org.gbif.collections.sync.common.parsers.DataParser;
-import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
-
-import java.util.Collections;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
-
-import com.google.common.base.Strings;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 import static org.gbif.collections.sync.common.CloneUtils.cloneCollection;
 import static org.gbif.collections.sync.common.CloneUtils.cloneInstitution;
 import static org.gbif.collections.sync.common.Utils.containsIrnIdentifier;
@@ -29,6 +7,27 @@ import static org.gbif.collections.sync.common.parsers.DataParser.*;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_COLLECTION_UUID;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.IDIGBIO_NAMESPACE;
 import static org.gbif.collections.sync.idigbio.IDigBioUtils.getIdigbioCodes;
+
+import com.google.common.base.Strings;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.gbif.api.model.collections.*;
+import org.gbif.api.model.registry.Identifiable;
+import org.gbif.api.model.registry.Identifier;
+import org.gbif.api.model.registry.MachineTag;
+import org.gbif.api.model.registry.MachineTaggable;
+import org.gbif.api.vocabulary.Country;
+import org.gbif.api.vocabulary.IdentifierType;
+import org.gbif.collections.sync.common.converter.ConvertedCollection;
+import org.gbif.collections.sync.common.converter.EntityConverter;
+import org.gbif.collections.sync.common.parsers.DataParser;
+import org.gbif.collections.sync.idigbio.model.IDigBioRecord;
 
 @NoArgsConstructor(staticName = "create")
 @Slf4j
@@ -97,17 +96,17 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
   }
 
   @Override
-  public Collection convertToCollection(IDigBioRecord record, Institution institution) {
+  public ConvertedCollection convertToCollection(IDigBioRecord record, Institution institution) {
     return convertToCollection(record, null, institution);
   }
 
   @Override
-  public Collection convertToCollection(IDigBioRecord record, Collection existing) {
+  public ConvertedCollection convertToCollection(IDigBioRecord record, Collection existing) {
     return convertToCollection(record, existing, null);
   }
 
   @Override
-  public Collection convertToCollection(
+  public ConvertedCollection convertToCollection(
       IDigBioRecord record, Collection existing, Institution institution) {
     Collection collection = cloneCollection(existing);
 
@@ -222,7 +221,7 @@ public class IDigBioEntityConverter implements EntityConverter<IDigBioRecord, ID
       }
     }
 
-    return collection;
+    return ConvertedCollection.builder().collection(collection).build();
   }
 
   private static void setCodes(
