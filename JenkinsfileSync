@@ -39,7 +39,7 @@ pipeline {
           sh """
            rm -rf *
            git clone -b master git@github.com:gbif/gbif-configuration.git
-    
+
            curl "${REPO_URL}" -L -o collections-sync.jar
            java -jar collections-sync.jar \
                 -c gbif-configuration/collections-sync/${params.ENV.toLowerCase()}/ih-config.yaml \
