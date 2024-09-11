@@ -12,7 +12,6 @@ import org.gbif.api.util.IsoDateParsingUtils;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.api.vocabulary.collections.IdType;
-import org.gbif.api.vocabulary.collections.InstitutionType;
 import org.gbif.api.vocabulary.collections.MasterSourceType;
 import org.gbif.api.vocabulary.collections.Source;
 import org.gbif.collections.sync.SyncResult;
@@ -25,9 +24,7 @@ import org.gbif.collections.sync.ih.model.IHStaff;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import lombok.Builder;
@@ -49,6 +46,8 @@ public class BaseIHTest {
   protected static final CountryParser countryParser =
       CountryParser.from(Arrays.asList("U.K.", "U.S.A.", "United Kingdom", "United States"));
   protected static final IHConfig ihConfig = createConfig();
+  protected static final String COMMENT =
+      "This suggestion was created as part of the weekly synchronisation of GRSciColl with Index Herbariorum (https://sweetgum.nybg.org/science/ih/)";
   protected final IHSynchronizer synchronizer =
       IHSynchronizer.builder()
           .dataLoader(TestDataLoader.builder().countries(COUNTRIES).build())

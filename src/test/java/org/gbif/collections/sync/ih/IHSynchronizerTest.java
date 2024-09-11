@@ -59,8 +59,6 @@ public class IHSynchronizerTest extends BaseIHTest {
 
     // assert no matches
     assertEquals(1, syncResult.getNoMatches().size());
-    NoEntityMatch noEntityMatch = syncResult.getNoMatches().get(0);
-    assertEquals(2, noEntityMatch.getContactMatch().getNewContacts().size());
   }
 
   private DataLoader<IHData> createData() {

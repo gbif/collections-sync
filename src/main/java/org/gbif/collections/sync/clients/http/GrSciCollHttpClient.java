@@ -24,6 +24,7 @@ import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.MasterSourceMetadata;
+import org.gbif.api.model.collections.suggestions.CollectionChangeSuggestion;
 import org.gbif.api.model.common.export.ExportFormat;
 import org.gbif.api.model.common.paging.PagingResponse;
 import org.gbif.api.model.registry.Identifier;
@@ -122,6 +123,31 @@ public class GrSciCollHttpClient {
     }
 
     return result;
+  }
+
+  public List<Institution> getInstitutionsByName(String name) {
+    List<Institution> result = new ArrayList<>();
+
+    boolean endRecords = false;
+    int offset = 0;
+    while (!endRecords) {
+      PagingResponse<Institution> response =
+          syncCall(api.listInstitutionsByName(name, 1000, offset));
+      endRecords = response.isEndOfRecords();
+      offset += response.getLimit();
+      result.addAll(response.getResults());
+    }
+
+    return result;
+  }
+
+  public List<CollectionChangeSuggestion> getChangeSuggestionsByIhIdentifier(String ihIdentifier) {
+    PagingResponse<CollectionChangeSuggestion> response = syncCall(api.listChangeSuggestions(ihIdentifier));
+    return new ArrayList<>(response.getResults());
+  }
+
+  public int createCollectionChangeSuggestion(CollectionChangeSuggestion changeSuggestion) {
+    return syncCall(api.createCollectionChangeSuggestion(changeSuggestion));
   }
 
   public Institution getInstitution(UUID key) {
@@ -297,6 +323,12 @@ public class GrSciCollHttpClient {
         @Query("limit") int limit,
         @Query("offset") int offset);
 
+    @GET("institution")
+    Call<PagingResponse<Institution>> listInstitutionsByName(
+        @Query("name") String name,
+        @Query("limit") int limit,
+        @Query("offset") int offset);
+
     @GET("institution/{key}")
     Call<Institution> getInstitution(@Path("key") UUID key);
 
@@ -395,6 +427,13 @@ public class GrSciCollHttpClient {
     @POST("collection/{collectionKey}/masterSourceMetadata")
     Call<Void> addMasterSourceMetadataToCollection(
         @Path("collectionKey") UUID collectionKey, @Body MasterSourceMetadata masterSourceMetadata);
+
+    @POST("collection/changeSuggestion")
+    Call<Integer> createCollectionChangeSuggestion(@Body CollectionChangeSuggestion createSuggestion);
+
+    @GET("collection/changeSuggestion")
+    Call<PagingResponse<CollectionChangeSuggestion>> listChangeSuggestions(
+        @Query("ihIdentifier") String ihIdentifier);
 
     @Multipart
     @POST("collection/{collectionKey}/descriptorGroup")

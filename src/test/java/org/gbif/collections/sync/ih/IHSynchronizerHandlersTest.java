@@ -1,8 +1,12 @@
 package org.gbif.collections.sync.ih;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.MasterSourceMetadata;
+import org.gbif.api.model.collections.suggestions.CollectionChangeSuggestion;
+import org.gbif.api.model.collections.suggestions.Type;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.api.vocabulary.collections.Source;
@@ -104,19 +108,32 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
     expectedCollection.setName(
         String.format(DEFAULT_COLLECTION_NAME_FORMAT, expectedInstitution.getName()));
     expectedCollection.setNumberSpecimens(1000);
-    expectedCollection.setMasterSourceMetadata(new MasterSourceMetadata(Source.IH_IRN, IRN_TEST));
+    expectedCollection.setMasterSourceMetadata(
+        new MasterSourceMetadata(Source.IH_IRN, ih.getIrn()));
 
     // add identifier to expected entities
     Identifier newIdentifier = new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST));
-    newIdentifier.setCreatedBy(TEST_USER);
     expectedInstitution.getIdentifiers().add(newIdentifier);
     expectedCollection.getIdentifiers().add(newIdentifier);
 
+    //Expected Suggestion
+    CollectionChangeSuggestion changeSuggestion = new CollectionChangeSuggestion();
+    changeSuggestion.setType(Type.CREATE);
+    changeSuggestion.setCreateInstitution(true);
+    changeSuggestion.setIhIdentifier(newIdentifier.getIdentifier());
+    changeSuggestion.setSuggestedEntity(expectedCollection);
+    changeSuggestion.setProposerEmail("scientific-collections@gbif.org");
+    List<String> comments = new ArrayList<>();
+    comments.add(COMMENT);
+    changeSuggestion.setComments(comments);
+
     IHMatchResult match = IHMatchResult.builder().ihInstitution(ih).build();
     SyncResult.NoEntityMatch noEntityMatch = synchronizer.handleNoMatch(match);
-    assertTrue(noEntityMatch.getNewCollection().lenientEquals(expectedCollection));
-    assertTrue(noEntityMatch.getNewInstitution().lenientEquals(expectedInstitution));
-    assertEmptyContactMatch(noEntityMatch.getContactMatch());
+
+    assertEquals(noEntityMatch.getNewChangeSuggestion().getIhIdentifier(),
+        expectedCollection.getIdentifiers().get(0).getIdentifier());
+    assertTrue(noEntityMatch.getNewChangeSuggestion().getCreateInstitution());
+    assertEquals(noEntityMatch.getNewChangeSuggestion(),changeSuggestion);
   }
 
   @Test

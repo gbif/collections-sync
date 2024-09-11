@@ -1,5 +1,7 @@
 package org.gbif.collections.sync.common.handler;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
 import org.gbif.api.model.collections.MasterSourceMetadata;
@@ -74,5 +76,12 @@ public class InstitutionHandler extends BasePrimaryEntityHandler<Institution> {
     callExecutor.executeOrAddFail(
         () -> grSciCollHttpClient.removeContactFromInstitution(entityKey, contactKey),
         exceptionHandler(contactKey, "Failed to remove contact from institution " + entityKey));
+  }
+
+  public List<Institution> listInstitutionsByName(String name) {
+    return callExecutor.executeAndReturnOrAddFail(
+        () -> grSciCollHttpClient.getInstitutionsByName(name),
+        exceptionHandler(name, "Failed to get institutions by name"),
+        new ArrayList<>());
   }
 }

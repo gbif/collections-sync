@@ -1,10 +1,13 @@
 package org.gbif.collections.sync.clients.proxy;
 
 import java.util.UUID;
+import java.util.List;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.Contact;
 import org.gbif.api.model.collections.Institution;
+import org.gbif.api.model.collections.suggestions.CollectionChangeSuggestion;
 import org.gbif.collections.sync.clients.http.GrSciCollHttpClient;
+import org.gbif.collections.sync.common.handler.ChangeSugesstionHandler;
 import org.gbif.collections.sync.common.converter.ConvertedCollection;
 import org.gbif.collections.sync.common.handler.CollectionHandler;
 import org.gbif.collections.sync.common.handler.InstitutionHandler;
@@ -16,6 +19,7 @@ public abstract class BaseProxyClient implements GrSciCollProxyClient {
   protected final CallExecutor callExecutor;
   protected CollectionHandler collectionHandler;
   protected InstitutionHandler institutionHandler;
+  protected ChangeSugesstionHandler changeSugesstionHandler;
 
   public BaseProxyClient(SyncConfig syncConfig) {
     this.callExecutor = CallExecutor.getInstance(syncConfig);
@@ -26,6 +30,7 @@ public abstract class BaseProxyClient implements GrSciCollProxyClient {
     }
     this.collectionHandler = CollectionHandler.create(callExecutor, grSciCollHttpClient);
     this.institutionHandler = InstitutionHandler.create(callExecutor, grSciCollHttpClient);
+    this.changeSugesstionHandler = ChangeSugesstionHandler.create(callExecutor,grSciCollHttpClient);
   }
 
   @Override
@@ -59,6 +64,20 @@ public abstract class BaseProxyClient implements GrSciCollProxyClient {
 
   public void removeContactFromInstitution(UUID entityKey, int contactKey) {
     institutionHandler.removeContactFromEntityCall(entityKey, contactKey);
+  }
+
+  @Override
+  public List<Institution> findInstitutionByName(String institutionName) {
+    return institutionHandler.listInstitutionsByName(institutionName);
+  }
+
+  @Override
+  public int createCollectionChangeSuggestion(CollectionChangeSuggestion createSuggestion) {
+    return changeSugesstionHandler.createCollectionChangeSuggestion(createSuggestion);
+  }
+
+  public List<CollectionChangeSuggestion> getCollectionChangeSuggestion(String ihIdentifier){
+    return changeSugesstionHandler.getCall(ihIdentifier);
   }
 
   public Integer addContactToCollection(UUID entityKey, Contact contact) {
