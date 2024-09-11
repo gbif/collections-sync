@@ -1,11 +1,13 @@
 package org.gbif.collections.sync.ih;
 
+import java.util.stream.Collectors;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.clients.proxy.IHProxyClient;
 import org.gbif.collections.sync.common.BaseSynchronizer;
 import org.gbif.collections.sync.common.DataLoader;
 import org.gbif.collections.sync.common.parsers.CountryParser;
+import org.gbif.collections.sync.common.parsers.DataParser;
 import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.ih.IHDataLoader.IHData;
 import org.gbif.collections.sync.ih.match.IHMatchResult;
@@ -25,7 +27,6 @@ import com.google.common.base.Strings;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
-import static org.gbif.collections.sync.common.parsers.DataParser.isValidEmail;
 import static org.gbif.collections.sync.common.parsers.DataParser.parseStringList;
 
 @Slf4j
@@ -79,6 +80,7 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
                 return;
               }
 
+              handleInvalidEmails(ihInstitution,issueNotifier);
               IHMatchResult match = matcher.match(ihInstitution);
               handleResult(match, resultBuilder);
             });
@@ -136,20 +138,30 @@ public class IHSynchronizer extends BaseSynchronizer<IHInstitution, IHStaff> {
     }
   }
 
+  private void handleInvalidEmails(IHInstitution ihInstitution, IHIssueNotifier issueNotifier) {
+    if (ihInstitution.getContact() != null && !Strings.isNullOrEmpty(ihInstitution.getContact().getEmail())) {
+      List<String> emails = parseStringList(ihInstitution.getContact().getEmail());
+      List<String> validEmails = emails.stream()
+          .filter(DataParser::isValidEmail)
+          .collect(Collectors.toList());
+
+      // If there are no valid emails, notify and set email to null
+      if (validEmails.isEmpty()) {
+        issueNotifier.createInvalidEntity(ihInstitution, "Not valid institution - emails are not valid");
+        ihInstitution.getContact().setEmail(null);
+      } else {
+        // Set only valid emails back
+        ihInstitution.getContact().setEmail(String.join(",", validEmails));
+      }
+    }
+  }
+
+
   private boolean isValidIhInstitution(IHInstitution ihInstitution, IHIssueNotifier issueNotifier) {
     if (Strings.isNullOrEmpty(ihInstitution.getOrganization())
         || Strings.isNullOrEmpty(ihInstitution.getCode())) {
       issueNotifier.createInvalidEntity(
           ihInstitution, "Not valid institution - name and code are required");
-      return false;
-    }
-
-    if (ihInstitution.getContact() != null
-        && !Strings.isNullOrEmpty(ihInstitution.getContact().getEmail())
-        && parseStringList(ihInstitution.getContact().getEmail()).stream()
-            .anyMatch(e -> !isValidEmail(e))) {
-      issueNotifier.createInvalidEntity(
-          ihInstitution, "Not valid institution - emails are not valid");
       return false;
     }
 

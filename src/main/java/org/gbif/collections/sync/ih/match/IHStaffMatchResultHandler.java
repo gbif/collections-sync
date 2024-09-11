@@ -1,5 +1,6 @@
 package org.gbif.collections.sync.ih.match;
 
+import java.util.List;
 import org.gbif.api.model.collections.Collection;
 import org.gbif.api.model.collections.CollectionEntity;
 import org.gbif.api.model.collections.Contact;
@@ -13,6 +14,7 @@ import org.gbif.collections.sync.SyncResult.EntityMatch;
 import org.gbif.collections.sync.clients.proxy.IHProxyClient;
 import org.gbif.collections.sync.common.match.MatchResult;
 import org.gbif.collections.sync.common.match.StaffResultHandler;
+import org.gbif.collections.sync.common.parsers.DataParser;
 import org.gbif.collections.sync.config.IHConfig;
 import org.gbif.collections.sync.ih.IHEntityConverter;
 import org.gbif.collections.sync.ih.IHIssueNotifier;
@@ -31,7 +33,6 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.gbif.collections.sync.SyncResult.ContactMatch;
-import static org.gbif.collections.sync.common.parsers.DataParser.isValidEmail;
 import static org.gbif.collections.sync.common.parsers.DataParser.parseStringList;
 
 @Slf4j
@@ -94,9 +95,12 @@ public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstituti
     for (IHStaff ihStaff : ihStaffList) {
       if (isInvalidIhStaff(ihStaff)) {
         issueNotifier.createInvalidEntity(
-            ihStaff, "Not valid person - first name is required and emails have to be valid");
+            ihStaff, "Not valid person - first name is required");
         continue;
       }
+
+      // Check and handle invalid emails
+      handleInvalidEmails(ihStaff);
 
       Set<Contact> contactsMatched =
           entity.getContactPersons().stream()
@@ -180,16 +184,27 @@ public class IHStaffMatchResultHandler implements StaffResultHandler<IHInstituti
 
   @VisibleForTesting
   static boolean isInvalidIhStaff(IHStaff ihStaff) {
-    if (Strings.isNullOrEmpty(ihStaff.getFirstName())
-        && Strings.isNullOrEmpty(ihStaff.getMiddleName())) {
-      return true;
-    }
-
-    if (ihStaff.getContact() != null && !Strings.isNullOrEmpty(ihStaff.getContact().getEmail())) {
-      return parseStringList(ihStaff.getContact().getEmail()).stream()
-          .anyMatch(e -> !isValidEmail(e));
-    }
-
-    return false;
+    return Strings.isNullOrEmpty(ihStaff.getFirstName())
+        && Strings.isNullOrEmpty(ihStaff.getMiddleName());
   }
+
+  @VisibleForTesting
+  public void handleInvalidEmails(IHStaff ihStaff) {
+    if (ihStaff.getContact() != null && !Strings.isNullOrEmpty(ihStaff.getContact().getEmail())) {
+      List<String> emails = parseStringList(ihStaff.getContact().getEmail());
+      List<String> validEmails = emails.stream()
+          .filter(DataParser::isValidEmail)
+          .collect(Collectors.toList());
+
+      // If there are no valid emails, notify and set email to null
+      if (validEmails.isEmpty()) {
+        issueNotifier.createInvalidEntity(ihStaff, "Invalid email address(es)");
+        ihStaff.getContact().setEmail(null);
+      } else {
+        // Set only valid emails back
+        ihStaff.getContact().setEmail(String.join(",", validEmails));
+      }
+    }
+  }
+
 }
