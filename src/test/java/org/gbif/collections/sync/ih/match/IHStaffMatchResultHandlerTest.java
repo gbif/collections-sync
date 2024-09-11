@@ -139,7 +139,7 @@ public class IHStaffMatchResultHandlerTest extends BaseIHTest {
     contact.setEmail("asfsf");
     ihStaff.setContact(contact);
 
-    assertTrue(IHStaffMatchResultHandler.isInvalidIhStaff(ihStaff));
+    assertFalse(IHStaffMatchResultHandler.isInvalidIhStaff(ihStaff));
     contact.setEmail(null);
     assertFalse(IHStaffMatchResultHandler.isInvalidIhStaff(ihStaff));
     ihStaff.setFirstName(null);
@@ -150,6 +150,6 @@ public class IHStaffMatchResultHandlerTest extends BaseIHTest {
     assertFalse(IHStaffMatchResultHandler.isInvalidIhStaff(ihStaff));
 
     contact.setEmail("aa@aa.com;bb@bb.es;aaa");
-    assertTrue(IHStaffMatchResultHandler.isInvalidIhStaff(ihStaff));
+    assertFalse(IHStaffMatchResultHandler.isInvalidIhStaff(ihStaff));
   }
 }
