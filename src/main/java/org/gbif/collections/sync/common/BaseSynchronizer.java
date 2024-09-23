@@ -183,6 +183,14 @@ public abstract class BaseSynchronizer<S, R> {
     collectionChangeSuggestion.setComments(comments);
     collectionChangeSuggestion.setSuggestedEntity(newCollection);
     collectionChangeSuggestion.setIhIdentifier(ihIdentifiers.get(0));
+    // Create identifiers and set them to the suggested entity
+    List<Identifier> identifiers = new ArrayList<>();
+    for (String identifierString : ihIdentifiers) {
+      Identifier identifier = new Identifier(IdentifierType.IH_IRN, identifierString);
+      identifiers.add(identifier);
+    }
+    newCollection.setIdentifiers(identifiers);
+
     collectionChangeSuggestion.setCreateInstitution(createInstitution);
     return collectionChangeSuggestion;
   }
