@@ -166,22 +166,11 @@ public abstract class BaseSynchronizer<S, R> {
       Institution institution, List<String> ihIdentifiers, boolean createInstitution) {
     Collection newCollection = entityConverter.convertToCollection(matchResult.getSource(),
         institution).getCollection();
-    addIdentifiers(ihIdentifiers, newCollection);
     CollectionChangeSuggestion collectionChangeSuggestion = createCollectionChangeSuggestion(newCollection,
         ihIdentifiers, createInstitution);
     collectionChangeSuggestion = staffResultHandler.handleStaffForCollectionChangeSuggestion(matchResult,newCollection,collectionChangeSuggestion);
     proxyClient.createCollectionChangeSuggestion(collectionChangeSuggestion);
     return NoEntityMatch.builder().newChangeSuggestion(collectionChangeSuggestion).build();
-  }
-
-  private void addIdentifiers(List<String> ihIdentifiers, Collection newCollection) {
-    // Create identifiers and set them to the suggested entity
-    List<Identifier> identifiers = new ArrayList<>();
-    for (String identifierString : ihIdentifiers) {
-      Identifier identifier = new Identifier(IdentifierType.IH_IRN, identifierString);
-      identifiers.add(identifier);
-    }
-    newCollection.setIdentifiers(identifiers);
   }
 
   private CollectionChangeSuggestion createCollectionChangeSuggestion(Collection newCollection,
