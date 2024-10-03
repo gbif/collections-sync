@@ -9,6 +9,7 @@ import org.gbif.api.model.collections.suggestions.CollectionChangeSuggestion;
 import org.gbif.api.model.collections.suggestions.Type;
 import org.gbif.api.model.registry.Identifier;
 import org.gbif.api.vocabulary.IdentifierType;
+import org.gbif.api.vocabulary.collections.MasterSourceType;
 import org.gbif.api.vocabulary.collections.Source;
 import org.gbif.collections.sync.SyncResult;
 import org.gbif.collections.sync.ih.match.IHMatchResult;
@@ -110,6 +111,7 @@ public class IHSynchronizerHandlersTest extends BaseIHTest {
     expectedCollection.setNumberSpecimens(1000);
     expectedCollection.setMasterSourceMetadata(
         new MasterSourceMetadata(Source.IH_IRN, ih.getIrn()));
+    expectedCollection.setMasterSource(MasterSourceType.IH);
 
     // add identifier to expected entities
     Identifier newIdentifier = new Identifier(IdentifierType.IH_IRN, encodeIRN(IRN_TEST));
