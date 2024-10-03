@@ -52,6 +52,7 @@ import org.gbif.api.util.IdentifierUtils;
 import org.gbif.api.vocabulary.Country;
 import org.gbif.api.vocabulary.IdentifierType;
 import org.gbif.api.vocabulary.collections.IdType;
+import org.gbif.api.vocabulary.collections.MasterSourceType;
 import org.gbif.api.vocabulary.collections.Source;
 import org.gbif.collections.sync.clients.http.IHHttpClient;
 import org.gbif.collections.sync.common.Utils;
@@ -221,6 +222,7 @@ public class IHEntityConverter implements EntityConverter<IHInstitution, IHStaff
     collection.setEmail(getIhEmails(ihInstitution));
     collection.setPhone(getIhPhones(ihInstitution));
     collection.setHomepage(getIhHomepage(ihInstitution));
+    collection.setMasterSource(MasterSourceType.IH);
 
     addIrnIfNotExists(collection, ihInstitution.getIrn());
 
