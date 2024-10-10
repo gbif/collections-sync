@@ -136,7 +136,7 @@ public abstract class BaseSynchronizer<S, R> {
     List<String> ihIdentifiers = getIhIdentifiers(newInstitution);
 
     //If we already created a suggestion before we do nothing
-    if (!proxyClient.getCollectionChangeSuggestion(ihIdentifiers.get(0)).isEmpty()){
+    if (!proxyClient.getCollectionChangeSuggestion(ihIdentifiers.get(0)).isEmpty()) {
       return NoEntityMatch.builder().build();
     }
     //Check if there is another institution with the same name

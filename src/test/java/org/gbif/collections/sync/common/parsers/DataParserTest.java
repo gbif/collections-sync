@@ -1,8 +1,6 @@
 package org.gbif.collections.sync.common.parsers;
 
 import java.net.URI;
-import java.util.Calendar;
-
 import org.junit.Test;
 
 import static org.gbif.collections.sync.common.parsers.DataParser.*;
@@ -52,6 +50,13 @@ public class DataParserTest {
   public void parseHomepageUrlTest() {
     assertEquals(URI.create("http://www.a.com"), parseUri("http://www.  a.co m").get());
     assertEquals(URI.create("http://www.b.com"), parseUri("www.b.com").get());
+    assertEquals(URI.create("http://b.com"), parseUri("b.com").get());
+    assertEquals(URI.create("http://abc.gov.dk/de/fg/"), parseUri("abc.gov.dk/de/fg/").get());
+    assertEquals(URI.create("https://abc.com/de/fg/"), parseUri("https://abc.com/de/fg/").get());
+    assertFalse(parseUri("na", ex -> {}).isPresent());
+    assertFalse(parseUri("", ex -> {}).isPresent());
+    assertFalse(parseUri(".com", ex -> {}).isPresent());
+    assertFalse(parseUri("na.c", ex -> {}).isPresent());
   }
 
   @Test

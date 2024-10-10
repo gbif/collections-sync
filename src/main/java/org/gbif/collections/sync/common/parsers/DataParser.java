@@ -43,6 +43,8 @@ public class DataParser {
   private static final Pattern WHITESPACE_PATTERN = Pattern.compile("[\\h\\s+]");
   private static final Pattern CONTAINS_NUMBER = Pattern.compile(".*[0-9].*");
   private static final List<SimpleDateFormat> DATE_FORMATS = new ArrayList<>();
+  private static final Pattern VALID_PROTOCOLS = Pattern.compile("^(http|https)://.*$");
+  private static final Pattern VALID_TLD = Pattern.compile("^(https?://)?([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}(/.*)?$");
 
   static {
     // date formats supported
@@ -120,6 +122,21 @@ public class DataParser {
       webUrl = "http://" + webUrl;
     }
 
+    // Validate protocol
+    if (!VALID_PROTOCOLS.matcher(webUrl).matches()) {
+      log.warn("Invalid protocol in URL: {}", webUrl);
+      errorHandler.accept(new IllegalArgumentException("Invalid protocol in URL"));
+      return Optional.empty();
+    }
+
+    // Validate TLD
+    if (!VALID_TLD.matcher(webUrl).matches()) {
+      log.warn("Invalid TLD in URL: {}", webUrl);
+      errorHandler.accept(new IllegalArgumentException("Invalid TLD in URL"));
+      return Optional.empty();
+    }
+
+    // Try creating the URI object and handle any exceptions
     try {
       return Optional.of(URI.create(webUrl));
     } catch (Exception ex) {
