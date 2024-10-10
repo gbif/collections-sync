@@ -118,17 +118,15 @@ public class DataParser {
       webUrl = webUrl.replace("http//:", "http://");
     }
 
-    if (!webUrl.startsWith("http") && !webUrl.startsWith("Http") && !webUrl.startsWith("HTTP")) {
-      webUrl = "http://" + webUrl;
-    }
-    // Check if the URL is valid
-    if (!URL_VALIDATOR.isValid(webUrl)) {
-      Exception ex = new IllegalArgumentException("Invalid URL: " + webUrl);
-      errorHandler.accept(ex);
-      return Optional.empty();
+    if (!webUrl.toLowerCase().startsWith("http://") && !webUrl.toLowerCase().startsWith("https://")) {
+      webUrl = "http://" + webUrl;  // Default to http
     }
 
     try {
+      // Check if the URL is valid
+      if (!URL_VALIDATOR.isValid(webUrl)) {
+        throw new IllegalArgumentException("Invalid URL: " + webUrl);
+      }
       return Optional.of(URI.create(webUrl));
     } catch (Exception ex) {
       log.warn("{}: {}", "Invalid URI", webUrl, ex);

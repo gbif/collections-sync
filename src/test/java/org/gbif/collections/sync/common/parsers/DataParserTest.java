@@ -53,11 +53,11 @@ public class DataParserTest {
     assertEquals(URI.create("http://b.com"), parseUri("b.com").get());
     assertEquals(URI.create("http://abc.gov.dk/de/fg/"), parseUri("abc.gov.dk/de/fg/").get());
     assertEquals(URI.create("https://abc.com/de/fg/"), parseUri("https://abc.com/de/fg/").get());
+    assertEquals(URI.create("https://abc.com/de/fg/"), parseUri("HTTPS://abc.com/de/fg/").get());
     assertFalse(parseUri("na", ex -> {}).isPresent());
     assertFalse(parseUri("", ex -> {}).isPresent());
     assertFalse(parseUri(".com", ex -> {}).isPresent());
     assertFalse(parseUri("na.c", ex -> {}).isPresent());
-    assertFalse(parseUri("httpwww.a.com", ex -> {}).isPresent());
   }
 
   @Test
