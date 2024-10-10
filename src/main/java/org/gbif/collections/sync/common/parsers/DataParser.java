@@ -28,6 +28,7 @@ import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.validator.routines.UrlValidator;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
@@ -40,11 +41,10 @@ public class DataParser {
       d -> d.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime();
 
   private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
+  private static final UrlValidator URL_VALIDATOR = UrlValidator.getInstance();
   private static final Pattern WHITESPACE_PATTERN = Pattern.compile("[\\h\\s+]");
   private static final Pattern CONTAINS_NUMBER = Pattern.compile(".*[0-9].*");
   private static final List<SimpleDateFormat> DATE_FORMATS = new ArrayList<>();
-  private static final Pattern VALID_PROTOCOLS = Pattern.compile("^(http|https)://.*$");
-  private static final Pattern VALID_TLD = Pattern.compile("^(https?://)?([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}(/.*)?$");
 
   static {
     // date formats supported
@@ -121,22 +121,13 @@ public class DataParser {
     if (!webUrl.startsWith("http") && !webUrl.startsWith("Http") && !webUrl.startsWith("HTTP")) {
       webUrl = "http://" + webUrl;
     }
-
-    // Validate protocol
-    if (!VALID_PROTOCOLS.matcher(webUrl).matches()) {
-      log.warn("Invalid protocol in URL: {}", webUrl);
-      errorHandler.accept(new IllegalArgumentException("Invalid protocol in URL"));
+    // Check if the URL is valid
+    if (!URL_VALIDATOR.isValid(webUrl)) {
+      Exception ex = new IllegalArgumentException("Invalid URL: " + webUrl);
+      errorHandler.accept(ex);
       return Optional.empty();
     }
 
-    // Validate TLD
-    if (!VALID_TLD.matcher(webUrl).matches()) {
-      log.warn("Invalid TLD in URL: {}", webUrl);
-      errorHandler.accept(new IllegalArgumentException("Invalid TLD in URL"));
-      return Optional.empty();
-    }
-
-    // Try creating the URI object and handle any exceptions
     try {
       return Optional.of(URI.create(webUrl));
     } catch (Exception ex) {

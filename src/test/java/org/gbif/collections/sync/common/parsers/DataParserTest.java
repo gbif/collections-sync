@@ -57,6 +57,7 @@ public class DataParserTest {
     assertFalse(parseUri("", ex -> {}).isPresent());
     assertFalse(parseUri(".com", ex -> {}).isPresent());
     assertFalse(parseUri("na.c", ex -> {}).isPresent());
+    assertFalse(parseUri("httpwww.a.com", ex -> {}).isPresent());
   }
 
   @Test
