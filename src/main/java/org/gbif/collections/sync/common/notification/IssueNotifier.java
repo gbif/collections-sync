@@ -13,6 +13,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +29,7 @@ public abstract class IssueNotifier {
   private static final String FAILS_TITLE =
       "Some operations have failed updating the registry in the %s";
   private static final String FAIL_LABEL = "%s fail";
+  private static final String TIMESTAMP_REGEX = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}";
 
   protected static final UnaryOperator<String> PORTAL_URL_NORMALIZER =
       url -> {
@@ -137,4 +141,26 @@ public abstract class IssueNotifier {
   }
 
   protected abstract String getProcessName();
+
+  //Clean the timestamp labels between the oldest and newest one
+  public static Set<String> manageTimestampLabels(
+      Set<String> existingLabels, Set<String> newLabels) {
+    Set<String> timestampLabels = existingLabels.stream()
+        .filter(label -> label.matches(TIMESTAMP_REGEX))
+        .collect(Collectors.toSet());
+
+    String oldestTimestampLabel = timestampLabels.isEmpty() ? null : Collections.min(timestampLabels);
+
+    Set<String> updatedLabels = new HashSet<>(existingLabels);
+
+    updatedLabels.removeIf(label -> label.matches(TIMESTAMP_REGEX) && !label.equals(oldestTimestampLabel));
+
+    updatedLabels.addAll(newLabels);
+
+    if (oldestTimestampLabel != null) {
+      updatedLabels.add(oldestTimestampLabel);
+    }
+
+    return updatedLabels;
+  }
 }
