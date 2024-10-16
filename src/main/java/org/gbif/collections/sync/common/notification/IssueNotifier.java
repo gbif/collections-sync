@@ -30,6 +30,7 @@ public abstract class IssueNotifier {
       "Some operations have failed updating the registry in the %s";
   private static final String FAIL_LABEL = "%s fail";
   private static final String TIMESTAMP_REGEX = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}";
+  private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
   protected static final UnaryOperator<String> PORTAL_URL_NORMALIZER =
       url -> {
@@ -55,7 +56,7 @@ public abstract class IssueNotifier {
     this.registryPersonLink =
         PORTAL_URL_NORMALIZER.apply(notificationConfig.getRegistryPortalUrl()) + "/person/%s";
     syncTimestampLabel =
-        LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime.now().format(dateTimeFormatter);
     notificationProxyClient = NotificationProxyClient.create(config);
 
     log.info("Issue factory created with sync timestamp label: {}", syncTimestampLabel);
@@ -145,20 +146,21 @@ public abstract class IssueNotifier {
   //Clean the timestamp labels between the oldest and newest one
   public static Set<String> manageTimestampLabels(
       Set<String> existingLabels, Set<String> newLabels) {
-    Set<String> timestampLabels = existingLabels.stream()
+    Set<LocalDateTime> timestampLabels = existingLabels.stream()
         .filter(label -> label.matches(TIMESTAMP_REGEX))
+        .map(label -> LocalDateTime.parse(label, dateTimeFormatter))
         .collect(Collectors.toSet());
 
-    String oldestTimestampLabel = timestampLabels.isEmpty() ? null : Collections.min(timestampLabels);
+    LocalDateTime oldestTimestamp = timestampLabels.isEmpty() ? null : Collections.min(timestampLabels);
 
     Set<String> updatedLabels = new HashSet<>(existingLabels);
 
-    updatedLabels.removeIf(label -> label.matches(TIMESTAMP_REGEX) && !label.equals(oldestTimestampLabel));
-
+    updatedLabels.removeIf(label -> label.matches(TIMESTAMP_REGEX) &&
+        !LocalDateTime.parse(label, dateTimeFormatter).equals(oldestTimestamp));
     updatedLabels.addAll(newLabels);
 
-    if (oldestTimestampLabel != null) {
-      updatedLabels.add(oldestTimestampLabel);
+    if (oldestTimestamp != null) {
+      updatedLabels.add(oldestTimestamp.format(dateTimeFormatter));
     }
 
     return updatedLabels;
