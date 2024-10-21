@@ -20,6 +20,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import okhttp3.HttpUrl;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 
@@ -123,8 +124,8 @@ public class DataParser {
     }
 
     try {
-      // Check if the URL is valid
-      if (!URL_VALIDATOR.isValid(webUrl)) {
+      HttpUrl parsedUrl = HttpUrl.parse(webUrl);
+      if (parsedUrl == null || !URL_VALIDATOR.isValid(parsedUrl.toString()) ) {
         throw new IllegalArgumentException("Invalid URL: " + webUrl);
       }
       return Optional.of(URI.create(webUrl));
