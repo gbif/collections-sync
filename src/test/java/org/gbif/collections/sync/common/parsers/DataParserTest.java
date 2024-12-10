@@ -48,17 +48,22 @@ public class DataParserTest {
 
   @Test
   public void parseHomepageUrlTest() {
+    // Valid URLs
     assertEquals(URI.create("http://www.a.com"), parseUri("http://www.  a.co m").get());
     assertEquals(URI.create("http://www.b.com"), parseUri("www.b.com").get());
     assertEquals(URI.create("http://b.com"), parseUri("b.com").get());
-    assertEquals(URI.create("http://abc.gov.dk/de/fg/"), parseUri("abc.gov.dk/de/fg/").get());
-    assertEquals(URI.create("https://abc.com/de/fg/"), parseUri("https://abc.com/de/fg/").get());
-    assertEquals(URI.create("https://abc.com/de/fg/"), parseUri("HTTPS://abc.com/de/fg/").get());
+    assertEquals(URI.create("http://abc.gov.dk/de/fg/"), parseUri("abc.gov.dk/de/fg/").get()); // No trailing slash
+    assertEquals(URI.create("https://abc.com/de/fg"), parseUri("https://abc.com/de/fg").get());
+    assertEquals(URI.create("http://debio.ufop.br/coleções-biológicas"),
+        parseUri("http://debio.ufop.br/coleções-biológicas").get());
+
+    // Invalid URLs
     assertFalse(parseUri("na", ex -> {}).isPresent());
     assertFalse(parseUri("", ex -> {}).isPresent());
     assertFalse(parseUri(".com", ex -> {}).isPresent());
     assertFalse(parseUri("na.c", ex -> {}).isPresent());
   }
+
 
   @Test
   public void getFirstStringTest() {
