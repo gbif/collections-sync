@@ -41,6 +41,8 @@
     <maven-failsafe-plugin.version>2.18.1</maven-failsafe-plugin.version>
     <maven-shade-plugin.version>3.2.2</maven-shade-plugin.version>
     <jacoco-maven-plugin.version>0.8.3</jacoco-maven-plugin.version>
+    <delombok.output>src/main/lombok</delombok.output>
+    <lombok-maven-plugin.version>1.18.0.0</lombok-maven-plugin.version>
 
     <!-- test -->
     <junit.version>4.12</junit.version>
@@ -254,6 +256,24 @@
               <dataFile>${jacoco.output.file}</dataFile>
               <outputDirectory>${coverage.report.dir}</outputDirectory>
             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok-maven-plugin</artifactId>
+        <version>${lombok-maven-plugin.version}</version>
+        <configuration>
+          <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+          <outputDirectory>${delombok.output}</outputDirectory>
+          <addOutputDirectory>false</addOutputDirectory>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>delombok</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
