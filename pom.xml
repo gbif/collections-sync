@@ -8,7 +8,7 @@
   </parent>
 
   <artifactId>collections-sync</artifactId>
-  <version>1.0.2-SNAPSHOT</version>
+  <version>1.0.3-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Collections sync</name>
