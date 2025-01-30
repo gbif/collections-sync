@@ -45,6 +45,7 @@ public class DataParser {
   private static final UrlValidator URL_VALIDATOR = UrlValidator.getInstance();
   private static final Pattern WHITESPACE_PATTERN = Pattern.compile("[\\h\\s+]");
   private static final Pattern CONTAINS_NUMBER = Pattern.compile(".*[0-9].*");
+  private static final Pattern ORDINAL_SUFFIX_PATTERN = Pattern.compile("\\b(\\d{1,2})(st|nd|rd|th)\\b");
   private static final List<SimpleDateFormat> DATE_FORMATS = new ArrayList<>();
 
   static {
@@ -144,6 +145,10 @@ public class DataParser {
     if (!hasValue(dateAsString)) {
       return null;
     }
+
+    // Remove ordinal suffixes (st, nd, rd, th) from day numbers (e.g., "21st" -> "21") and remove commas
+    dateAsString = ORDINAL_SUFFIX_PATTERN.matcher(dateAsString).replaceAll("$1")
+        .replace(",", "");
 
     // some dates came with a dot at the end
     if (dateAsString.endsWith(".")) {
