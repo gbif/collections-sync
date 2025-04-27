@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import org.gbif.collections.sync.common.notification.Issue;
+import org.gbif.collections.sync.common.notification.IssueNotifier;
 import org.gbif.collections.sync.config.SyncConfig.NotificationConfig;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -136,7 +137,7 @@ public class GithubClient {
       // assignees in case the original ones were modified in Github
       Issue existingIssue = existingIssueOpt.get();
       issue.setNumber(existingIssue.getNumber());
-      issue.getLabels().addAll(existingIssue.getLabels());
+      issue.setLabels(IssueNotifier.manageTimestampLabels(existingIssue.getLabels(), issue.getLabels()));
       issue.getAssignees().addAll(existingIssue.getAssignees());
 
       updateIssue(issue);
