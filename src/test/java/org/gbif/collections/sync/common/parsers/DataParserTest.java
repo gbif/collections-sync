@@ -44,6 +44,7 @@ public class DataParserTest {
     assertEquals(2019, parseDateYear("June 2019").intValue());
     assertEquals(2019, parseDateYear("Junio 2019").intValue());
     assertEquals(2019, parseDateYear("1 January 2019").intValue());
+    assertEquals(2014, parseDateYear("9th JANUARY, 2014").intValue());
   }
 
   @Test
