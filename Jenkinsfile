@@ -19,11 +19,13 @@ pipeline {
         not { expression { params.RELEASE } }
       }
       steps {
-        configFileProvider(
-                [configFile(fileId: 'org.jenkinsci.plugins.configfiles.maven.GlobalMavenSettingsConfig1387378707709',
-                        variable: 'MAVEN_SETTINGS_XML')]) {
-          sh 'mvn clean package dependency:analyze -U'
-        }
+          withMaven(traceability: true) {
+            configFileProvider(
+                    [configFile(fileId: 'org.jenkinsci.plugins.configfiles.maven.GlobalMavenSettingsConfig1387378707709',
+                            variable: 'MAVEN_SETTINGS_XML')]) {
+              sh 'mvn clean package deploy dependency:analyze -U'
+            }
+          }
       }
     }
     stage('SonarQube analysis') {
@@ -41,21 +43,7 @@ pipeline {
         }
       }
     }
-    stage('Snapshot to nexus') {
-      when {
-        allOf {
-          not { expression { params.RELEASE } }
-          branch 'master';
-        }
-      }
-      steps {
-        configFileProvider(
-                [configFile(fileId: 'org.jenkinsci.plugins.configfiles.maven.GlobalMavenSettingsConfig1387378707709',
-                        variable: 'MAVEN_SETTINGS_XML')]) {
-          sh 'mvn clean -s $MAVEN_SETTINGS_XML deploy'
-        }
-      }
-    }
+
     stage('Release version to nexus') {
       when { expression { params.RELEASE } }
       steps {
