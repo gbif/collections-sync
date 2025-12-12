@@ -22,27 +22,27 @@
   </scm>
 
   <properties>
-    <jdkLevel>11</jdkLevel>
+    <jdkLevel>17</jdkLevel>
 
-    <slf4j.version>1.7.29</slf4j.version>
-    <jackson.version>2.14.1</jackson.version>
-    <retrofit.version>2.7.1</retrofit.version>
-    <okhttp.version>4.3.1</okhttp.version>
+    <slf4j.version>2.0.17</slf4j.version>
+    <jackson.version>2.19.4</jackson.version>
+    <retrofit.version>2.9.0</retrofit.version>
+    <okhttp.version>4.12.0</okhttp.version>
     <okio.version>2.4.3</okio.version>
-    <lombok.version>1.18.12</lombok.version>
+    <lombok.version>1.18.42</lombok.version>
     <jcommander.version>1.78</jcommander.version>
-    <gbif-api.version>2.0.0</gbif-api.version>
-    <commons-beanutils.version>1.9.2</commons-beanutils.version>
-    <logback.version>1.2.3</logback.version>
-    <guava.version>28.2-jre</guava.version>
+    <gbif-api.version>2.2.0</gbif-api.version>
+    <commons-beanutils.version>1.9.4</commons-beanutils.version>
+    <logback.version>1.5.16</logback.version>
+    <guava.version>33.5.0-jre</guava.version>
     <opencsv.version>5.9</opencsv.version>
 
-    <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
+    <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
     <maven-failsafe-plugin.version>2.18.1</maven-failsafe-plugin.version>
-    <maven-shade-plugin.version>3.2.2</maven-shade-plugin.version>
-    <jacoco-maven-plugin.version>0.8.3</jacoco-maven-plugin.version>
+    <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+    <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
     <delombok.output>src/main/lombok</delombok.output>
-    <lombok-maven-plugin.version>1.18.0.0</lombok-maven-plugin.version>
+    <lombok-maven-plugin.version>1.18.20.0</lombok-maven-plugin.version>
 
     <!-- test -->
     <junit.version>4.12</junit.version>
@@ -117,11 +117,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
       <version>${slf4j.version}</version>
     </dependency>
     <dependency>
@@ -259,7 +254,8 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
+      <!-- Commented out due to incompatibility with Lombok 1.18.42 -->
+      <!-- <plugin>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok-maven-plugin</artifactId>
         <version>${lombok-maven-plugin.version}</version>
@@ -276,14 +272,12 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
+      </plugin> -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>${maven-javadoc-plugin.version}</version>
-        <configuration>
-          <sourcepath>${delombok.output}</sourcepath>
-        </configuration>
+        <!-- Javadoc plugin can work directly with Lombok annotated sources in modern versions -->
       </plugin>
     </plugins>
   </build>

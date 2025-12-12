@@ -7,3 +7,6 @@ target/
 
 /idigbio_sync_result_*
 /ih_sync_result_*
+
+# Lombok generated sources
+src/main/lombok/
