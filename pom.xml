@@ -31,7 +31,7 @@
     <okio.version>2.4.3</okio.version>
     <lombok.version>1.18.42</lombok.version>
     <jcommander.version>1.78</jcommander.version>
-    <gbif-api.version>2.2.0</gbif-api.version>
+    <gbif-api.version>2.2.1</gbif-api.version>
     <commons-beanutils.version>1.9.4</commons-beanutils.version>
     <logback.version>1.5.16</logback.version>
     <guava.version>33.5.0-jre</guava.version>
