@@ -24,6 +24,9 @@ import retrofit2.http.Query;
 /** Lightweight IndexHerbariorum client. */
 public class IHHttpClient {
 
+  private static final String USER_AGENT =
+      "GBIF-collections-sync (+https://github.com/gbif/collections-sync; scientific-collections@gbif.org)";
+
   private static final ConcurrentMap<String, IHHttpClient> clientsMap = new ConcurrentHashMap<>();
   private final API api;
 
@@ -37,7 +40,15 @@ public class IHHttpClient {
         new OkHttpClient.Builder()
             .cache(null)
             .connectTimeout(Duration.ofMinutes(2))
-            .readTimeout(Duration.ofMinutes(2));
+            .readTimeout(Duration.ofMinutes(2))
+            .addInterceptor(
+                chain ->
+                    chain.proceed(
+                        chain
+                            .request()
+                            .newBuilder()
+                            .header("User-Agent", USER_AGENT)
+                            .build()));
 
     Retrofit retrofit =
         new Retrofit.Builder()
